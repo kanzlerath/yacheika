@@ -73,6 +73,8 @@ export default function VenueCard({
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
   const accentColor = customColors?.accent || "#e11d48"; // Default rose
+  const compactHeight = "calc(256px + env(safe-area-inset-bottom, 0px))";
+  const expandedHeight = "min(84dvh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px)))";
 
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
@@ -157,8 +159,8 @@ export default function VenueCard({
       animate={{ 
         y: 0,
         height: isExpanded 
-          ? "84vh" 
-          : "256px" 
+          ? expandedHeight
+          : compactHeight
       }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 28, stiffness: 220 }}
@@ -184,6 +186,7 @@ export default function VenueCard({
         className={`flex flex-col h-full ${
           isExpanded ? "overflow-y-auto" : "overflow-hidden"
         }`}
+        style={{ paddingBottom: isExpanded ? "env(safe-area-inset-bottom, 0px)" : 0 }}
       >
         <AnimatePresence mode="wait">
           {!isExpanded ? (
@@ -193,7 +196,8 @@ export default function VenueCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="px-5 pb-5 space-y-4 text-left"
+              className="px-5 space-y-4 text-left"
+              style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
             >
               <div className="flex items-start gap-4 justify-between">
                 <div className="flex items-center gap-4 min-w-0">
@@ -213,11 +217,6 @@ export default function VenueCard({
                       <span className="text-[9px] uppercase font-mono tracking-widest text-neutral-400">
                         {venue.category}
                       </span>
-                      {isPremiumActive && (
-                        <span className="flex items-center gap-1 text-[8px] font-display font-medium uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-950/20 text-amber-500 border border-amber-900/20">
-                          <Sparkles className="w-2.5 h-2.5" /> Premium
-                        </span>
-                      )}
                       {vEvents.length > 0 && (
                         <span className="text-[8px] font-mono font-medium tracking-wide text-violet-400 bg-violet-950/15 border border-violet-900/25 px-1.5 py-0.2 rounded" title="Событие сегодня">
                           Событие сегодня
@@ -298,18 +297,14 @@ export default function VenueCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="px-5 pb-8 space-y-6 text-left"
+              className="px-5 space-y-6 text-left"
+              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
             >
               {/* Simplified airy title and header bar */}
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-[9px] uppercase font-mono tracking-widest text-[#a1a1aa]">{venue.category}</span>
-                    {isPremiumActive && (
-                      <span className="flex items-center gap-1 text-[8px] font-display font-medium uppercase tracking-widest px-1.5 py-0.5 rounded bg-amber-500 text-black">
-                        <Sparkles className="w-2.5 h-2.5" /> Premium
-                      </span>
-                    )}
                   </div>
                   <h1 className="text-2xl font-display font-extrabold text-white tracking-tight leading-none mb-1.5">
                     {venue.name}
@@ -492,15 +487,15 @@ export default function VenueCard({
                               />
                             </div>
                           ))}
-                          {!isPremiumActive && venue.gallery.length < 2 && (
+                          {venue.gallery.length < 2 && (
                             <div className="border border-dashed border-neutral-900 w-60 h-36 rounded-2xl flex items-center justify-center text-center p-5 text-neutral-500 text-xs shrink-0 bg-neutral-900/10 font-mono">
-                              Большие галереи в Premium картах
+                              Дополнительные кадры пока не добавлены
                             </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Curated featured premium suggestions */}
+                      {/* Curated featured suggestions */}
                       {isPremiumActive && premium.featuredDrinks && premium.featuredDrinks.length > 0 && (
                         <div className="p-5 bg-neutral-950 border border-neutral-900/60 rounded-3xl space-y-3">
                           <div className="flex items-center gap-2">

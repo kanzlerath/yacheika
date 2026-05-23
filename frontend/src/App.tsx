@@ -442,7 +442,10 @@ export default function App() {
         <main className="w-full flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 relative overflow-hidden bg-[#070709] animate-fadeIn">
           
           {/* Left Column - Full Admin Panel CRUD view (scrollable containing edit forms) */}
-          <section className="col-span-12 xl:col-span-8 h-full overflow-y-auto p-4 md:p-6 border-r border-neutral-900/50">
+          <section
+            className="col-span-12 xl:col-span-8 h-full overflow-y-auto p-4 md:p-6 border-r border-neutral-900/50"
+            style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          >
             
             {/* Top Info Bar inside control panel space */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 border-b border-neutral-900 pb-4">

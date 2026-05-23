@@ -139,7 +139,7 @@ export default function DiscoveryPanel({
   };
 
   return (
-    <div id="discovery-panel" className="flex flex-col h-full text-zinc-300 bg-[#060608] font-sans pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+    <div id="discovery-panel" className="flex flex-col h-full text-zinc-300 bg-[#060608] font-sans">
       
       {/* Search Header Area */}
       <div className="p-4 space-y-3 shrink-0 bg-[#060608] border-b border-zinc-900/40">
@@ -197,7 +197,10 @@ export default function DiscoveryPanel({
       </div>
 
       {/* Main body displaying Curated Playlists & Listings */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5 scrollbar-thin">
+      <div
+        className="flex-1 overflow-y-auto px-4 pt-3 space-y-5 scrollbar-thin"
+        style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         
         {/* Active Collection Description Card */}
         <AnimatePresence>
@@ -284,8 +287,6 @@ export default function DiscoveryPanel({
               filteredVenues.map((venue) => {
                 const total = venue.likesCount + venue.notMyPlaceCount;
                 const ratio = total > 0 ? Math.round((venue.likesCount / total) * 100) : 100;
-                const matchesPremium = venue.premiumConfig?.premiumActive;
-                const customAccent = matchesPremium && venue.premiumConfig?.customColors?.accent ? venue.premiumConfig.customColors.accent : "#e11d48";
 
                 return (
                   <button
@@ -303,12 +304,6 @@ export default function DiscoveryPanel({
                           className="w-full h-full object-cover filter brightness-[0.85] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
                         />
-                        {matchesPremium && (
-                          <div 
-                            className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full shadow"
-                            style={{ backgroundColor: customAccent }}
-                          />
-                        )}
                       </div>
                       
                       {/* Name and secondary meta */}
