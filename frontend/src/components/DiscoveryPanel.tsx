@@ -181,7 +181,7 @@ export default function DiscoveryPanel({
   };
 
   return (
-    <div id="discovery-panel" className="flex flex-col h-full text-zinc-300 bg-[#060608] font-sans pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+    <div id="discovery-panel" className="flex flex-col h-full text-zinc-300 bg-[#060608] font-sans">
       
       {/* Search Header Area */}
       <div className="p-4 space-y-3 shrink-0 bg-[#060608] border-b border-zinc-900/40">
@@ -239,7 +239,10 @@ export default function DiscoveryPanel({
       </div>
 
       {/* Main body displaying Curated Playlists & Listings */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5 scrollbar-thin">
+      <div
+        className="flex-1 overflow-y-auto px-4 pt-3 space-y-5 scrollbar-thin"
+        style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         
         {/* Active Collection Description Card */}
         <AnimatePresence>

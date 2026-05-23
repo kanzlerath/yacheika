@@ -73,6 +73,8 @@ export default function VenueCard({
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
   const accentColor = customColors?.accent || "#e11d48"; // Default rose
+  const compactHeight = "calc(256px + env(safe-area-inset-bottom, 0px))";
+  const expandedHeight = "min(84dvh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px)))";
 
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
@@ -157,8 +159,8 @@ export default function VenueCard({
       animate={{ 
         y: 0,
         height: isExpanded 
-          ? "84vh" 
-          : "256px" 
+          ? expandedHeight
+          : compactHeight
       }}
       exit={{ y: "100%" }}
       transition={{ type: "spring", damping: 28, stiffness: 220 }}
@@ -184,6 +186,7 @@ export default function VenueCard({
         className={`flex flex-col h-full ${
           isExpanded ? "overflow-y-auto" : "overflow-hidden"
         }`}
+        style={{ paddingBottom: isExpanded ? "env(safe-area-inset-bottom, 0px)" : 0 }}
       >
         <AnimatePresence mode="wait">
           {!isExpanded ? (
@@ -193,7 +196,8 @@ export default function VenueCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="px-5 pb-5 space-y-4 text-left"
+              className="px-5 space-y-4 text-left"
+              style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
             >
               <div className="flex items-start gap-4 justify-between">
                 <div className="flex items-center gap-4 min-w-0">
@@ -298,7 +302,8 @@ export default function VenueCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="px-5 pb-8 space-y-6 text-left"
+              className="px-5 space-y-6 text-left"
+              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
             >
               {/* Simplified airy title and header bar */}
               <div className="flex items-start justify-between">
