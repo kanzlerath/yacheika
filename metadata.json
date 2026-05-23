@@ -1,0 +1,6 @@
+{
+  "name": "Ячейка",
+  "description": "Discovery-карта вечерних и nightlife заведений Новосибирска. Минималистичный интерактивный гид по барам, пабам и атмосфере города.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

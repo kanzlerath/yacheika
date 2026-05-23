@@ -1,0 +1,623 @@
+import express from "express";
+import path from "path";
+import { createServer as createViteServer } from "vite";
+import { Venue, Reaction, VenueEvent, Collection, AnalyticsEvent, TelegramUser } from "./src/types";
+
+const app = express();
+app.use(express.json());
+
+const PORT = 3000;
+
+// === SEED DATA ===
+
+// A selection of gorgeous, highly dark-atmospheric unsplash nightlife photos to ensure zero broken assets
+const PHOTO_PRESETS = [
+  "https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&q=80&w=800", // Warm bar interior
+  "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&q=80&w=800", // Dark room with bar counters
+  "https://images.unsplash.com/photo-1543007630-9710e4a00a20?auto=format&fit=crop&q=80&w=800", // Pouring wine
+  "https://images.unsplash.com/photo-1511105612625-2c9434778f3f?auto=format&fit=crop&q=80&w=800", // Cozy table lamp lighting
+  "https://images.unsplash.com/photo-1575444758702-4a6b9222336e?auto=format&fit=crop&q=80&w=800", // Craft beer taps
+  "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&q=80&w=800", // Dark cocktail preparation
+  "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&q=80&w=800", // Club atmosphere with violet glow
+  "https://images.unsplash.com/photo-1563842947141-946f403b4d57?auto=format&fit=crop&q=80&w=800", // Vinyl record DJ setup
+  "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&q=80&w=800"  // Brick walls with warm cozy lighting
+];
+
+let venues: Venue[] = [
+  {
+    id: "v-friends",
+    name: "Friends Bar",
+    slug: "friends-bar",
+    category: "коктейльный бар",
+    shortDescription: "Тот самый легендарный дружелюбный коктейльный бар в самом центре.",
+    fullDescription: "Здесь нет пафоса, зато есть отличные авторские коктейли, душевные разговоры у стойки и неудержимое веселье по выходным. Бармены подберут микс по вашему настроению и приготовят идеальный напиток. По выходным здесь стихийные танцы у столов и лучшие пластинки.",
+    address: "Красный проспект, 22",
+    latitude: 55.0267,
+    longitude: 82.9218,
+    workingHours: "Ежедневно с 18:00 до 03:00, Пт-Сб до 05:00",
+    contacts: {
+      phone: "+7 (383) 222-77-77",
+      telegram: "friends_bar_nsk",
+      instagram: "friends_bar",
+      website: "http://friendsbar.ru"
+    },
+    gallery: [PHOTO_PRESETS[5], PHOTO_PRESETS[1], PHOTO_PRESETS[3]],
+    tags: ["коктейли", "свидание", "шумно", "afterwork", "DJ"],
+    status: "published",
+    premiumConfig: {
+      premiumActive: true,
+      premiumTheme: "crimson-glow",
+      customColors: {
+        primary: "#140a0c",
+        accent: "#f43f5e",
+        glowColor: "rgba(244, 63, 94, 0.4)"
+      },
+      heroImage: PHOTO_PRESETS[5],
+      moodBlock: "Сегодня играем фанк на виниле с 22:00. Приходи пить Penicillin!",
+      featuredDrinks: ["Penicillin", "Tommy's Margarita", "Red Room Cobbler"]
+    },
+    createdAt: "2026-05-10T12:00:00Z",
+    updatedAt: "2026-05-23T06:00:00Z",
+    likesCount: 142,
+    notMyPlaceCount: 4,
+    vibeRatings: { "Душевно": 68, "Танцы": 45, "Крутой персонал": 52 }
+  },
+  {
+    id: "v-fry",
+    name: "FRY ciders & drafts",
+    slug: "fry-ciders",
+    category: "крафтовый бар",
+    shortDescription: "Шумный пивной дворик с лучшей уличной атмосферой в городе.",
+    fullDescription: "Знаковое место встреч творческой молодежи Новосибирска во внутреннем дворике на Ленина 3. Огромный ассортимент крафтового пива, сидров, кисляков и вкусного стритфуда. Место, где стираются границы, а вечер всегда превращается в незабываемое приключение под открытым небом.",
+    address: "ул. Ленина, 3",
+    latitude: 55.0302,
+    longitude: 82.9189,
+    workingHours: "Пн-Чт 16:00-01:00, Пт 16:00-03:00, Сб 14:00-03:00, Вс 14:00-01:00",
+    contacts: {
+      telegram: "fry_bar_nsk",
+      vk: "fry_cider_pub"
+    },
+    gallery: [PHOTO_PRESETS[4], PHOTO_PRESETS[0], PHOTO_PRESETS[8]],
+    tags: ["крафт", "летник", "шумно", "веранда", "DJ"],
+    status: "published",
+    premiumConfig: {
+      premiumActive: false
+    },
+    createdAt: "2026-05-11T12:00:00Z",
+    updatedAt: "2026-05-23T01:00:00Z",
+    likesCount: 204,
+    notMyPlaceCount: 12,
+    vibeRatings: { "Шумно": 95, "Лампово во дворе": 112, "Кислое пиво": 45 }
+  },
+  {
+    id: "v-incider",
+    name: "InCider Сидрерия",
+    slug: "incider-сидры",
+    category: "крафтовый бар",
+    shortDescription: "Камерная сидрерия с уютными гирляндами и ламповым летником.",
+    fullDescription: "Локальный уютный бар, спрятанный в тихом переулке Октябрьской. Специализируется на сухих традиционных сидрах из Франции, Испании, Англии, а также лучших российских сидроварнях. Идеальная локация для неспешных вечерних бесед в свете теплых ретро-гирлянд.",
+    address: "ул. Октябрьская, 45а",
+    latitude: 55.0255,
+    longitude: 82.9192,
+    workingHours: "Ежедневно с 15:00 до 00:00, Пт-Сб до 02:00",
+    contacts: {
+      phone: "+7 (913) 456-12-34",
+      instagram: "incider_nsk"
+    },
+    gallery: [PHOTO_PRESETS[3], PHOTO_PRESETS[0]],
+    tags: ["крафт", "летник", "тихо", "cozy", "afterwork"],
+    status: "published",
+    premiumConfig: {
+      premiumActive: true,
+      premiumTheme: "amber-smoke",
+      customColors: {
+        primary: "#0d0a07",
+        accent: "#f59e0b",
+        glowColor: "rgba(245, 158, 11, 0.4)"
+      },
+      heroImage: PHOTO_PRESETS[3],
+      moodBlock: "Расслабленная атмосфера, горячий сырный сэндвич и свежий сухой яблочный сидр из Астурии.",
+      featuredDrinks: ["Sidra Trabanco", "Cidre Breton", "Локальный Вишневый Саур"]
+    },
+    createdAt: "2026-05-12T10:00:00Z",
+    updatedAt: "2026-05-21T09:00:00Z",
+    likesCount: 98,
+    notMyPlaceCount: 2,
+    vibeRatings: { "Тихий вечер": 48, "Ламповый свет": 39, "Вкусный сыр": 18 }
+  },
+  {
+    id: "v-hide",
+    name: "Hide Secret Bar",
+    slug: "hide-secret-bar",
+    category: "коктейльный бар",
+    shortDescription: "Секретный бар в викторианском стиле для ценителей высокой миксологии.",
+    fullDescription: "Скрытый от посторонних глаз за глухой деревянной дверью на Коммунистической. Камерный полумрак, изумрудные тона, бархатная мебель и викторианский лоск. Подача коктейлей здесь — настоящее искусство с сухим льдом, парфюмами для бокалов и кастомной стеклянной посудой.",
+    address: "ул. Коммунистическая, 43",
+    latitude: 55.0238,
+    longitude: 82.9241,
+    workingHours: "Чт, Вс 19:00 - 02:00, Пт-Сб 19:00 - 04:00",
+    contacts: {
+      telegram: "hide_secret_bar",
+      instagram: "hide_nsk"
+    },
+    gallery: [PHOTO_PRESETS[1], PHOTO_PRESETS[5], PHOTO_PRESETS[4]],
+    tags: ["коктейли", "тихо", "свидание", "cozy"],
+    status: "published",
+    premiumConfig: {
+      premiumActive: true,
+      premiumTheme: "emerald-vault",
+      customColors: {
+        primary: "#050b07",
+        accent: "#10b981",
+        glowColor: "rgba(16, 185, 129, 0.4)"
+      },
+      heroImage: PHOTO_PRESETS[1],
+      moodBlock: "Сегодня тушим свет, зажигаем свечи. Идеальное время для интимных свиданий за авторским сауэром.",
+      featuredDrinks: ["Emerald Basil Sour", "Black Truffle Negroni", "Smoky Islay Cobbler"]
+    },
+    createdAt: "2026-05-14T11:00:00Z",
+    updatedAt: "2026-05-23T04:30:00Z",
+    likesCount: 115,
+    notMyPlaceCount: 3,
+    vibeRatings: { "Мистический полумрак": 54, "Эстетичный вечер": 62, "Сверх-сервис": 28 }
+  },
+  {
+    id: "v-rooks",
+    name: "The Rooks Shop & Pub",
+    slug: "the-rooks-nsk",
+    category: "крафтовый бар",
+    shortDescription: "Центр бунтарского крафта, гик-тусовок и сибирского рока.",
+    fullDescription: "Легендарный спонсор веселья на Коммунистической. Каждые выходные здесь гремит музыка, рекой льются сидры собственной варки и оригинальный крафт. Сюда приходят за настоящим неформальным барным угаром, настолками, выступлениями стендаперов или виниловыми сетами местных диджеев.",
+    address: "ул. Коммунистическая, 45",
+    latitude: 55.0242,
+    longitude: 82.9238,
+    workingHours: "Ежедневно с 12:00 до 02:00, Пт-Сб до 05:00",
+    contacts: {
+      phone: "+7 (923) 124-44-55",
+      telegram: "therooksbar",
+      vk: "therooks_nsk"
+    },
+    gallery: [PHOTO_PRESETS[6], PHOTO_PRESETS[7]],
+    tags: ["крафт", "шумно", "DJ", "настолки"],
+    status: "published",
+    premiumConfig: {
+      premiumActive: false
+    },
+    createdAt: "2026-05-15T15:00:00Z",
+    updatedAt: "2026-05-23T02:00:00Z",
+    likesCount: 178,
+    notMyPlaceCount: 22,
+    vibeRatings: { "Рок угар": 88, "Шумная толпа": 74, "Локальный сидр": 49 }
+  },
+  {
+    id: "v-pardon",
+    name: "Pardon My French",
+    slug: "pardon-french-wine",
+    category: "винный бар",
+    shortDescription: "Изысканное вино и сибирские сыры в утонченном приватном интерьере.",
+    fullDescription: "Бистро-бар для интеллигентного и эстетичного отдыха. Огромная винная карта с редкими биодинамическими позициями, отличный кофе и потрясающие брускетты с фермерскими сибирскими сырами. По выходным — тихие лекции сомелье и камерное звучание французского джаза на фоне.",
+    address: "Красный проспект, 17/1",
+    latitude: 55.0289,
+    longitude: 82.9201,
+    workingHours: "Пн-Чт 12:00-00:00, Пт-Сб 12:00-02:00, Вс 14:00-00:00",
+    contacts: {
+      phone: "+7 (383) 310-99-88",
+      telegram: "pardon_wine_nsk",
+      website: "https://pardonwine.ru"
+    },
+    gallery: [PHOTO_PRESETS[2], PHOTO_PRESETS[3]],
+    tags: ["винный бар", "тихо", "свидание", "afterwork", "веранда"],
+    status: "published",
+    premiumConfig: {
+      premiumActive: true,
+      premiumTheme: "violet-night",
+      customColors: {
+        primary: "#0a060d",
+        accent: "#a855f7",
+        glowColor: "rgba(168, 85, 247, 0.4)"
+      },
+      heroImage: PHOTO_PRESETS[2],
+      moodBlock: "Сегодня дегустация натуральных оранжевых вин в сопровождении козьего сыра.",
+      featuredDrinks: ["Orange Pet-Nat", "Pinot Noir Reserve", "Jura Chardonnay"]
+    },
+    createdAt: "2026-05-16T12:00:00Z",
+    updatedAt: "2026-05-22T10:00:00Z",
+    likesCount: 89,
+    notMyPlaceCount: 1,
+    vibeRatings: { "Эстетично": 65, "Тихая беседа": 34, "Редкое вино": 41 }
+  }
+];
+
+let collections: Collection[] = [
+  {
+    id: "c-center-evening",
+    title: "Вечер в центре",
+    description: "Коктейльно-винный маршрут по изысканным заведениям Новосибирска для идеального свидания или неспешных интеллектуальных встреч.",
+    cover: PHOTO_PRESETS[3],
+    venueIds: ["v-friends", "v-pardon", "v-hide"],
+    publishedAt: "2026-05-18T12:00:00Z"
+  },
+  {
+    id: "c-craft-crawl",
+    title: "Крафтовый маршрут",
+    description: "Шумный пивной поход для любителей правильного традиционного и крафтового пива, сухих испанских сидров и веселой сибирской тусовки под виниловые DJ сеты.",
+    cover: PHOTO_PRESETS[4],
+    venueIds: ["v-fry", "v-incider", "v-rooks"],
+    publishedAt: "2026-05-19T14:00:00Z"
+  }
+];
+
+let events: VenueEvent[] = [
+  {
+    id: "e-vinyl-friends",
+    venueId: "v-friends",
+    title: "Fruity Funk Vinyl Set",
+    description: "Легендарная танцевальная пятница с резидентами бара на аналоговом виниле. Угощаем пуншем на входе.",
+    date: "2026-05-23",
+    time: "22:00",
+    coverImage: PHOTO_PRESETS[7]
+  },
+  {
+    id: "e-cider-tasting",
+    venueId: "v-incider",
+    title: "Дегустация испанских сидров",
+    description: "Лекция от шефа о культуре эскансирования (правильного налива) сидра из Астурии с дегустацией трех сухих сортов.",
+    date: "2026-05-23",
+    time: "20:00",
+    coverImage: PHOTO_PRESETS[3]
+  },
+  {
+    id: "e-techno-hide",
+    venueId: "v-hide",
+    title: "Intimate Candlelight Ambient Night",
+    description: "Задуваем электрический свет, зажигаем сотни свечей и погружаемся в интимный даунтемпо лаундж.",
+    date: "2026-05-24",
+    time: "21:30",
+    coverImage: PHOTO_PRESETS[1]
+  }
+];
+
+let reactions: Reaction[] = [];
+let analytics: AnalyticsEvent[] = [
+  {
+    id: "a-1",
+    eventType: "open_venue",
+    venueId: "v-friends",
+    timestamp: "2026-05-23T06:10:00Z",
+    metadata: { note: "First initialization log" }
+  }
+];
+
+// === API ROUTES ===
+
+// 1. Venues (Get all and CRUD)
+app.get("/api/venues", (req, res) => {
+  res.json(venues);
+});
+
+app.post("/api/venues", (req, res) => {
+  const data = req.body;
+  
+  if (!data.name || !data.category) {
+    return res.status(400).json({ error: "Missing required fields (name, category)" });
+  }
+
+  const existingIndex = venues.findIndex(v => v.id === data.id);
+  const now = new Date().toISOString();
+
+  let venue: Venue;
+
+  if (existingIndex > -1) {
+    // Update
+    venue = {
+      ...venues[existingIndex],
+      ...data,
+      updatedAt: now
+    };
+    venues[existingIndex] = venue;
+  } else {
+    // Create new
+    const id = data.id || `v-${Math.random().toString(36).substr(2, 9)}`;
+    const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    
+    venue = {
+      id,
+      slug,
+      name: data.name,
+      category: data.category,
+      shortDescription: data.shortDescription || "",
+      fullDescription: data.fullDescription || "",
+      address: data.address || "",
+      latitude: Number(data.latitude) || 55.0302,
+      longitude: Number(data.longitude) || 82.9204,
+      workingHours: data.workingHours || "Ежедневно с 18:00",
+      contacts: data.contacts || {},
+      gallery: data.gallery && data.gallery.length ? data.gallery : [PHOTO_PRESETS[0]],
+      tags: data.tags || [],
+      status: data.status || "published",
+      premiumConfig: {
+        premiumActive: data.premiumConfig?.premiumActive || false,
+        premiumTheme: data.premiumConfig?.premiumTheme || "crimson-glow",
+        customColors: data.premiumConfig?.customColors || {
+          primary: "#111",
+          accent: "#f43f5e",
+          glowColor: "rgba(244, 63, 94, 0.4)"
+        },
+        heroImage: data.premiumConfig?.heroImage || (data.gallery && data.gallery[0]),
+        moodBlock: data.premiumConfig?.moodBlock || "",
+        featuredDrinks: data.premiumConfig?.featuredDrinks || [],
+        ctaText: data.premiumConfig?.ctaText || "",
+        ctaUrl: data.premiumConfig?.ctaUrl || ""
+      },
+      createdAt: now,
+      updatedAt: now,
+      likesCount: 0,
+      notMyPlaceCount: 0,
+      vibeRatings: {}
+    };
+    venues.push(venue);
+  }
+
+  // Push to analytics log
+  analytics.unshift({
+    id: `an-${Date.now()}`,
+    eventType: "open_venue", // using core event
+    venueId: venue.id,
+    timestamp: now,
+    metadata: { action: "venue_crud", name: venue.name }
+  });
+
+  res.json(venue);
+});
+
+app.delete("/api/venues/:id", (req, res) => {
+  const { id } = req.params;
+  venues = venues.filter(v => v.id !== id);
+  res.json({ success: true });
+});
+
+// 2. Collections APIs
+app.get("/api/collections", (req, res) => {
+  res.json(collections);
+});
+
+app.post("/api/collections", (req, res) => {
+  const data = req.body;
+  if (!data.title) {
+    return res.status(400).json({ error: "Missing collection title" });
+  }
+
+  const existingIndex = collections.findIndex(c => c.id === data.id);
+  const now = new Date().toISOString();
+
+  let collection: Collection;
+
+  if (existingIndex > -1) {
+    collection = {
+      ...collections[existingIndex],
+      ...data
+    };
+    collections[existingIndex] = collection;
+  } else {
+    const id = data.id || `c-${Math.random().toString(36).substr(2, 9)}`;
+    collection = {
+      id,
+      title: data.title,
+      description: data.description || "",
+      cover: data.cover || PHOTO_PRESETS[3],
+      venueIds: data.venueIds || [],
+      publishedAt: now
+    };
+    collections.push(collection);
+  }
+
+  res.json(collection);
+});
+
+app.delete("/api/collections/:id", (req, res) => {
+  const { id } = req.params;
+  collections = collections.filter(c => c.id !== id);
+  res.json({ success: true });
+});
+
+// 3. Events APIs
+app.get("/api/events", (req, res) => {
+  res.json(events);
+});
+
+app.post("/api/events", (req, res) => {
+  const data = req.body;
+  if (!data.title || !data.venueId) {
+    return res.status(400).json({ error: "Missing title or venueId for event" });
+  }
+
+  const existingIndex = events.findIndex(e => e.id === data.id);
+  let eventItem: VenueEvent;
+
+  if (existingIndex > -1) {
+    eventItem = {
+      ...events[existingIndex],
+      ...data
+    };
+    events[existingIndex] = eventItem;
+  } else {
+    const id = data.id || `e-${Math.random().toString(36).substr(2, 9)}`;
+    eventItem = {
+      id,
+      venueId: data.venueId,
+      title: data.title,
+      description: data.description || "",
+      date: data.date || new Date().toISOString().split("T")[0],
+      time: data.time || "20:00",
+      coverImage: data.coverImage || PHOTO_PRESETS[1]
+    };
+    events.push(eventItem);
+  }
+
+  res.json(eventItem);
+});
+
+app.delete("/api/events/:id", (req, res) => {
+  const { id } = req.params;
+  events = events.filter(e => e.id !== id);
+  res.json({ success: true });
+});
+
+// 4. Reactions & User logic
+// Toggle reaction / like / not_my_place for venue
+app.post("/api/venues/:id/react", (req, res) => {
+  const venueId = req.params.id;
+  const { userId, type, vibeTag } = req.body; // type: 'like' | 'not_my_place' | 'vibe_tag'
+
+  if (!userId) {
+    return res.status(400).json({ error: "Unauthorized: Telegram userId required" });
+  }
+
+  const venue = venues.find(v => v.id === venueId);
+  if (!venue) {
+    return res.status(404).json({ error: "Venue not found" });
+  }
+
+  // Check if this user already reacts using this type
+  // Note: Only one reaction of a specific type or max one absolute reaction except multiple unique vibe tags
+  const existingReact = reactions.find(r => r.userId === userId && r.venueId === venueId && r.type === type && (type !== "vibe_tag" || r.vibeTag === vibeTag));
+
+  const now = new Date().toISOString();
+
+  if (existingReact) {
+    // Deselect (Toggle off)
+    reactions = reactions.filter(r => r.id !== existingReact.id);
+    
+    // Decrement counters
+    if (type === "like") {
+      venue.likesCount = Math.max(0, venue.likesCount - 1);
+    } else if (type === "not_my_place") {
+      venue.notMyPlaceCount = Math.max(0, venue.notMyPlaceCount - 1);
+    } else if (type === "vibe_tag" && vibeTag) {
+      if (venue.vibeRatings[vibeTag]) {
+        venue.vibeRatings[vibeTag] = Math.max(0, venue.vibeRatings[vibeTag] - 1);
+        if (venue.vibeRatings[vibeTag] === 0) {
+          delete venue.vibeRatings[vibeTag];
+        }
+      }
+    }
+
+    analytics.unshift({
+      id: `an-${Date.now()}`,
+      eventType: type === "like" ? "like" : "reaction",
+      venueId,
+      userId,
+      timestamp: now,
+      metadata: { action: "remove_reaction", type, vibeTag }
+    });
+
+    return res.json({ removed: true, venue });
+  }
+
+  // Create new reaction
+  // If user likes, they cannot 'not_my_place' simultaneously, let's remove opposite reaction to keep records simple!
+  if (type === "like") {
+    const opp = reactions.find(r => r.userId === userId && r.venueId === venueId && r.type === "not_my_place");
+    if (opp) {
+      reactions = reactions.filter(r => r.id !== opp.id);
+      venue.notMyPlaceCount = Math.max(0, venue.notMyPlaceCount - 1);
+    }
+  } else if (type === "not_my_place") {
+    const opp = reactions.find(r => r.userId === userId && r.venueId === venueId && r.type === "like");
+    if (opp) {
+      reactions = reactions.filter(r => r.id !== opp.id);
+      venue.likesCount = Math.max(0, venue.likesCount - 1);
+    }
+  }
+
+  const reaction: Reaction = {
+    id: `r-${Math.random().toString(36).substr(2, 9)}`,
+    userId,
+    venueId,
+    type,
+    vibeTag,
+    createdAt: now
+  };
+  reactions.push(reaction);
+
+  // Increment counters
+  if (type === "like") {
+    venue.likesCount += 1;
+  } else if (type === "not_my_place") {
+    venue.notMyPlaceCount += 1;
+  } else if (type === "vibe_tag" && vibeTag) {
+    if (!venue.vibeRatings[vibeTag]) {
+      venue.vibeRatings[vibeTag] = 0;
+    }
+    venue.vibeRatings[vibeTag] += 1;
+  }
+
+  analytics.unshift({
+    id: `an-${Date.now()}`,
+    eventType: type === "like" ? "like" : "reaction",
+    venueId,
+    userId,
+    timestamp: now,
+    metadata: { action: "add_reaction", type, vibeTag }
+  });
+
+  res.json({ added: true, venue });
+});
+
+// Helper endpoint for active reactions list of user
+app.get("/api/users/:userId/reactions", (req, res) => {
+  const { userId } = req.params;
+  const userReacts = reactions.filter(r => r.userId === userId);
+  res.json(userReacts);
+});
+
+// 5. Analytics (Post action logging and get feed for dashboard)
+app.post("/api/analytics", (req, res) => {
+  const { eventType, venueId, userId, metadata } = req.body;
+  const newEvent: AnalyticsEvent = {
+    id: `an-${Date.now()}`,
+    eventType,
+    venueId,
+    userId,
+    timestamp: new Date().toISOString(),
+    metadata
+  };
+  analytics.unshift(newEvent);
+  
+  if (analytics.length > 300) {
+    analytics = analytics.slice(0, 300); // capped limit
+  }
+
+  res.json({ success: true });
+});
+
+app.get("/api/analytics", (req, res) => {
+  res.json(analytics);
+});
+
+// === SERVER CONFIG & PORT INGRESS ===
+
+// Integrate Vite middleware for static assets + Hot Reload proxy routing in sandbox
+const startServer = async () => {
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`[Ячейка Server] Backend initialized on http://0.0.0.0:${PORT}`);
+  });
+};
+
+startServer().catch((err) => {
+  console.error("Critical: Failed to boot Express+Vite development server integration:", err);
+});
