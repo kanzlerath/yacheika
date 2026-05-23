@@ -326,8 +326,6 @@ export default function DiscoveryPanel({
               filteredVenues.map((venue) => {
                 const total = venue.likesCount + venue.notMyPlaceCount;
                 const ratio = total > 0 ? Math.round((venue.likesCount / total) * 100) : 100;
-                const matchesPremium = venue.premiumConfig?.premiumActive;
-                const customAccent = matchesPremium && venue.premiumConfig?.customColors?.accent ? venue.premiumConfig.customColors.accent : "#e11d48";
 
                 return (
                   <button
@@ -345,12 +343,6 @@ export default function DiscoveryPanel({
                           className="w-full h-full object-cover filter brightness-[0.85] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
                         />
-                        {matchesPremium && (
-                          <div 
-                            className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full shadow"
-                            style={{ backgroundColor: customAccent }}
-                          />
-                        )}
                       </div>
                       
                       {/* Name and secondary meta */}
