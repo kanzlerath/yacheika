@@ -6,7 +6,8 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Venue } from "../types";
+import { Venue, VenueEvent } from "../types";
+import { filterVenuesForDiscovery } from "../utils/venueFilters";
 
 interface MapContainerProps {
   venues: Venue[];
@@ -14,6 +15,7 @@ interface MapContainerProps {
   onSelectVenue: (venue: Venue) => void;
   adminMode: boolean;
   onCoordsSelect?: (lat: number, lng: number) => void;
+  eventsList?: VenueEvent[];
   filters: {
     category: string;
     tag: string;
@@ -31,6 +33,7 @@ export default function MapContainer({
   onSelectVenue,
   adminMode,
   onCoordsSelect,
+  eventsList = [],
   filters,
 }: MapContainerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -132,19 +135,9 @@ export default function MapContainer({
     });
     markersRef.current = {};
 
-    // Filter venues on current selection for immediate Map syncing
-    const filtered = venues.filter((venue) => {
-      if (venue.status !== "published" && !adminMode) return false;
-      if (filters.category && venue.category !== filters.category) return false;
-      if (filters.tag && !venue.tags.includes(filters.tag)) return false;
-      if (filters.search) {
-        const query = filters.search.toLowerCase();
-        const matchesName = venue.name.toLowerCase().includes(query);
-        const matchesDesc = venue.shortDescription.toLowerCase().includes(query);
-        const matchesTags = venue.tags.some(t => t.toLowerCase().includes(query));
-        if (!matchesName && !matchesDesc && !matchesTags) return false;
-      }
-      return true;
+    const filtered = filterVenuesForDiscovery(venues, filters, {
+      adminMode,
+      events: eventsList,
     });
 
     // Populate markers
@@ -213,7 +206,7 @@ export default function MapContainer({
 
       markersRef.current[venue.id] = marker;
     });
-  }, [venues, selectedVenue, filters, adminMode]);
+  }, [venues, selectedVenue, filters, adminMode, eventsList]);
 
   return (
     <div id="map-root" className="w-full h-full relative overflow-hidden bg-neutral-950">

@@ -15,7 +15,8 @@ import {
   Compass,
   Map
 } from "lucide-react";
-import { Venue, Collection } from "../types";
+import { Venue, Collection, VenueEvent } from "../types";
+import { filterVenuesForDiscovery } from "../utils/venueFilters";
 
 interface DiscoveryPanelProps {
   venues: Venue[];
@@ -36,7 +37,7 @@ interface DiscoveryPanelProps {
     hasEventToday: boolean;
     search: string;
   }>>;
-  eventsList: any[];
+  eventsList: VenueEvent[];
   setMobileView?: (view: "map" | "list") => void;
 }
 
@@ -67,52 +68,9 @@ export default function DiscoveryPanel({
 }: DiscoveryPanelProps) {
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
 
-  // Apply visual filtering on venues for sidebar list
-  const filteredVenues = venues.filter((venue) => {
-    if (venue.status !== "published") return false;
-
-    // Filter by Active Collection if selected
-    if (selectedCollection && !selectedCollection.venueIds.includes(venue.id)) {
-      return false;
-    }
-
-    // Filter by Category
-    if (filters.category && venue.category !== filters.category) {
-      return false;
-    }
-
-    // Filter by Tag
-    if (filters.tag && !venue.tags.includes(filters.tag)) {
-      return false;
-    }
-
-    // Filter by Open Now
-    if (filters.openNow) {
-      const hours = new Date().getHours();
-      // Simple logic check: closed between 4am and 3pm
-      if (hours < 15 && hours >= 4) {
-        return false;
-      }
-    }
-
-    // Filter by Event Today
-    if (filters.hasEventToday) {
-      const hasEvent = eventsList.some(e => e.venueId === venue.id);
-      if (!hasEvent) return false;
-    }
-
-    // Filter by Search text Input
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      const matchesName = venue.name.toLowerCase().includes(q);
-      const matchesDesc = venue.shortDescription.toLowerCase().includes(q);
-      const matchesTags = venue.tags.some(t => t.toLowerCase().includes(q));
-      if (!matchesName && !matchesDesc && !matchesTags) {
-        return false;
-      }
-    }
-
-    return true;
+  const filteredVenues = filterVenuesForDiscovery(venues, filters, {
+    collectionVenueIds: selectedCollection?.venueIds,
+    events: eventsList,
   });
 
   const handlePillClick = (pill: typeof UNIFIED_PILLS[0]) => {
