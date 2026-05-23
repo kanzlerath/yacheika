@@ -399,6 +399,7 @@ export default function App() {
               onSelectVenue={handleVenueSelected}
               adminMode={false}
               onCoordsSelect={handleMapCoordsClick}
+              eventsList={events}
               filters={filters}
             />
 
@@ -499,6 +500,7 @@ export default function App() {
               onSelectVenue={setSelectedVenue}
               adminMode={true}
               onCoordsSelect={handleMapCoordsClick}
+              eventsList={events}
               filters={filters}
             />
 
