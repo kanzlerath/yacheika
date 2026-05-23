@@ -7,6 +7,7 @@ import { EventModule } from './event/event.module';
 import { CollectionModule } from './collection/collection.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { StorageModule } from './storage/storage.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { StorageModule } from './storage/storage.module';
       autoLoadEntities: true,
       synchronize: true, // Auto schema sync for development
     }),
+    AuthModule,
     DatabaseModule,
     VenueModule,
     ReactionModule,

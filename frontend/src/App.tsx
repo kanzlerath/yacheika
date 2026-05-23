@@ -23,39 +23,19 @@ import MapContainer from "./components/MapContainer";
 import DiscoveryPanel from "./components/DiscoveryPanel";
 import VenueCard from "./components/VenueCard";
 import AdminPanel from "./components/AdminPanel";
-import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramUser, Reaction } from "./types";
+import TelegramLoginGate from "./components/TelegramLoginGate";
+import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramAuthSession, Reaction } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
-
-const MOCK_TELEGRAM_USERS: TelegramUser[] = [
-  {
-    id: "tg-dmitry",
-    telegramId: "12345678",
-    username: "nsk_bar_hunter",
-    firstName: "Дмитрий",
-    lastName: "Гордеев",
-    avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150",
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "tg-dasha",
-    telegramId: "87654321",
-    username: "dasha_vibe",
-    firstName: "Дарья",
-    lastName: "Смирнова",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150",
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "tg-mikhail",
-    telegramId: "99887766",
-    username: "mikhail_tech",
-    firstName: "Михаил",
-    avatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=150",
-    createdAt: new Date().toISOString()
-  }
-];
+import {
+  clearTelegramAuth,
+  getAuthHeaders,
+  readStoredTelegramAuth,
+  refreshTelegramSession,
+  storeTelegramAuth,
+} from "./utils/telegramAuth";
 
 export default function App() {
+  const [auth, setAuth] = useState<TelegramAuthSession | null>(() => readStoredTelegramAuth());
   const [venues, setVenues] = useState<Venue[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [events, setEvents] = useState<VenueEvent[]>([]);
@@ -70,8 +50,9 @@ export default function App() {
     search: ""
   });
 
-  // Telegram Mock Auth system
-  const [currentUser, setCurrentUser] = useState<TelegramUser | null>(MOCK_TELEGRAM_USERS[0]);
+  const currentUser = auth?.user ?? null;
+  const authToken = auth?.token;
+  const isAdmin = Boolean(auth?.isAdmin);
   const [userReactions, setUserReactions] = useState<Reaction[]>([]);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
@@ -82,47 +63,86 @@ export default function App() {
   // Layout View Switcher for responsive mobile sizing (map vs sidebar items)
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
-  // Load all live datastores on initialization
-  const fetchAllData = async (userIdStr?: string) => {
+  const handleAuthenticated = (nextAuth: TelegramAuthSession) => {
+    storeTelegramAuth(nextAuth);
+    setAuth(nextAuth);
+    setShowUserDropdown(false);
+  };
+
+  const handleLogout = () => {
+    clearTelegramAuth();
+    setAuth(null);
+    setAdminMode(false);
+    setShowUserDropdown(false);
+    setSelectedVenue(null);
+    setUserReactions([]);
+  };
+
+  // Load all live datastores after Telegram auth is verified
+  const fetchAllData = async (session = auth) => {
+    if (!session) return;
+
     try {
-      const vRes = await fetch("/api/venues");
-      const vData = await vRes.json();
-      setVenues(vData);
+      const authHeaders = getAuthHeaders(session.token);
+      const [vRes, cRes, eRes, rRes, aRes] = await Promise.all([
+        fetch("/api/venues"),
+        fetch("/api/collections"),
+        fetch("/api/events"),
+        fetch("/api/users/me/reactions", { headers: authHeaders }),
+        session.isAdmin ? fetch("/api/analytics", { headers: authHeaders }) : Promise.resolve(null),
+      ]);
 
-      const cRes = await fetch("/api/collections");
-      const cData = await cRes.json();
-      setCollections(cData);
-
-      const eRes = await fetch("/api/events");
-      const eData = await eRes.json();
-      setEvents(eData);
-
-      const aRes = await fetch("/api/analytics");
-      const aData = await aRes.json();
-      setAnalytics(aData);
-
-      const activeUid = userIdStr || currentUser?.id;
-      if (activeUid) {
-        const rRes = await fetch(`/api/users/${activeUid}/reactions`);
-        const rData = await rRes.json();
-        setUserReactions(rData);
+      if ([vRes, cRes, eRes, rRes].some((res) => !res.ok) || (aRes && !aRes.ok)) {
+        if (rRes.status === 401 || aRes?.status === 401) {
+          handleLogout();
+        }
+        throw new Error("Backend returned an error while loading app data.");
       }
+
+      const [vData, cData, eData, rData, aData] = await Promise.all([
+        vRes.json(),
+        cRes.json(),
+        eRes.json(),
+        rRes.json(),
+        aRes ? aRes.json() : Promise.resolve([]),
+      ]);
+
+      setVenues(vData);
+      setCollections(cData);
+      setEvents(eData);
+      setUserReactions(rData);
+      setAnalytics(aData);
     } catch (error) {
       console.error("Failed to load backend datastores:", error);
     }
   };
 
-  // Run core mounts once safely
+  // Validate persisted Telegram session once on app mount.
   useEffect(() => {
-    fetchAllData();
+    const storedAuth = readStoredTelegramAuth();
+    if (!storedAuth) return;
+
+    refreshTelegramSession(storedAuth.token)
+      .then((freshAuth) => {
+        storeTelegramAuth(freshAuth);
+        setAuth(freshAuth);
+      })
+      .catch(() => {
+        handleLogout();
+      });
   }, []);
 
-  // Update reactions lists whenever users shift
-  const handleSwitchUser = (user: TelegramUser) => {
-    setCurrentUser(user);
-    setShowUserDropdown(false);
-    fetchAllData(user.id);
-  };
+  useEffect(() => {
+    if (!auth) return;
+    fetchAllData(auth);
+  }, [auth?.token]);
+
+  useEffect(() => {
+    if (!isAdmin && adminMode) {
+      setAdminMode(false);
+      setPendingCoords(null);
+    }
+  }, [adminMode, isAdmin]);
 
   // Reactions toggle triggers
   const handleReactVenue = async (
@@ -130,14 +150,16 @@ export default function App() {
     type: "like" | "not_my_place" | "vibe_tag",
     vibeTag?: string
   ) => {
-    if (!currentUser) return;
+    if (!currentUser || !authToken) return;
 
     try {
       const res = await fetch(`/api/venues/${venueId}/react`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(authToken),
+        },
         body: JSON.stringify({
-          userId: currentUser.id,
           type,
           vibeTag
         })
@@ -156,16 +178,16 @@ export default function App() {
         await logAnalyticsEvent({
           eventType: type === "like" ? "like" : "reaction",
           venueId,
-          userId: currentUser.telegramId,
           metadata: {
             action: removed ? "remove_reaction" : added ? "add_reaction" : "toggle_reaction",
             reactionType: type,
             vibeTag,
           },
+          authToken,
         });
 
         // Re-load complete logs
-        fetchAllData();
+        fetchAllData(auth);
       }
     } catch (e) {
       console.error("Reaction registering critical failure:", e);
@@ -174,14 +196,19 @@ export default function App() {
 
   // CRUD API: Venues Admin Saves
   const handleSaveVenue = async (venueForm: any) => {
+    if (!isAdmin || !authToken) return;
+
     try {
       const res = await fetch("/api/venues", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(authToken),
+        },
         body: JSON.stringify(venueForm)
       });
       if (res.ok) {
-        fetchAllData();
+        fetchAllData(auth);
       }
     } catch (err) {
       console.error("Failed saving venue:", err);
@@ -190,13 +217,16 @@ export default function App() {
 
   // CRUD API: Venue Admin Deletions
   const handleDeleteVenue = async (id: string) => {
+    if (!isAdmin || !authToken) return;
+
     try {
       const res = await fetch(`/api/venues/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: getAuthHeaders(authToken),
       });
       if (res.ok) {
         setSelectedVenue(null);
-        fetchAllData();
+        fetchAllData(auth);
       }
     } catch (err) {
       console.error("Failed deleting venue:", err);
@@ -205,14 +235,19 @@ export default function App() {
 
   // CRUD API: Venue Event Additions
   const handleSaveEvent = async (eventForm: any) => {
+    if (!isAdmin || !authToken) return;
+
     try {
       const res = await fetch("/api/events", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(authToken),
+        },
         body: JSON.stringify(eventForm)
       });
       if (res.ok) {
-        fetchAllData();
+        fetchAllData(auth);
       }
     } catch (err) {
       console.error("Failed compiling event:", err);
@@ -221,12 +256,15 @@ export default function App() {
 
   // CRUD API: Venue Event Deletions
   const handleDeleteEvent = async (id: string) => {
+    if (!isAdmin || !authToken) return;
+
     try {
       const res = await fetch(`/api/events/${id}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: getAuthHeaders(authToken),
       });
       if (res.ok) {
-        fetchAllData();
+        fetchAllData(auth);
       }
     } catch (err) {
       console.error("Failed deleting event:", err);
@@ -248,15 +286,21 @@ export default function App() {
     logAnalyticsEvent({
         eventType: "open_venue",
         venueId: venue.id,
-        userId: currentUser?.telegramId,
-        metadata: { action: "view_card", name: venue.name }
+        metadata: { action: "view_card", name: venue.name },
+        authToken,
     }).then(() => {
       // Refresh logs for feed counters
-      fetch("/api/analytics")
-        .then(r => r.json())
-        .then(data => setAnalytics(data));
+      if (isAdmin && authToken) {
+        fetch("/api/analytics", { headers: getAuthHeaders(authToken) })
+          .then(r => r.json())
+          .then(data => setAnalytics(data));
+      }
     });
   };
+
+  if (!auth) {
+    return <TelegramLoginGate onAuthenticated={handleAuthenticated} />;
+  }
 
   return (
     <div id="application-root" className="h-screen h-[100dvh] w-screen bg-[#030303] flex flex-col overflow-hidden relative">
@@ -281,8 +325,8 @@ export default function App() {
         {/* Central Auth Switcher Block */}
         <div className="flex items-center gap-2.5">
           
-          {/* Telegram simulation user badge popup selector */}
-          <div className="relative select-none" id="simulated-auth-widget">
+          {/* Telegram authenticated user badge */}
+          <div className="relative select-none" id="telegram-auth-widget">
             <button
               onClick={() => setShowUserDropdown(!showUserDropdown)}
               className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-1.5 transition text-xs font-display text-neutral-300"
@@ -309,58 +353,64 @@ export default function App() {
                   className="absolute right-0 top-11 w-56 bg-neutral-950 border border-neutral-900 rounded-xl p-3 space-y-3 shadow-2xl z-50"
                 >
                   <div className="text-[9px] font-mono text-neutral-500 uppercase tracking-wider pb-1.5 border-b border-neutral-900">
-                    Симулятор Telegram-аккаунта
+                    Telegram аккаунт
                   </div>
                   
-                  <div className="space-y-1">
-                    {MOCK_TELEGRAM_USERS.map((user) => (
-                      <button
-                        key={user.id}
-                        onClick={() => handleSwitchUser(user)}
-                        className={`w-full text-left p-2 rounded-lg flex items-center gap-2.5 text-xs transition ${
-                          currentUser?.id === user.id
-                            ? "bg-rose-950/30 text-rose-200 border border-rose-900/30"
-                            : "hover:bg-neutral-900 text-neutral-400"
-                        }`}
-                      >
-                        <img
-                          src={user.avatarUrl}
-                          alt={user.firstName}
-                          className="w-5 h-5 rounded-full border border-neutral-800"
-                          referrerPolicy="no-referrer"
-                        />
-                        <div className="truncate">
-                          <div className="font-semibold text-neutral-100 leading-none">
-                            {user.firstName} {user.lastName || ""}
-                          </div>
-                          <span className="text-[10px] text-neutral-500">@{user.username}</span>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="p-2 rounded-lg bg-neutral-900/70 border border-neutral-850 flex items-center gap-2.5">
+                    {currentUser?.avatarUrl ? (
+                      <img
+                        src={currentUser.avatarUrl}
+                        alt={currentUser.firstName}
+                        className="w-8 h-8 rounded-full border border-neutral-800"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-[11px] font-bold text-neutral-300">
+                        {currentUser?.firstName?.slice(0, 1) || "T"}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-neutral-100 leading-none truncate">
+                        {currentUser?.firstName} {currentUser?.lastName || ""}
+                      </div>
+                      <div className="text-[10px] text-neutral-500 truncate">
+                        @{currentUser?.username} · ID {currentUser?.telegramId}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="text-[9px] text-neutral-500 italic leading-snug">
-                    Переключайте профили для тестирования раздельных лайков заведений и атмосферных оценок.
+                  <div className="text-[10px] text-neutral-500 leading-snug">
+                    Роль: {isAdmin ? "администратор" : "пользователь"}
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-lg px-3 py-2 text-xs font-semibold text-neutral-200 transition"
+                  >
+                    Выйти
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Admin panel toggle */}
-          <button
-            onClick={() => {
-              setAdminMode(!adminMode);
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-display font-semibold transition ${
-              adminMode
-                ? "bg-rose-950/30 text-rose-200 border-rose-900/80"
-                : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700 hover:text-white"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Админка CRUD</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setAdminMode(!adminMode);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-display font-semibold transition ${
+                adminMode
+                  ? "bg-rose-950/30 text-rose-200 border-rose-900/80"
+                  : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700 hover:text-white"
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Админка CRUD</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -422,7 +472,7 @@ export default function App() {
                 <VenueCard
                   key={selectedVenue.id}
                   venue={selectedVenue}
-                  currentUser={currentUser}
+                  authToken={authToken}
                   userReactions={userReactions}
                   vEvents={events.filter((e) => e.venueId === selectedVenue.id)}
                   onReact={handleReactVenue}
@@ -465,6 +515,7 @@ export default function App() {
               venues={venues}
               events={events}
               analytics={analytics}
+              authToken={authToken}
               selectedVenue={selectedVenue}
               onSelectVenue={setSelectedVenue}
               onSaveVenue={handleSaveVenue}

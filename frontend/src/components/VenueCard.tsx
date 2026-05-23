@@ -22,13 +22,13 @@ import {
   ChevronUp,
   ChevronDown
 } from "lucide-react";
-import { Venue, TelegramUser, VenueEvent, Reaction, PremiumConfig } from "../types";
+import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
 
 interface VenueCardProps {
   key?: string | number;
   venue: Venue;
-  currentUser: TelegramUser | null;
+  authToken?: string;
   userReactions: Reaction[];
   vEvents: VenueEvent[];
   onReact: (id: string, type: "like" | "not_my_place" | "vibe_tag", vibeTag?: string) => void;
@@ -49,7 +49,7 @@ const AVAILABLE_VIBES = [
 
 export default function VenueCard({
   venue,
-  currentUser,
+  authToken,
   userReactions,
   vEvents,
   onReact,
@@ -91,8 +91,8 @@ export default function VenueCard({
     logAnalyticsEvent({
       eventType: "click_social",
       venueId: venue.id,
-      userId: currentUser?.telegramId,
       metadata: { platform: "share", slug: venue.slug },
+      authToken,
     });
   };
 
@@ -103,8 +103,8 @@ export default function VenueCard({
     logAnalyticsEvent({
       eventType: "open_route",
       venueId: venue.id,
-      userId: currentUser?.telegramId,
       metadata: { address: venue.address },
+      authToken,
     });
 
     const mapUrl = `https://yandex.ru/maps/?text=Новосибирск, ${encodeURIComponent(venue.address)} ${encodeURIComponent(venue.name)}`;
@@ -115,8 +115,8 @@ export default function VenueCard({
     logAnalyticsEvent({
       eventType: platform === "phone" ? "click_phone" : "click_social",
       venueId: venue.id,
-      userId: currentUser?.telegramId,
       metadata: { platform, label },
+      authToken,
     });
   };
 
@@ -127,12 +127,12 @@ export default function VenueCard({
       logAnalyticsEvent({
         eventType: "open_event",
         venueId: venue.id,
-        userId: currentUser?.telegramId,
         metadata: {
           action: "open_events_tab",
           eventCount: vEvents.length,
           eventIds: vEvents.map((event) => event.id),
         },
+        authToken,
       });
     }
   };
@@ -141,7 +141,6 @@ export default function VenueCard({
     logAnalyticsEvent({
       eventType: "open_event",
       venueId: venue.id,
-      userId: currentUser?.telegramId,
       metadata: {
         action: "open_event_card",
         eventId: event.id,
@@ -149,6 +148,7 @@ export default function VenueCard({
         date: event.date,
         time: event.time,
       },
+      authToken,
     });
   };
 

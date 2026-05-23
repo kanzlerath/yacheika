@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../auth/admin.guard';
 import { CollectionService } from './collection.service';
 import { SaveCollectionDto } from './dto/save-collection.dto';
 
@@ -12,11 +13,13 @@ export class CollectionController {
   }
 
   @Post()
-  async saveCollection(@Body() collectionData: SaveCollectionDto) {
+  @UseGuards(AdminGuard)
+  async saveCollection(@Body() collectionData: any) {
     return this.collectionService.createOrUpdate(collectionData);
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   async deleteCollection(@Param('id') id: string) {
     return this.collectionService.delete(id);
   }
