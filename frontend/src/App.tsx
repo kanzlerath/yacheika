@@ -24,6 +24,7 @@ import DiscoveryPanel from "./components/DiscoveryPanel";
 import VenueCard from "./components/VenueCard";
 import AdminPanel from "./components/AdminPanel";
 import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramUser, Reaction } from "./types";
+import { logAnalyticsEvent } from "./utils/analytics";
 
 const MOCK_TELEGRAM_USERS: TelegramUser[] = [
   {
@@ -120,17 +121,7 @@ export default function App() {
   const handleSwitchUser = (user: TelegramUser) => {
     setCurrentUser(user);
     setShowUserDropdown(false);
-    
-    // Log auth simulator event in backend
-    fetch("/api/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: "open_venue",
-        userId: user.username,
-        metadata: { action: "switch_sim_user", name: user.firstName }
-      })
-    }).then(() => fetchAllData(user.id));
+    fetchAllData(user.id);
   };
 
   // Reactions toggle triggers
@@ -154,13 +145,24 @@ export default function App() {
 
       if (res.ok) {
         // Soft refresh local layouts
-        const { venue } = await res.json();
+        const { venue, added, removed } = await res.json();
         
         // Update local state directly for speedy immediate UX feedback loops!
         setVenues((prev) => prev.map((v) => (v.id === venue.id ? venue : v)));
         if (selectedVenue?.id === venue.id) {
           setSelectedVenue(venue);
         }
+
+        await logAnalyticsEvent({
+          eventType: type === "like" ? "like" : "reaction",
+          venueId,
+          userId: currentUser.telegramId,
+          metadata: {
+            action: removed ? "remove_reaction" : added ? "add_reaction" : "toggle_reaction",
+            reactionType: type,
+            vibeTag,
+          },
+        });
 
         // Re-load complete logs
         fetchAllData();
@@ -243,16 +245,11 @@ export default function App() {
     // Auto shift on mobile to map view so they see the coordinates flying!
     setMobileView("map");
     
-    // Send background analytical metrics logger
-    fetch("/api/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    logAnalyticsEvent({
         eventType: "open_venue",
         venueId: venue.id,
         userId: currentUser?.telegramId,
         metadata: { action: "view_card", name: venue.name }
-      })
     }).then(() => {
       // Refresh logs for feed counters
       fetch("/api/analytics")

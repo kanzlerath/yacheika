@@ -23,6 +23,7 @@ import {
   ChevronDown
 } from "lucide-react";
 import { Venue, TelegramUser, VenueEvent, Reaction, PremiumConfig } from "../types";
+import { logAnalyticsEvent } from "../utils/analytics";
 
 interface VenueCardProps {
   key?: string | number;
@@ -87,48 +88,68 @@ export default function VenueCard({
     setCopiedSlug(true);
     setTimeout(() => setCopiedSlug(false), 2000);
 
-    fetch("/api/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: "click_social",
-        venueId: venue.id,
-        userId: currentUser?.telegramId,
-        metadata: { action: "share_venuelink", slug: venue.slug }
-      })
-    }).catch(() => {});
+    logAnalyticsEvent({
+      eventType: "click_social",
+      venueId: venue.id,
+      userId: currentUser?.telegramId,
+      metadata: { platform: "share", slug: venue.slug },
+    });
   };
 
   const handleRouteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onOpenRoute) onOpenRoute(venue);
 
-    fetch("/api/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: "open_route",
-        venueId: venue.id,
-        userId: currentUser?.telegramId,
-        metadata: { action: "route_opened", address: venue.address }
-      })
-    }).catch(() => {});
+    logAnalyticsEvent({
+      eventType: "open_route",
+      venueId: venue.id,
+      userId: currentUser?.telegramId,
+      metadata: { address: venue.address },
+    });
 
     const mapUrl = `https://yandex.ru/maps/?text=Новосибирск, ${encodeURIComponent(venue.address)} ${encodeURIComponent(venue.name)}`;
     window.open(mapUrl, "_blank");
   };
 
   const handleSocialClick = (platform: string, label?: string) => {
-    fetch("/api/analytics", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        eventType: "click_social",
+    logAnalyticsEvent({
+      eventType: platform === "phone" ? "click_phone" : "click_social",
+      venueId: venue.id,
+      userId: currentUser?.telegramId,
+      metadata: { platform, label },
+    });
+  };
+
+  const handleEventsTabClick = () => {
+    setActiveTab("events");
+
+    if (vEvents.length > 0) {
+      logAnalyticsEvent({
+        eventType: "open_event",
         venueId: venue.id,
         userId: currentUser?.telegramId,
-        metadata: { action: `click_${platform}`, label }
-      })
-    }).catch(() => {});
+        metadata: {
+          action: "open_events_tab",
+          eventCount: vEvents.length,
+          eventIds: vEvents.map((event) => event.id),
+        },
+      });
+    }
+  };
+
+  const handleEventOpen = (event: VenueEvent) => {
+    logAnalyticsEvent({
+      eventType: "open_event",
+      venueId: venue.id,
+      userId: currentUser?.telegramId,
+      metadata: {
+        action: "open_event_card",
+        eventId: event.id,
+        title: event.title,
+        date: event.date,
+        time: event.time,
+      },
+    });
   };
 
   // Drag handler for Framer Motion to enable smooth native Swipes / Gestures
@@ -428,7 +449,7 @@ export default function VenueCard({
                   )}
                 </button>
                 <button
-                  onClick={() => setActiveTab("events")}
+                  onClick={handleEventsTabClick}
                   className={`pb-3 px-4 font-display font-semibold relative transition flex items-center gap-1.5 cursor-pointer ${
                     activeTab === "events" ? "text-white" : "text-neutral-400 hover:text-neutral-205"
                   }`}
@@ -742,9 +763,10 @@ export default function VenueCard({
                       ) : (
                         <div className="space-y-4 pt-1">
                           {vEvents.map((ev) => (
-                            <div
+                            <button
                               key={ev.id}
-                              className="bg-neutral-950 rounded-2xl border border-neutral-900 overflow-hidden flex flex-col sm:flex-row gap-4 p-4.5 transition duration-200 hover:border-neutral-800"
+                              onClick={() => handleEventOpen(ev)}
+                              className="w-full bg-neutral-950 rounded-2xl border border-neutral-900 overflow-hidden flex flex-col sm:flex-row gap-4 p-4.5 transition duration-200 hover:border-neutral-800 cursor-pointer"
                             >
                               {ev.coverImage && (
                                 <div className="w-full sm:w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
@@ -769,7 +791,7 @@ export default function VenueCard({
                                 <h4 className="text-xs sm:text-sm font-display font-medium text-white leading-snug">{ev.title}</h4>
                                 <p className="text-[11.5px] text-[#8e8e93] leading-relaxed">{ev.description}</p>
                               </div>
-                            </div>
+                            </button>
                           ))}
                         </div>
                       )}
