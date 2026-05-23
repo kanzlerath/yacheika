@@ -77,6 +77,10 @@ const PRESET_THEMES = [
   }
 ];
 
+const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
+
 export default function AdminPanel({
   venues,
   events,
@@ -91,8 +95,17 @@ export default function AdminPanel({
   setPendingCoords,
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<"venue" | "events" | "analytics">("venue");
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const uploadFile = async (file: File): Promise<string> => {
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      throw new Error("Поддерживаются только JPG, PNG, WebP, GIF или AVIF.");
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error("Размер изображения не должен превышать 8 МБ.");
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     const res = await fetch('/api/storage/upload', {
@@ -106,6 +119,26 @@ export default function AdminPanel({
     const data = await res.json();
     return data.url;
   };
+
+  const handleImageUpload = async (
+    file: File | undefined,
+    onUploaded: (url: string) => void,
+    resetInput?: () => void,
+  ) => {
+    if (!file) return;
+
+    setUploadError(null);
+
+    try {
+      const url = await uploadFile(file);
+      onUploaded(url);
+      resetInput?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Не удалось загрузить изображение.";
+      setUploadError(message);
+    }
+  };
+
   const [editingVenue, setEditingVenue] = useState<any>({
     id: "",
     name: "",
@@ -566,6 +599,11 @@ export default function AdminPanel({
             {/* Gallery images with upload capability */}
             <div className="space-y-1 border-t border-neutral-900 pt-3">
               <label className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest block pb-1">Галерея заведения</label>
+              {uploadError && (
+                <div className="rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-[11px] text-rose-200">
+                  {uploadError}
+                </div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {editingVenue.gallery?.map((imgUrl: string, idx: number) => (
                   <div key={idx} className="relative group aspect-video rounded-lg overflow-hidden border border-neutral-800 bg-neutral-900">
@@ -588,21 +626,22 @@ export default function AdminPanel({
                   <span className="text-[9px] font-semibold">Добавить фото</span>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept={IMAGE_ACCEPT_ATTRIBUTE}
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
-                      if (file) {
-                        try {
-                          const url = await uploadFile(file);
+                      await handleImageUpload(
+                        file,
+                        (url) => {
                           setEditingVenue((prev: any) => ({
                             ...prev,
                             gallery: [...(prev.gallery || []), url]
                           }));
-                        } catch (err) {
-                          alert('Ошибка загрузки: ' + err.message);
-                        }
-                      }
+                        },
+                        () => {
+                          e.target.value = "";
+                        },
+                      );
                     }}
                   />
                 </label>
@@ -761,25 +800,31 @@ export default function AdminPanel({
                         Загрузить файл
                         <input
                           type="file"
-                          accept="image/*"
+                          accept={IMAGE_ACCEPT_ATTRIBUTE}
                           className="hidden"
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) {
-                              try {
-                                const url = await uploadFile(file);
+                            await handleImageUpload(
+                              file,
+                              (url) => {
                                 setEditingVenue((prev: any) => ({
                                   ...prev,
                                   premiumConfig: { ...prev.premiumConfig, heroImage: url }
                                 }));
-                              } catch (err) {
-                                alert('Ошибка загрузки: ' + err.message);
-                              }
-                            }
+                              },
+                              () => {
+                                e.target.value = "";
+                              },
+                            );
                           }}
                         />
                       </label>
                     </div>
+                    {uploadError && (
+                      <div className="rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-[11px] text-rose-200">
+                        {uploadError}
+                      </div>
+                    )}
                   </div>
 
                   {/* Premium customized visual CTA button links links */}
@@ -931,22 +976,28 @@ export default function AdminPanel({
                     Загрузить
                     <input
                       type="file"
-                      accept="image/*"
+                      accept={IMAGE_ACCEPT_ATTRIBUTE}
                       className="hidden"
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
-                        if (file) {
-                          try {
-                            const url = await uploadFile(file);
+                        await handleImageUpload(
+                          file,
+                          (url) => {
                             setNewEvent((prev: any) => ({ ...prev, coverImage: url }));
-                          } catch (err) {
-                            alert('Ошибка загрузки: ' + err.message);
-                          }
-                        }
+                          },
+                          () => {
+                            e.target.value = "";
+                          },
+                        );
                       }}
                     />
                   </label>
                 </div>
+                {uploadError && (
+                  <div className="rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-[11px] text-rose-200">
+                    {uploadError}
+                  </div>
+                )}
               </div>
 
               <textarea
