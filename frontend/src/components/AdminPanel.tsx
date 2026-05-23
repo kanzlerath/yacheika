@@ -24,6 +24,7 @@ interface AdminPanelProps {
   venues: Venue[];
   events: VenueEvent[];
   analytics: AnalyticsEvent[];
+  authToken?: string;
   selectedVenue: Venue | null;
   onSelectVenue: (venue: Venue) => void;
   onSaveVenue: (venue: any) => void;
@@ -81,6 +82,7 @@ export default function AdminPanel({
   venues,
   events,
   analytics,
+  authToken,
   selectedVenue,
   onSelectVenue,
   onSaveVenue,
@@ -97,6 +99,7 @@ export default function AdminPanel({
     formData.append('file', file);
     const res = await fetch('/api/storage/upload', {
       method: 'POST',
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
       body: formData,
     });
     if (!res.ok) {
