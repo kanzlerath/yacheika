@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Param, Query, Body } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../auth/admin.guard';
 import { VenueService } from './venue.service';
 
 @Controller('api/venues')
@@ -28,11 +29,13 @@ export class VenueController {
   }
 
   @Post()
+  @UseGuards(AdminGuard)
   async saveVenue(@Body() venueData: any) {
     return this.venueService.createOrUpdate(venueData);
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   async deleteVenue(@Param('id') id: string) {
     return this.venueService.delete(id);
   }

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { AdminGuard } from '../auth/admin.guard';
 import { EventService } from './event.service';
 
 @Controller('api/events')
@@ -11,11 +12,13 @@ export class EventController {
   }
 
   @Post()
+  @UseGuards(AdminGuard)
   async saveEvent(@Body() eventData: any) {
     return this.eventService.createOrUpdate(eventData);
   }
 
   @Delete(':id')
+  @UseGuards(AdminGuard)
   async deleteEvent(@Param('id') id: string) {
     return this.eventService.delete(id);
   }
