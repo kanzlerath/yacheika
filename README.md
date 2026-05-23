@@ -28,7 +28,14 @@ docker-compose.yml   Локальная оркестрация сервисов
 cp .env.example .env
 ```
 
-3. Поднимите проект:
+3. Для реального входа через Telegram заполните в `.env`:
+
+- `TELEGRAM_BOT_TOKEN` - токен бота из BotFather.
+- `AUTH_SESSION_SECRET` - длинный случайный секрет для подписи app session.
+- `VITE_TELEGRAM_BOT_USERNAME` - username бота без `@`.
+- `ADMIN_TELEGRAM_ID=1859857121` и `ADMIN_TELEGRAM_USERNAME=nick_luzhkov` - единственный админ-аккаунт.
+
+4. Поднимите проект:
 
 ```bash
 docker compose up --build
@@ -84,23 +91,37 @@ docker exec yacheyka_backend npm run build
 
 Основные endpoints:
 
+- `POST /api/auth/telegram` - вход через Telegram Mini App `initData` или Telegram Login Widget payload.
+- `GET /api/auth/me` - проверка текущей app session по `Authorization: Bearer <token>`.
 - `GET /api/venues` - список заведений с фильтрами `category`, `tag`, `search`, `userLat`, `userLng`.
 - `GET /api/venues/:id` - карточка заведения.
-- `POST /api/venues` - создание или обновление заведения.
-- `DELETE /api/venues/:id` - удаление заведения.
-- `POST /api/venues/:id/react` - реакции `like`, `not_my_place`, `vibe_tag`.
-- `GET /api/events` и `POST /api/events` - события.
-- `GET /api/collections` и `POST /api/collections` - подборки.
-- `GET /api/analytics` и `POST /api/analytics` - сбор MVP-аналитики.
-- `POST /api/storage/upload` - загрузка файла в MinIO.
+- `POST /api/venues` - создание или обновление заведения, только admin token.
+- `DELETE /api/venues/:id` - удаление заведения, только admin token.
+- `POST /api/venues/:id/react` - реакции `like`, `not_my_place`, `vibe_tag`, только authenticated Telegram session.
+- `GET /api/users/me/reactions` - реакции текущего Telegram-пользователя.
+- `GET /api/events` - события.
+- `POST /api/events` и `DELETE /api/events/:id` - управление событиями, только admin token.
+- `GET /api/collections` - подборки.
+- `POST /api/collections` и `DELETE /api/collections/:id` - управление подборками, только admin token.
+- `GET /api/analytics` - поток аналитики, только admin token.
+- `POST /api/analytics` - запись MVP-событий, только authenticated Telegram session.
+- `POST /api/storage/upload` - загрузка файла в MinIO, только admin token.
+
+## Telegram auth
+
+Frontend больше не использует dev-переключатель пользователей. При запуске внутри Telegram Mini App приложение автоматически отправляет `window.Telegram.WebApp.initData` на backend. В обычном PWA-режиме показывается Telegram Login Widget, если задан `VITE_TELEGRAM_BOT_USERNAME`.
+
+Backend проверяет Telegram-подпись по `TELEGRAM_BOT_TOKEN`, создает или обновляет пользователя в PostgreSQL и выдает server-signed session token. Клиент хранит token в `localStorage` и передает его в `Authorization: Bearer <token>` для реакций, аналитики и admin API.
+
+Админка отображается и принимает запросы только для Telegram id `1859857121` или username `nick_luzhkov`. UI-скрытие не считается единственной защитой: backend guards также закрывают CRUD, storage upload и analytics feed.
 
 ## Админка
 
-Админка встроена во frontend и открывается кнопкой `Админка CRUD` в шапке приложения. В ней можно редактировать заведения, координаты, галереи, premium-оформление, события и смотреть поток аналитики.
+Админка встроена во frontend и открывается кнопкой `Админка CRUD` в шапке приложения только у @nick_luzhkov. В ней можно редактировать заведения, координаты, галереи, premium-оформление, события и смотреть поток аналитики.
 
 ## Текущие ограничения MVP
 
-- Авторизация Telegram пока представлена dev-симулятором пользователей.
 - TypeORM `synchronize` включен для локальной разработки.
 - Frontend сейчас на Vite/React, хотя исходное ТЗ допускает дальнейшее решение по Next.js.
 - Расписание заведений хранится текстом, поэтому фильтр "открыто сейчас" требует отдельного улучшения.
+- Без заполненных Telegram env-переменных локальный frontend покажет экран входа и предупреждение о недостающем `VITE_TELEGRAM_BOT_USERNAME`.
