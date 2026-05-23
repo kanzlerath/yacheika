@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { ReactionService } from './reaction.service';
+import { ReactVenueDto } from './dto/react-venue.dto';
 
 @Controller()
 export class ReactionController {
@@ -13,10 +14,13 @@ export class ReactionController {
   @Post('api/venues/:id/react')
   async reactVenue(
     @Param('id') venueId: string,
-    @Body('userId') userId: string,
-    @Body('type') type: 'like' | 'not_my_place' | 'vibe_tag',
-    @Body('vibeTag') vibeTag?: string,
+    @Body() reactionData: ReactVenueDto,
   ) {
-    return this.reactionService.toggleReaction(venueId, userId, type, vibeTag);
+    return this.reactionService.toggleReaction(
+      venueId,
+      reactionData.userId,
+      reactionData.type,
+      reactionData.type === 'vibe_tag' ? reactionData.vibeTag : undefined,
+    );
   }
 }

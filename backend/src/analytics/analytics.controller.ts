@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
+import { LogAnalyticsEventDto } from './dto/log-analytics-event.dto';
 
 @Controller('api/analytics')
 export class AnalyticsController {
@@ -11,17 +12,7 @@ export class AnalyticsController {
   }
 
   @Post()
-  async logEvent(
-    @Body('eventType') eventType: string,
-    @Body('venueId') venueId?: string,
-    @Body('userId') userId?: string,
-    @Body('metadata') metadata?: Record<string, any>,
-  ) {
-    return this.analyticsService.logEvent({
-      eventType,
-      venueId,
-      userId,
-      metadata,
-    });
+  async logEvent(@Body() eventData: LogAnalyticsEventDto) {
+    return this.analyticsService.logEvent(eventData);
   }
 }
