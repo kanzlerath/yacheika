@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { VenueService } from './venue.service';
+import { SaveVenueDto } from './dto/save-venue.dto';
 
 @Controller('api/venues')
 export class VenueController {

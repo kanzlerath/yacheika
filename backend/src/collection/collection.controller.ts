@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { CollectionService } from './collection.service';
+import { SaveCollectionDto } from './dto/save-collection.dto';
 
 @Controller('api/collections')
 export class CollectionController {

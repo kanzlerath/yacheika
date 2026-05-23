@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Get, Param, Post, Req, UseGuards
 import { AdminGuard } from '../auth/admin.guard';
 import { TelegramAuthGuard } from '../auth/telegram-auth.guard';
 import { ReactionService } from './reaction.service';
+import { ReactVenueDto } from './dto/react-venue.dto';
 
 @Controller()
 export class ReactionController {

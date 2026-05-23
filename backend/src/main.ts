@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
 
 async function bootstrap() {
@@ -9,6 +9,14 @@ async function bootstrap() {
 
   // Enable CORS for dev convenience
   app.enableCors();
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidUnknownValues: false,
+    }),
+  );
 
   // Increase payload limits for gallery image uploads
   app.use(express.json({ limit: '10mb' }));
