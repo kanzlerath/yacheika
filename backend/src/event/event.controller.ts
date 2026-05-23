@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
 import { EventService } from './event.service';
+import { SaveEventDto } from './dto/save-event.dto';
 
 @Controller('api/events')
 export class EventController {
@@ -11,7 +12,7 @@ export class EventController {
   }
 
   @Post()
-  async saveEvent(@Body() eventData: any) {
+  async saveEvent(@Body() eventData: SaveEventDto) {
     return this.eventService.createOrUpdate(eventData);
   }
 

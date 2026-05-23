@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Query, Body } from '@nestjs/common';
 import { VenueService } from './venue.service';
+import { SaveVenueDto } from './dto/save-venue.dto';
 
 @Controller('api/venues')
 export class VenueController {
@@ -28,7 +29,7 @@ export class VenueController {
   }
 
   @Post()
-  async saveVenue(@Body() venueData: any) {
+  async saveVenue(@Body() venueData: SaveVenueDto) {
     return this.venueService.createOrUpdate(venueData);
   }
 

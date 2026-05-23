@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body } from '@nestjs/common';
 import { CollectionService } from './collection.service';
+import { SaveCollectionDto } from './dto/save-collection.dto';
 
 @Controller('api/collections')
 export class CollectionController {
@@ -11,7 +12,7 @@ export class CollectionController {
   }
 
   @Post()
-  async saveCollection(@Body() collectionData: any) {
+  async saveCollection(@Body() collectionData: SaveCollectionDto) {
     return this.collectionService.createOrUpdate(collectionData);
   }
 
