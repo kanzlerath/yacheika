@@ -415,7 +415,7 @@ export default function App() {
   };
 
   return (
-    <div id="application-root" className="fixed inset-0 w-full bg-[#030303] flex flex-col overflow-hidden relative">
+    <div id="application-root" className="fixed inset-0 w-full bg-[#030303] flex flex-col overflow-hidden">
       
       {/* 1. Global Glass Header Panel */}
       <header 
