@@ -102,7 +102,14 @@ export default function MapContainer({
       }
     });
 
+    // Resize observer to handle dynamic size changes of the container
+    const resizeObserver = new ResizeObserver(() => {
+      map.resize();
+    });
+    resizeObserver.observe(mapContainerRef.current);
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
     };
