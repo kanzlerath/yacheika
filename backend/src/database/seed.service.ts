@@ -29,6 +29,15 @@ export class SeedService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     this.logger.log('Checking database status for seeding...');
+
+    // Gate seeding in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    const forceSeed = process.env.SEED_DATABASE === 'true';
+    if (isProduction && !forceSeed) {
+      this.logger.log('Production environment detected and SEED_DATABASE is not true. Skipping database seeding.');
+      return;
+    }
+
     const venueCount = await this.venueRepository.count();
     if (venueCount > 0) {
       this.logger.log('Database already has data. Skipping seeding.');
@@ -405,9 +414,13 @@ export class SeedService implements OnApplicationBootstrap {
 
     for (const c of collectionsData) {
       const collection = this.collectionRepository.create({
-        ...c,
+        id: c.id,
+        title: c.title,
+        description: c.description,
+        cover: c.cover,
+        venues: c.venueIds.map((vId) => ({ id: vId })),
         publishedAt: new Date(),
-      } as Partial<CollectionEntity>);
+      });
       await this.collectionRepository.save(collection);
     }
     this.logger.log(`Seeded ${collectionsData.length} collections.`);

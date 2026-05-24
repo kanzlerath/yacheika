@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Sparkles,
@@ -35,6 +35,20 @@ import {
   refreshTelegramSession,
   storeTelegramAuth,
 } from "./utils/telegramAuth";
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
 
 export default function App() {
   const [auth, setAuth] = useState<TelegramAuthSession | null>(() => readStoredTelegramAuth());
@@ -145,9 +159,7 @@ export default function App() {
   const fetchAllData = async (session = auth) => {
     try {
       const authHeaders = session ? getAuthHeaders(session.token) : {};
-      const venuesUrl = userCoords
-        ? `/api/venues?userLat=${userCoords.lat}&userLng=${userCoords.lng}`
-        : "/api/venues";
+      const venuesUrl = "/api/venues";
 
       const [vRes, cRes, eRes, rRes, aRes] = await Promise.all([
         fetch(venuesUrl),
@@ -223,6 +235,18 @@ export default function App() {
     };
   }, [nearbySort]);
 
+  // Local client-side sorting by proximity to save battery & network requests!
+  const sortedVenues = useMemo(() => {
+    if (!nearbySort || !userCoords) {
+      return venues;
+    }
+    return [...venues].sort((a, b) => {
+      const distA = calculateDistance(userCoords.lat, userCoords.lng, a.latitude, a.longitude);
+      const distB = calculateDistance(userCoords.lat, userCoords.lng, b.latitude, b.longitude);
+      return distA - distB;
+    });
+  }, [venues, nearbySort, userCoords]);
+
   // Validate persisted Telegram session once on app mount.
   useEffect(() => {
     const storedAuth = readStoredTelegramAuth();
@@ -243,7 +267,7 @@ export default function App() {
 
   useEffect(() => {
     fetchAllData(auth);
-  }, [auth?.token, userCoords]);
+  }, [auth?.token]);
 
   useEffect(() => {
     if (!isAdmin && adminMode) {
@@ -417,27 +441,27 @@ export default function App() {
   };
 
   return (
-    <div id="application-root" className="fixed inset-0 w-full bg-[#030303] flex flex-col overflow-hidden">
+    <div id="application-root" className="absolute inset-0 w-full bg-[#030303] flex flex-col overflow-hidden">
       
       {/* 1. Global Glass Header Panel */}
       <header 
-        className="w-full flex-shrink-0 bg-neutral-950/90 border-b border-neutral-900/80 flex items-center justify-between px-4 sm:px-6 z-40 backdrop-blur-md"
+        className="absolute top-0 left-0 right-0 flex-shrink-0 bg-gradient-to-b from-black/85 via-black/35 to-transparent flex items-center justify-between px-4 sm:px-6 z-40 pointer-events-none"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
-          height: "calc(4rem + env(safe-area-inset-top, 0px))"
+          height: "calc(4.5rem + env(safe-area-inset-top, 0px))"
         }}
       >
         
         {/* Logo label space typography */}
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-          <span className="font-display font-black tracking-[0.25em] text-sm text-white uppercase select-none">
-            ЯЧЕЙКА
+        <div className="flex items-center gap-2.5 pointer-events-auto">
+          <img src="/logo.png" className="w-7.5 h-7.5 object-contain" alt="скоуп logo" />
+          <span className="font-display font-bold tracking-[0.15em] text-lg text-white lowercase select-none">
+            скоуп
           </span>
         </div>
 
         {/* Central Auth/Settings Trigger Button */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 pointer-events-auto">
           {auth ? (
             <button
               onClick={() => setShowSettingsModal(true)}
@@ -477,12 +501,12 @@ export default function App() {
           
           {/* Left Discovery Sidebar - occupies 4-cols on desktop */}
           <section
-            className={`h-full md:col-span-4 lg:col-span-3.5 border-r border-neutral-900/60 bg-black/95 md:block absolute md:relative inset-0 z-10 transition-transform duration-300 ${
+            className={`h-full md:col-span-4 lg:col-span-3.5 border-r border-neutral-900/60 bg-black/95 md:block absolute md:relative inset-0 z-30 transition-transform duration-300 ${
               mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             }`}
           >
             <DiscoveryPanel
-              venues={venues}
+              venues={sortedVenues}
               collections={collections}
               selectedVenue={selectedVenue}
               onSelectVenue={handleVenueSelected}
@@ -497,7 +521,7 @@ export default function App() {
           <section className="relative w-full h-full flex-1 md:col-span-8 lg:col-span-8.5 overflow-hidden block">
             
             <MapContainer
-              venues={venues}
+              venues={sortedVenues}
               selectedVenue={selectedVenue}
               onSelectVenue={handleVenueSelected}
               adminMode={false}
@@ -516,10 +540,10 @@ export default function App() {
               >
                 <button
                   onClick={() => setMobileView("list")}
-                  className="flex items-center gap-2 bg-zinc-950/90 border border-zinc-800 hover:border-zinc-700 px-5 py-2.5 rounded-xl text-xs font-display font-semibold text-white shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                  className="flex items-center justify-center w-12 h-12 bg-zinc-950/90 border border-zinc-800 hover:border-zinc-700 rounded-full text-white shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                  aria-label="Открыть подборки"
                 >
-                  <Grid className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-                  <span>Открыть подборки</span>
+                  <Grid className="w-5 h-5 text-rose-500 animate-pulse" />
                 </button>
               </div>
             )}

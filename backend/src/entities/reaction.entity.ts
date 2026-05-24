@@ -1,9 +1,10 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Unique, Index } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { VenueEntity } from './venue.entity';
 
 @Entity('reactions')
 @Unique(['userId', 'venueId', 'type', 'vibeTag'])
+@Index(['userId', 'venueId', 'type'], { unique: true, where: '"vibeTag" IS NULL' })
 export class ReactionEntity {
   @PrimaryColumn({ type: 'varchar' })
   id: string;

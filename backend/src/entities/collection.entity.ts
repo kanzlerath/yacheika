@@ -1,4 +1,5 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToMany, JoinTable } from 'typeorm';
+import { VenueEntity } from './venue.entity';
 
 @Entity('collections')
 export class CollectionEntity {
@@ -14,8 +15,13 @@ export class CollectionEntity {
   @Column()
   cover: string;
 
-  @Column({ type: 'text', array: true, default: '{}' })
-  venueIds: string[];
+  @ManyToMany(() => VenueEntity, { onDelete: 'CASCADE' })
+  @JoinTable({
+    name: 'collection_venues',
+    joinColumn: { name: 'collectionId', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'venueId', referencedColumnName: 'id' }
+  })
+  venues: VenueEntity[];
 
   @CreateDateColumn()
   publishedAt: Date;

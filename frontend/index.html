@@ -16,11 +16,154 @@
     <meta name="apple-mobile-web-app-title" content="Ячейка" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Custom Preloader Inline Styles -->
+    <style>
+      .preloader-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: #030303;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        pointer-events: all;
+      }
+      .preloader-overlay.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .preloader-logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+      }
+      .preloader-svg {
+        width: 120px;
+        height: 120px;
+        overflow: visible;
+        filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.8));
+      }
+      .preloader-group {
+        transform-origin: 50px 50px;
+        animation: preloaderGroupRotate 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+      .preloader-circle-left {
+        fill: url(#leftHalfGrad);
+        transform-origin: 50px 50px;
+        animation: preloaderLeftHalfShift 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+      .preloader-circle-right {
+        fill: url(#rightHalfGrad);
+        transform-origin: 50px 50px;
+        animation: preloaderRightHalfShift 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+      .preloader-text {
+        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0.25em;
+        text-indent: 0.25em; /* Shift center by letter spacing */
+        text-transform: lowercase;
+        opacity: 0;
+        transform: translateY(12px);
+        animation: preloaderTextReveal 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      }
+
+      @keyframes preloaderLeftHalfShift {
+        0% {
+          opacity: 0;
+          transform: scale(0.6) translate(0, 0);
+        }
+        25% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0);
+        }
+        50%, 100% {
+          transform: scale(1) translate(-18px, -14px);
+        }
+      }
+
+      @keyframes preloaderRightHalfShift {
+        0% {
+          opacity: 0;
+          transform: scale(0.6) translate(0, 0);
+        }
+        25% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0);
+        }
+        50%, 100% {
+          transform: scale(1) translate(18px, 14px);
+        }
+      }
+
+      @keyframes preloaderGroupRotate {
+        0%, 50% {
+          transform: rotate(0deg);
+        }
+        75%, 100% {
+          transform: rotate(40deg);
+        }
+      }
+
+      @keyframes preloaderTextReveal {
+        0%, 65% {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        82%, 100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
   </head>
   <body class="text-zinc-300 antialiased">
+    <!-- PWA App Animated Preloader -->
+    <div id="pwa-preloader" class="preloader-overlay">
+      <div class="preloader-logo-container">
+        <svg class="preloader-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="leftHalfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#ffffff" />
+              <stop offset="100%" stop-color="#3a3a3a" />
+            </linearGradient>
+            <linearGradient id="rightHalfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#3a3a3a" />
+              <stop offset="100%" stop-color="#ffffff" />
+            </linearGradient>
+          </defs>
+          <g class="preloader-group">
+            <path class="preloader-circle-left" d="M 50 15 A 35 35 0 0 0 50 85 Z" />
+            <path class="preloader-circle-right" d="M 50 15 A 35 35 0 0 1 50 85 Z" />
+          </g>
+        </svg>
+        <div class="preloader-text">скоуп</div>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
+    <!-- Automatic preloader dismissal -->
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const preloader = document.getElementById('pwa-preloader');
+          if (preloader) {
+            preloader.classList.add('fade-out');
+            setTimeout(() => preloader.remove(), 800);
+          }
+        }, 3600);
+      });
+    </script>
+
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {

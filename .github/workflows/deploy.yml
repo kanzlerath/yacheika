@@ -1,0 +1,52 @@
+name: Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - feat-telegram-auth
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Check if project directory exists, otherwise clone it
+            if [ ! -d "/app/yacheyka" ]; then
+              mkdir -p /app
+              git clone https://github.com/${{ github.repository }}.git /app/yacheyka
+              cd /app/yacheyka
+              git checkout ${{ github.ref_name }}
+            else
+              cd /app/yacheyka
+              git fetch --all
+              git checkout ${{ github.ref_name }}
+              git pull origin ${{ github.ref_name }}
+            fi
+
+            # Recreate production .env file from secrets
+            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" > .env
+            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+            echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
+            echo "DB_PORT=5432" >> .env
+            echo "PORT=4002" >> .env
+            echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
+            echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
+            echo "MINIO_BUCKET=yacheyka-gallery" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+            echo "TELEGRAM_BOT_USERNAME=${{ secrets.TELEGRAM_BOT_USERNAME }}" >> .env
+            echo "DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" >> .env
+            echo "MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}" >> .env
+
+            # Restart Docker Compose services in production mode
+            docker-compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml up -d --build

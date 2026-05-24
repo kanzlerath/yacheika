@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('analytics')
 export class AnalyticsEventEntity {
@@ -14,6 +14,7 @@ export class AnalyticsEventEntity {
   @Column({ nullable: true })
   userId: string;
 
+  @Index()
   @CreateDateColumn()
   timestamp: Date;
 
