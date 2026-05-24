@@ -58,6 +58,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        - VITE_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
     container_name: yacheyka_frontend
     restart: always
     depends_on:
