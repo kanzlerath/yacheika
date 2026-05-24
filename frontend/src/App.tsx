@@ -501,7 +501,7 @@ export default function App() {
           
           {/* Left Discovery Sidebar - occupies 4-cols on desktop */}
           <section
-            className={`h-full md:col-span-4 lg:col-span-3.5 border-r border-neutral-900/60 bg-black/95 md:block absolute md:relative inset-0 z-10 transition-transform duration-300 ${
+            className={`h-full md:col-span-4 lg:col-span-3.5 border-r border-neutral-900/60 bg-black/95 md:block absolute md:relative inset-0 z-30 transition-transform duration-300 ${
               mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             }`}
           >
