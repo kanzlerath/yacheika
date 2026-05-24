@@ -1,0 +1,25 @@
+{$DOMAIN_NAME:localhost} {
+    # Gzip and zstd compression
+    encode gzip zstd
+
+    # Log configurations (optional, console stdout)
+    log {
+        output stdout
+        format json
+    }
+
+    # Route backend NestJS API requests
+    handle /api/* {
+        reverse_proxy backend:4002
+    }
+
+    # Route MinIO uploads bucket requests
+    handle /yacheyka-gallery/* {
+        reverse_proxy minio:9000
+    }
+
+    # Route all other traffic to static frontend Nginx container
+    handle {
+        reverse_proxy frontend:80
+    }
+}
