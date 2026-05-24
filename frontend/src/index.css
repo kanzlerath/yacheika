@@ -53,7 +53,7 @@
 @theme {
   --font-sans: "Gilroy", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Gilroy", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-mono: "Gilroy", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
   /* Custom glow shadows */
   --shadow-rose-glow: 0 0 15px rgba(244, 63, 94, 0.4);
