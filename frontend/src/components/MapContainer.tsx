@@ -75,6 +75,7 @@ export default function MapContainer({
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const pendingMarkerRef = useRef<maplibregl.Marker | null>(null);
   const prevUserCoordsRef = useRef<string | null>(null);
+  const prevMapStyleRef = useRef(mapStyle);
 
   // Initialize Map
   useEffect(() => {
@@ -110,7 +111,9 @@ export default function MapContainer({
   // Update Map Style dynamically
   useEffect(() => {
     if (!mapRef.current) return;
+    if (prevMapStyleRef.current === mapStyle) return;
     mapRef.current.setStyle(getMapStyleObject(mapStyle) as any);
+    prevMapStyleRef.current = mapStyle;
   }, [mapStyle]);
 
   // Update user GPS location marker and center

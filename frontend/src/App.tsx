@@ -59,7 +59,11 @@ export default function App() {
 
   // Site Settings States
   const [mapStyle, setMapStyle] = useState<"dark" | "light" | "voyager">(() => {
-    return (localStorage.getItem("yacheyka.mapStyle") as any) || "dark";
+    const val = localStorage.getItem("yacheyka.mapStyle");
+    if (val === "dark" || val === "light" || val === "voyager") {
+      return val;
+    }
+    return "dark";
   });
   const [nearbySort, setNearbySort] = useState<boolean>(() => {
     return localStorage.getItem("yacheyka.nearbySort") === "true";
@@ -488,7 +492,7 @@ export default function App() {
           </section>
 
           {/* Right Map Canvas Content View - occupies 8-cols on desktop */}
-          <section className="h-full md:col-span-8 lg:col-span-8.5 relative overflow-hidden block">
+          <section className="absolute md:relative inset-0 w-full h-full md:h-full md:col-span-8 lg:col-span-8.5 overflow-hidden block">
             
             <MapContainer
               venues={venues}
