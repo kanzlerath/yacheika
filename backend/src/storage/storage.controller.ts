@@ -1,16 +1,7 @@
-import { BadRequestException, Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, UploadedFile, UseGuards, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminGuard } from '../auth/admin.guard';
 import { StorageService } from './storage.service';
-
-const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
-const ALLOWED_IMAGE_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'image/avif',
-]);
 
 @Controller('api/storage')
 export class StorageController {
@@ -19,10 +10,17 @@ export class StorageController {
   @Post('upload')
   @UseGuards(AdminGuard)
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file uploaded');
-    }
+  async uploadFile(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 8 * 1024 * 1024 }), // 8MB
+          new FileTypeValidator({ fileType: 'image/(jpeg|png|webp|gif|avif)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
     return this.storageService.uploadFile(file);
   }
 }

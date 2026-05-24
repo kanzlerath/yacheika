@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Sparkles,
@@ -35,6 +35,20 @@ import {
   refreshTelegramSession,
   storeTelegramAuth,
 } from "./utils/telegramAuth";
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
 
 export default function App() {
   const [auth, setAuth] = useState<TelegramAuthSession | null>(() => readStoredTelegramAuth());
@@ -145,9 +159,7 @@ export default function App() {
   const fetchAllData = async (session = auth) => {
     try {
       const authHeaders = session ? getAuthHeaders(session.token) : {};
-      const venuesUrl = userCoords
-        ? `/api/venues?userLat=${userCoords.lat}&userLng=${userCoords.lng}`
-        : "/api/venues";
+      const venuesUrl = "/api/venues";
 
       const [vRes, cRes, eRes, rRes, aRes] = await Promise.all([
         fetch(venuesUrl),
@@ -223,6 +235,18 @@ export default function App() {
     };
   }, [nearbySort]);
 
+  // Local client-side sorting by proximity to save battery & network requests!
+  const sortedVenues = useMemo(() => {
+    if (!nearbySort || !userCoords) {
+      return venues;
+    }
+    return [...venues].sort((a, b) => {
+      const distA = calculateDistance(userCoords.lat, userCoords.lng, a.latitude, a.longitude);
+      const distB = calculateDistance(userCoords.lat, userCoords.lng, b.latitude, b.longitude);
+      return distA - distB;
+    });
+  }, [venues, nearbySort, userCoords]);
+
   // Validate persisted Telegram session once on app mount.
   useEffect(() => {
     const storedAuth = readStoredTelegramAuth();
@@ -243,7 +267,7 @@ export default function App() {
 
   useEffect(() => {
     fetchAllData(auth);
-  }, [auth?.token, userCoords]);
+  }, [auth?.token]);
 
   useEffect(() => {
     if (!isAdmin && adminMode) {
@@ -482,7 +506,7 @@ export default function App() {
             }`}
           >
             <DiscoveryPanel
-              venues={venues}
+              venues={sortedVenues}
               collections={collections}
               selectedVenue={selectedVenue}
               onSelectVenue={handleVenueSelected}
@@ -497,7 +521,7 @@ export default function App() {
           <section className="relative w-full h-full flex-1 md:col-span-8 lg:col-span-8.5 overflow-hidden block">
             
             <MapContainer
-              venues={venues}
+              venues={sortedVenues}
               selectedVenue={selectedVenue}
               onSelectVenue={handleVenueSelected}
               adminMode={false}

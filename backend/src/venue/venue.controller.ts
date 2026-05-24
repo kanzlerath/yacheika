@@ -31,7 +31,7 @@ export class VenueController {
 
   @Post()
   @UseGuards(AdminGuard)
-  async saveVenue(@Body() venueData: any) {
+  async saveVenue(@Body() venueData: SaveVenueDto) {
     return this.venueService.createOrUpdate(venueData);
   }
 
