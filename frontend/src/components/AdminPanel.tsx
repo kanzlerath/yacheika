@@ -32,7 +32,8 @@ interface AdminPanelProps {
   onSaveEvent: (event: any) => void;
   onDeleteEvent: (id: string) => void;
   pendingCoords: { lat: number; lng: number } | null;
-  setPendingCoords: (co: null) => void;
+  setPendingCoords: (co: any) => void;
+  onToggleMobileMap?: (show: boolean) => void;
 }
 
 const CATEGORIES = [
@@ -95,9 +96,47 @@ export default function AdminPanel({
   onDeleteEvent,
   pendingCoords,
   setPendingCoords,
+  onToggleMobileMap,
 }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<"venue" | "events" | "analytics">("venue");
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [mobileSubView, setMobileSubView] = useState<"list" | "editor">("list");
+
+  // Phone formatting helper mask: +7 (XXX) XXX-XX-XX
+  const formatPhone = (val: string) => {
+    const clean = val.replace(/\D/g, "");
+    let digits = clean;
+    if (digits.startsWith("7") || digits.startsWith("8")) {
+      digits = digits.substring(1);
+    }
+    digits = digits.substring(0, 10);
+    
+    if (digits.length === 0) return "";
+    
+    let formatted = "+7 (";
+    if (digits.length > 0) {
+      formatted += digits.substring(0, Math.min(digits.length, 3));
+    }
+    if (digits.length >= 3) {
+      formatted += ") ";
+    }
+    if (digits.length > 3) {
+      formatted += digits.substring(3, Math.min(digits.length, 6));
+    }
+    if (digits.length >= 6) {
+      formatted += "-";
+    }
+    if (digits.length > 6) {
+      formatted += digits.substring(6, Math.min(digits.length, 8));
+    }
+    if (digits.length >= 8) {
+      formatted += "-";
+    }
+    if (digits.length > 8) {
+      formatted += digits.substring(8, 10);
+    }
+    return formatted;
+  };
 
   const uploadFile = async (file: File): Promise<string> => {
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
@@ -190,6 +229,7 @@ export default function AdminPanel({
   // Load selected venue into editor form
   const handleLoadVenue = (v: Venue) => {
     onSelectVenue(v);
+    setMobileSubView("editor");
     setEditingVenue({
       ...v,
       contacts: {
@@ -215,6 +255,7 @@ export default function AdminPanel({
   };
 
   const handleCreateNewVenueForm = () => {
+    setMobileSubView("editor");
     setEditingVenue({
       id: "",
       name: "Новый Бар",
@@ -305,10 +346,10 @@ export default function AdminPanel({
   };
 
   return (
-    <div id="admin-panel" className="bg-neutral-950 p-4 rounded-2xl border border-neutral-900 grid lg:grid-cols-12 gap-5 text-xs sm:text-sm">
+    <div id="admin-panel" className="bg-neutral-950 p-4 rounded-2xl border border-neutral-900 grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs sm:text-sm">
       
       {/* Sidebar List of Venues */}
-      <div className="lg:col-span-4 space-y-3 border-r border-neutral-900/60 pr-3">
+      <div className={`lg:col-span-4 space-y-3 lg:border-r border-neutral-900/60 lg:pr-3 ${mobileSubView === "list" ? "block" : "hidden lg:block"}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-neutral-300">
             <Layers className="w-4 h-4 text-rose-500" />
@@ -395,7 +436,7 @@ export default function AdminPanel({
       </div>
 
       {/* Editor Main Content Area */}
-      <div className="lg:col-span-8 flex flex-col space-y-4">
+      <div className={`lg:col-span-8 flex flex-col space-y-4 ${mobileSubView === "editor" ? "block" : "hidden lg:block"}`}>
         
         {/* Editor tab switches */}
         <div className="flex border-b border-neutral-900 pb-2 gap-3 text-xs font-display">
@@ -421,6 +462,17 @@ export default function AdminPanel({
 
         {activeTab === "venue" && (
           <div className="space-y-4 max-h-[580px] overflow-y-auto pr-2">
+            
+            {/* Back Button on Mobile */}
+            <div className="lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileSubView("list")}
+                className="flex items-center gap-1 bg-neutral-900 border border-neutral-800 rounded-xl px-3.5 py-2 text-xs font-semibold text-neutral-300 hover:text-white cursor-pointer select-none mb-2"
+              >
+                ← Назад к списку заведений
+              </button>
+            </div>
             
             {/* Main info row */}
             <div className="grid sm:grid-cols-2 gap-3">
@@ -485,6 +537,37 @@ export default function AdminPanel({
               </div>
             </div>
 
+            {onToggleMobileMap && (
+              <div className="xl:hidden space-y-2">
+                <button
+                  type="button"
+                  onClick={() => onToggleMobileMap(true)}
+                  className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs font-semibold text-rose-500 w-full justify-center cursor-pointer select-none"
+                >
+                  <MapPin className="w-4 h-4" /> Указать на карте
+                </button>
+                
+                {pendingCoords && (
+                  <div className="p-3 bg-rose-950/20 border border-rose-900/60 rounded-xl space-y-2 animate-pulse text-xs">
+                    <div className="flex items-center gap-1 text-rose-300 font-semibold font-display">
+                      <MapPin className="w-4 h-4" /> Точка выбрана на карте!
+                    </div>
+                    <div className="text-[10px] text-neutral-400 font-mono">
+                      Широта: {pendingCoords.lat.toFixed(6)}<br />
+                      Долгота: {pendingCoords.lng.toFixed(6)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleApplyCoords}
+                      className="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-1.5 rounded-lg transition cursor-pointer select-none"
+                    >
+                      Применить координаты
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[10px] font-mono text-neutral-500 uppercase">Адрес</label>
@@ -538,11 +621,14 @@ export default function AdminPanel({
                   type="text"
                   placeholder="Телефон (+7...)"
                   value={editingVenue.contacts.phone}
-                  onChange={(e) => setEditingVenue({
-                    ...editingVenue,
-                    contacts: { ...editingVenue.contacts, phone: e.target.value }
-                  })}
-                  className="bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-white outline-none"
+                  onChange={(e) => {
+                    const formatted = formatPhone(e.target.value);
+                    setEditingVenue({
+                      ...editingVenue,
+                      contacts: { ...editingVenue.contacts, phone: formatted }
+                    });
+                  }}
+                  className="bg-neutral-900 border border-neutral-800 rounded-lg p-2 text-white outline-none font-mono"
                 />
                 
                 <input
@@ -668,7 +754,7 @@ export default function AdminPanel({
                     })}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-400 after:border-neutral-300 after:border after:rounded-full after:h-4 after:width-4 after:w-4 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white border border-neutral-700"></div>
+                  <div className="w-9 h-5 relative bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-400 after:border-neutral-300 after:border after:rounded-full after:h-4 after:width-4 after:w-4 after:transition-all peer-checked:bg-amber-600 peer-checked:after:bg-white border border-neutral-700"></div>
                   <span className="ml-2 text-xs text-neutral-300 font-medium">Включить Premium</span>
                 </label>
               </div>
