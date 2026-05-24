@@ -78,11 +78,13 @@ export default function App() {
   // Admin and manual geocoding selector controls
   const [adminMode, setAdminMode] = useState(() => window.location.hash === "#admin");
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [adminMobileShowMap, setAdminMobileShowMap] = useState(false);
 
   // Listen to hash route updates
   useEffect(() => {
     const handleHashChange = () => {
       const isHashAdmin = window.location.hash === "#admin";
+      setAdminMobileShowMap(false);
       if (isHashAdmin) {
         if (!auth || !auth.isAdmin) {
           window.location.hash = "";
@@ -546,7 +548,7 @@ export default function App() {
           
           {/* Left Column - Full Admin Panel CRUD view (scrollable containing edit forms) */}
           <section
-            className="col-span-12 xl:col-span-8 h-full overflow-y-auto p-4 md:p-6 border-r border-neutral-900/50"
+            className={`col-span-12 xl:col-span-8 h-full overflow-y-auto p-4 md:p-6 border-r border-neutral-900/50 ${adminMobileShowMap ? "hidden xl:block" : "block"}`}
             style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
           >
             
@@ -560,8 +562,9 @@ export default function App() {
                 onClick={() => {
                   window.location.hash = "";
                   setPendingCoords(null);
+                  setAdminMobileShowMap(false);
                 }}
-                className="self-start sm:self-auto flex items-center gap-1 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 py-1.5 px-4 text-xs font-semibold rounded-xl text-neutral-200 transition"
+                className="self-start sm:self-auto flex items-center gap-1 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 py-1.5 px-4 text-xs font-semibold rounded-xl text-neutral-200 transition select-none cursor-pointer"
               >
                 ← Вернуться на карту
               </button>
@@ -580,15 +583,16 @@ export default function App() {
               onDeleteEvent={handleDeleteEvent}
               pendingCoords={pendingCoords}
               setPendingCoords={setPendingCoords}
+              onToggleMobileMap={setAdminMobileShowMap}
             />
 
           </section>
 
           {/* Right Column - Framed interactive Map container for pin geocoding */}
-          <section className="hidden xl:block xl:col-span-4 h-full relative border-l border-neutral-900/30">
+          <section className={`col-span-12 xl:col-span-4 h-full relative border-l border-neutral-900/30 ${adminMobileShowMap ? "block" : "hidden xl:block"}`}>
             
             {/* Helper floating info card */}
-            <div className="absolute top-5 left-5 right-5 bg-neutral-950/95 border border-neutral-900 px-4 py-3 rounded-xl z-10 shadow-2xl">
+            <div className="absolute top-5 left-5 right-5 bg-neutral-950/95 border border-neutral-900 px-4 py-3 rounded-xl z-10 shadow-2xl hidden xl:block">
               <div className="font-semibold text-xs text-neutral-100 flex items-center gap-1.5">
                 <Map className="w-3.5 h-3.5 text-rose-500" />
                 Карта разметки координат
@@ -597,6 +601,36 @@ export default function App() {
                 Выберите заведение слева и нажмите в любой точке карты, чтобы добавить новые координаты в форму редактирования.
               </p>
             </div>
+
+            {/* Floating Close/Apply controls for Mobile admin map picker */}
+            {adminMobileShowMap && (
+              <div className="absolute bottom-5 left-5 right-5 bg-neutral-950/95 border border-neutral-900/85 p-4 rounded-2xl z-20 shadow-2xl backdrop-blur-md flex flex-col gap-2 xl:hidden animate-slideUp">
+                <div className="font-semibold text-xs text-neutral-200">Выбор координат на карте</div>
+                {pendingCoords ? (
+                  <>
+                    <div className="text-[10px] text-neutral-400 font-mono">
+                      Выбрано: {pendingCoords.lat.toFixed(6)}, {pendingCoords.lng.toFixed(6)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setAdminMobileShowMap(false)}
+                      className="bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold py-2 px-4 rounded-xl cursor-pointer select-none text-center transition"
+                    >
+                      Подтвердить точку
+                    </button>
+                  </>
+                ) : (
+                  <div className="text-[10px] text-neutral-500 italic">Нажмите в любой точке карты для выбора...</div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setAdminMobileShowMap(false)}
+                  className="bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-neutral-300 text-xs font-semibold py-2 px-4 rounded-xl cursor-pointer select-none text-center transition"
+                >
+                  ← Вернуться к анкете
+                </button>
+              </div>
+            )}
 
             <MapContainer
               venues={venues}
