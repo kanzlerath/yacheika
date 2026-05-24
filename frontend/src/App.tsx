@@ -454,9 +454,9 @@ export default function App() {
         
         {/* Logo label space typography */}
         <div className="flex items-center gap-2.5 pointer-events-auto">
-          <img src="/logo.png" className="w-7.5 h-7.5 object-contain" alt="scope logo" />
+          <img src="/logo.png" className="w-7.5 h-7.5 object-contain" alt="скоуп logo" />
           <span className="font-display font-bold tracking-[0.15em] text-lg text-white lowercase select-none">
-            scope
+            скоуп
           </span>
         </div>
 
