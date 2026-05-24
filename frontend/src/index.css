@@ -30,17 +30,19 @@ body {
   font-family: var(--font-sans);
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
-
 @supports (height: 100dvh) {
   html,
   body,
   #root {
     height: 100dvh;
+  }
+}
+
+@media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    height: 100vh !important;
   }
 }
 
