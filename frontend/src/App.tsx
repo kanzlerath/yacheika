@@ -471,7 +471,7 @@ export default function App() {
       {/* 2. Main Workspace Layout Routing */}
       {!adminMode ? (
         /* Standard Explorer Discovery Viewport */
-        <main className="w-full flex-1 h-0 min-h-0 grid grid-cols-1 md:grid-cols-12 relative overflow-hidden">
+        <main className="w-full flex-1 h-0 min-h-0 flex flex-col md:grid md:grid-cols-12 relative overflow-hidden">
           
           {/* Left Discovery Sidebar - occupies 4-cols on desktop */}
           <section
@@ -492,7 +492,7 @@ export default function App() {
           </section>
 
           {/* Right Map Canvas Content View - occupies 8-cols on desktop */}
-          <section className="relative w-full h-full md:col-span-8 lg:col-span-8.5 overflow-hidden block">
+          <section className="relative w-full h-full flex-1 md:col-span-8 lg:col-span-8.5 overflow-hidden block">
             
             <MapContainer
               venues={venues}
@@ -542,7 +542,7 @@ export default function App() {
         </main>
       ) : (
         /* Dedicated Separated Administration Workspace Viewport */
-        <main className="w-full flex-1 h-0 min-h-0 grid grid-cols-1 xl:grid-cols-12 relative overflow-hidden bg-[#070709] animate-fadeIn">
+        <main className="w-full flex-1 h-0 min-h-0 flex flex-col xl:grid xl:grid-cols-12 relative overflow-hidden bg-[#070709] animate-fadeIn">
           
           {/* Left Column - Full Admin Panel CRUD view (scrollable containing edit forms) */}
           <section
