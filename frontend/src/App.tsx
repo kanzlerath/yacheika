@@ -445,23 +445,23 @@ export default function App() {
       
       {/* 1. Global Glass Header Panel */}
       <header 
-        className="w-full flex-shrink-0 bg-neutral-950/90 border-b border-neutral-900/80 flex items-center justify-between px-4 sm:px-6 z-40 backdrop-blur-md"
+        className="absolute top-0 left-0 right-0 flex-shrink-0 bg-gradient-to-b from-black/85 via-black/35 to-transparent flex items-center justify-between px-4 sm:px-6 z-40 pointer-events-none"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
-          height: "calc(4rem + env(safe-area-inset-top, 0px))"
+          height: "calc(4.5rem + env(safe-area-inset-top, 0px))"
         }}
       >
         
         {/* Logo label space typography */}
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-          <span className="font-display font-black tracking-[0.25em] text-sm text-white uppercase select-none">
-            ЯЧЕЙКА
+        <div className="flex items-center gap-2.5 pointer-events-auto">
+          <img src="/logo.png" className="w-7.5 h-7.5 object-contain" alt="scope logo" />
+          <span className="font-display font-bold tracking-[0.15em] text-lg text-white lowercase select-none">
+            scope
           </span>
         </div>
 
         {/* Central Auth/Settings Trigger Button */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 pointer-events-auto">
           {auth ? (
             <button
               onClick={() => setShowSettingsModal(true)}
@@ -540,10 +540,10 @@ export default function App() {
               >
                 <button
                   onClick={() => setMobileView("list")}
-                  className="flex items-center gap-2 bg-zinc-950/90 border border-zinc-800 hover:border-zinc-700 px-5 py-2.5 rounded-xl text-xs font-display font-semibold text-white shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                  className="flex items-center justify-center w-12 h-12 bg-zinc-950/90 border border-zinc-800 hover:border-zinc-700 rounded-full text-white shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                  aria-label="Открыть подборки"
                 >
-                  <Grid className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-                  <span>Открыть подборки</span>
+                  <Grid className="w-5 h-5 text-rose-500 animate-pulse" />
                 </button>
               </div>
             )}

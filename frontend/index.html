@@ -16,11 +16,133 @@
     <meta name="apple-mobile-web-app-title" content="Ячейка" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Custom Preloader Inline Styles -->
+    <style>
+      .preloader-overlay {
+        position: fixed;
+        inset: 0;
+        background-color: #030303;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        pointer-events: all;
+      }
+      .preloader-overlay.fade-out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .preloader-logo-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+      }
+      .preloader-svg {
+        width: 100px;
+        height: 100px;
+        overflow: visible;
+      }
+      .preloader-circle-left {
+        fill: #ffffff;
+        transform-origin: 50px 50px;
+        animation: preloaderLeftHalf 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+      .preloader-circle-right {
+        fill: #ffffff;
+        transform-origin: 50px 50px;
+        animation: preloaderRightHalf 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+      .preloader-text {
+        font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 26px;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: 0.25em;
+        text-indent: 0.25em; /* Shift center by letter spacing */
+        text-transform: lowercase;
+        opacity: 0;
+        transform: translateY(12px);
+        animation: preloaderTextReveal 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+      }
+
+      @keyframes preloaderLeftHalf {
+        0% {
+          opacity: 0;
+          transform: scale(0.6) translate(0, 0) rotate(0deg);
+        }
+        20% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0) rotate(0deg);
+        }
+        45% {
+          transform: scale(1) translate(-10px, -10px) rotate(0deg);
+        }
+        70%, 100% {
+          transform: scale(1) translate(-10px, -10px) rotate(-45deg);
+        }
+      }
+
+      @keyframes preloaderRightHalf {
+        0% {
+          opacity: 0;
+          transform: scale(0.6) translate(0, 0) rotate(0deg);
+        }
+        20% {
+          opacity: 1;
+          transform: scale(1) translate(0, 0) rotate(0deg);
+        }
+        45% {
+          transform: scale(1) translate(10px, 10px) rotate(0deg);
+        }
+        70%, 100% {
+          transform: scale(1) translate(10px, 10px) rotate(-45deg);
+        }
+      }
+
+      @keyframes preloaderTextReveal {
+        0%, 55% {
+          opacity: 0;
+          transform: translateY(15px);
+        }
+        75%, 100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
   </head>
   <body class="text-zinc-300 antialiased">
+    <!-- PWA App Animated Preloader -->
+    <div id="pwa-preloader" class="preloader-overlay">
+      <div class="preloader-logo-container">
+        <svg class="preloader-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <path class="preloader-circle-left" d="M 50 15 A 35 35 0 0 0 50 85 Z" />
+          <path class="preloader-circle-right" d="M 50 15 A 35 35 0 0 1 50 85 Z" />
+        </svg>
+        <div class="preloader-text">scope</div>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
+    <!-- Automatic preloader dismissal -->
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const preloader = document.getElementById('pwa-preloader');
+          if (preloader) {
+            preloader.classList.add('fade-out');
+            setTimeout(() => preloader.remove(), 700);
+          }
+        }, 2500);
+      });
+    </script>
+
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {

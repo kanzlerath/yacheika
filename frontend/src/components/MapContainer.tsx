@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { Plus, Minus } from "lucide-react";
 import { Venue } from "../types";
 
 interface MapContainerProps {
@@ -90,8 +91,6 @@ export default function MapContainer({
       maxZoom: 18,
       attributionControl: false,
     });
-
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     mapRef.current = map;
 
@@ -344,8 +343,29 @@ export default function MapContainer({
     <div id="map-root" className="w-full h-full relative overflow-hidden bg-neutral-950">
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
       
+      {/* Custom glassmorphic zoom controls */}
+      <div className="absolute top-28 right-4 sm:right-6 z-15 flex flex-col gap-1 bg-zinc-950/85 border border-zinc-800/80 rounded-xl p-1 shadow-2xl backdrop-blur-md">
+        <button
+          onClick={() => mapRef.current?.zoomIn()}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-900/60 active:scale-95 transition-all cursor-pointer"
+          title="Приблизить"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        <button
+          onClick={() => mapRef.current?.zoomOut()}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-900/60 active:scale-95 transition-all cursor-pointer"
+          title="Отдалить"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* Dynamic zoom controller feedback or instructions */}
-      <div className="absolute top-20 right-4 bg-neutral-950/80 border border-neutral-900 px-2.5 py-1.5 rounded-md text-[10px] text-neutral-400 font-mono pointer-events-none z-10 hidden sm:block">
+      <div 
+        className="absolute bg-neutral-950/80 border border-neutral-900 px-2.5 py-1.5 rounded-md text-[10px] text-neutral-400 font-mono pointer-events-none z-10 hidden sm:block"
+        style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", left: "1.5rem" }}
+      >
         NSK NAVIGATOR: 55.03° N, 82.92° E
       </div>
 
