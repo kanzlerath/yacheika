@@ -23,10 +23,12 @@ import MapContainer from "./components/MapContainer";
 import DiscoveryPanel from "./components/DiscoveryPanel";
 import VenueCard from "./components/VenueCard";
 import AdminPanel from "./components/AdminPanel";
-import TelegramLoginGate from "./components/TelegramLoginGate";
-import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramAuthSession, Reaction } from "./types";
+import SettingsModal from "./components/SettingsModal";
+import AuthPromptModal from "./components/AuthPromptModal";
+import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramAuthSession, TelegramLoginWidgetUser, Reaction } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
 import {
+  authenticateTelegram,
   clearTelegramAuth,
   getAuthHeaders,
   readStoredTelegramAuth,
@@ -54,46 +56,103 @@ export default function App() {
   const authToken = auth?.token;
   const isAdmin = Boolean(auth?.isAdmin);
   const [userReactions, setUserReactions] = useState<Reaction[]>([]);
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
+
+  // Site Settings States
+  const [mapStyle, setMapStyle] = useState<"dark" | "light" | "voyager">(() => {
+    return (localStorage.getItem("yacheyka.mapStyle") as any) || "dark";
+  });
+  const [nearbySort, setNearbySort] = useState<boolean>(() => {
+    return localStorage.getItem("yacheyka.nearbySort") === "true";
+  });
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Modals Visibility
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showAuthPromptModal, setShowAuthPromptModal] = useState(false);
+  const [authPromptActionText, setAuthPromptActionText] = useState("");
 
   // Admin and manual geocoding selector controls
-  const [adminMode, setAdminMode] = useState(false);
+  const [adminMode, setAdminMode] = useState(() => window.location.hash === "#admin");
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Listen to hash route updates
+  useEffect(() => {
+    const handleHashChange = () => {
+      const isHashAdmin = window.location.hash === "#admin";
+      if (isHashAdmin) {
+        if (!auth || !auth.isAdmin) {
+          window.location.hash = "";
+          setAdminMode(false);
+        } else {
+          setAdminMode(true);
+        }
+      } else {
+        setAdminMode(false);
+      }
+    };
+
+    window.addEventListener("hashchange", handleHashChange);
+    handleHashChange();
+
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+    };
+  }, [auth]);
 
   // Layout View Switcher for responsive mobile sizing (map vs sidebar items)
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
+  const handleMapStyleChange = (style: "dark" | "light" | "voyager") => {
+    setMapStyle(style);
+    localStorage.setItem("yacheyka.mapStyle", style);
+  };
+
+  const handleNearbySortChange = (val: boolean) => {
+    setNearbySort(val);
+    localStorage.setItem("yacheyka.nearbySort", String(val));
+  };
+
   const handleAuthenticated = (nextAuth: TelegramAuthSession) => {
     storeTelegramAuth(nextAuth);
     setAuth(nextAuth);
-    setShowUserDropdown(false);
+  };
+
+  const handleTelegramWidgetAuth = async (user: TelegramLoginWidgetUser) => {
+    try {
+      const session = await authenticateTelegram({ loginWidgetUser: user });
+      handleAuthenticated(session);
+    } catch (err) {
+      console.error("Telegram authentication failed:", err);
+      alert(err instanceof Error ? err.message : "Ошибка авторизации");
+    }
   };
 
   const handleLogout = () => {
     clearTelegramAuth();
     setAuth(null);
-    setAdminMode(false);
-    setShowUserDropdown(false);
+    window.location.hash = "";
     setSelectedVenue(null);
     setUserReactions([]);
   };
 
-  // Load all live datastores after Telegram auth is verified
+  // Load all live datastores
   const fetchAllData = async (session = auth) => {
-    if (!session) return;
-
     try {
-      const authHeaders = getAuthHeaders(session.token);
+      const authHeaders = session ? getAuthHeaders(session.token) : {};
+      const venuesUrl = userCoords
+        ? `/api/venues?userLat=${userCoords.lat}&userLng=${userCoords.lng}`
+        : "/api/venues";
+
       const [vRes, cRes, eRes, rRes, aRes] = await Promise.all([
-        fetch("/api/venues"),
+        fetch(venuesUrl),
         fetch("/api/collections"),
         fetch("/api/events"),
-        fetch("/api/users/me/reactions", { headers: authHeaders }),
-        session.isAdmin ? fetch("/api/analytics", { headers: authHeaders }) : Promise.resolve(null),
+        session ? fetch("/api/users/me/reactions", { headers: authHeaders }) : Promise.resolve(null),
+        session?.isAdmin ? fetch("/api/analytics", { headers: authHeaders }) : Promise.resolve(null),
       ]);
 
-      if ([vRes, cRes, eRes, rRes].some((res) => !res.ok) || (aRes && !aRes.ok)) {
-        if (rRes.status === 401 || aRes?.status === 401) {
+      if ([vRes, cRes, eRes].some((res) => !res.ok) || (rRes && !rRes.ok) || (aRes && !aRes.ok)) {
+        if (rRes?.status === 401 || aRes?.status === 401) {
           handleLogout();
         }
         throw new Error("Backend returned an error while loading app data.");
@@ -103,7 +162,7 @@ export default function App() {
         vRes.json(),
         cRes.json(),
         eRes.json(),
-        rRes.json(),
+        rRes ? rRes.json() : Promise.resolve([]),
         aRes ? aRes.json() : Promise.resolve([]),
       ]);
 
@@ -117,10 +176,54 @@ export default function App() {
     }
   };
 
+  // Watch geolocation position when nearbySort is enabled
+  useEffect(() => {
+    if (!nearbySort) {
+      setUserCoords(null);
+      return;
+    }
+
+    let watchId: number;
+
+    const onSuccess = (pos: GeolocationPosition) => {
+      setUserCoords({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    };
+
+    const onError = (err: GeolocationPositionError) => {
+      console.warn("Geolocation watch error:", err);
+      setNearbySort(false);
+    };
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+      });
+
+      watchId = navigator.geolocation.watchPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+      });
+    } else {
+      console.warn("Geolocation is not supported by this browser.");
+      setNearbySort(false);
+    }
+
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [nearbySort]);
+
   // Validate persisted Telegram session once on app mount.
   useEffect(() => {
     const storedAuth = readStoredTelegramAuth();
-    if (!storedAuth) return;
+    if (!storedAuth) {
+      fetchAllData(null);
+      return;
+    }
 
     refreshTelegramSession(storedAuth.token)
       .then((freshAuth) => {
@@ -133,9 +236,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!auth) return;
     fetchAllData(auth);
-  }, [auth?.token]);
+  }, [auth?.token, userCoords]);
 
   useEffect(() => {
     if (!isAdmin && adminMode) {
@@ -150,7 +252,17 @@ export default function App() {
     type: "like" | "not_my_place" | "vibe_tag",
     vibeTag?: string
   ) => {
-    if (!currentUser || !authToken) return;
+    if (!authToken) {
+      setAuthPromptActionText(
+        type === "like"
+          ? "чтобы ставить отметку «Хочу пойти»"
+          : type === "not_my_place"
+          ? "чтобы помечать заведение как «Не моё место»"
+          : `чтобы оценить вайб дня «${vibeTag}»`
+      );
+      setShowAuthPromptModal(true);
+      return;
+    }
 
     try {
       const res = await fetch(`/api/venues/${venueId}/react`, {
@@ -298,12 +410,8 @@ export default function App() {
     });
   };
 
-  if (!auth) {
-    return <TelegramLoginGate onAuthenticated={handleAuthenticated} />;
-  }
-
   return (
-    <div id="application-root" className="h-screen h-[100dvh] w-screen bg-[#030303] flex flex-col overflow-hidden relative">
+    <div id="application-root" className="fixed inset-0 w-full bg-[#030303] flex flex-col overflow-hidden relative">
       
       {/* 1. Global Glass Header Panel */}
       <header 
@@ -322,93 +430,35 @@ export default function App() {
           </span>
         </div>
 
-        {/* Central Auth Switcher Block */}
+        {/* Central Auth/Settings Trigger Button */}
         <div className="flex items-center gap-2.5">
-          
-          {/* Telegram authenticated user badge */}
-          <div className="relative select-none" id="telegram-auth-widget">
+          {auth ? (
             <button
-              onClick={() => setShowUserDropdown(!showUserDropdown)}
-              className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-1.5 transition text-xs font-display text-neutral-300"
+              onClick={() => setShowSettingsModal(true)}
+              className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-1.5 transition text-xs font-display text-neutral-300 select-none cursor-pointer"
             >
-              {currentUser?.avatarUrl && (
+              {currentUser?.avatarUrl ? (
                 <img
                   src={currentUser.avatarUrl}
                   alt={currentUser.firstName}
-                  className="w-4 h-4 rounded-full border border-neutral-800"
+                  className="w-4.5 h-4.5 rounded-full border border-neutral-800"
                   referrerPolicy="no-referrer"
                 />
+              ) : (
+                <div className="w-4.5 h-4.5 rounded-full bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-neutral-300">
+                  {currentUser?.firstName?.slice(0, 1) || "T"}
+                </div>
               )}
               <span className="hidden sm:inline font-medium">@{currentUser?.username}</span>
               <span className="sm:hidden font-medium">{currentUser?.firstName}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
             </button>
-
-            <AnimatePresence>
-              {showUserDropdown && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  className="absolute right-0 top-11 w-56 bg-neutral-950 border border-neutral-900 rounded-xl p-3 space-y-3 shadow-2xl z-50"
-                >
-                  <div className="text-[9px] font-mono text-neutral-500 uppercase tracking-wider pb-1.5 border-b border-neutral-900">
-                    Telegram аккаунт
-                  </div>
-                  
-                  <div className="p-2 rounded-lg bg-neutral-900/70 border border-neutral-850 flex items-center gap-2.5">
-                    {currentUser?.avatarUrl ? (
-                      <img
-                        src={currentUser.avatarUrl}
-                        alt={currentUser.firstName}
-                        className="w-8 h-8 rounded-full border border-neutral-800"
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-[11px] font-bold text-neutral-300">
-                        {currentUser?.firstName?.slice(0, 1) || "T"}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="font-semibold text-neutral-100 leading-none truncate">
-                        {currentUser?.firstName} {currentUser?.lastName || ""}
-                      </div>
-                      <div className="text-[10px] text-neutral-500 truncate">
-                        @{currentUser?.username} · ID {currentUser?.telegramId}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] text-neutral-500 leading-snug">
-                    Роль: {isAdmin ? "администратор" : "пользователь"}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-lg px-3 py-2 text-xs font-semibold text-neutral-200 transition"
-                  >
-                    Выйти
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Admin panel toggle */}
-          {isAdmin && (
+          ) : (
             <button
-              onClick={() => {
-                setAdminMode(!adminMode);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-display font-semibold transition ${
-                adminMode
-                  ? "bg-rose-950/30 text-rose-200 border-rose-900/80"
-                  : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-700 hover:text-white"
-              }`}
+              onClick={() => setShowSettingsModal(true)}
+              className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3.5 py-1.5 transition text-xs font-display font-semibold text-neutral-300 hover:text-white cursor-pointer select-none"
             >
-              <Settings className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Админка CRUD</span>
+              <Settings className="w-4 h-4 text-neutral-400" />
+              <span>Войти / Настройки</span>
             </button>
           )}
         </div>
@@ -446,8 +496,10 @@ export default function App() {
               onSelectVenue={handleVenueSelected}
               adminMode={false}
               onCoordsSelect={handleMapCoordsClick}
-              eventsList={events}
               filters={filters}
+              mapStyle={mapStyle}
+              userCoords={userCoords}
+              pendingCoords={pendingCoords}
             />
 
             {/* Float trigger in the bottom center of the map */}
@@ -502,7 +554,7 @@ export default function App() {
               </div>
               <button
                 onClick={() => {
-                  setAdminMode(false);
+                  window.location.hash = "";
                   setPendingCoords(null);
                 }}
                 className="self-start sm:self-auto flex items-center gap-1 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 py-1.5 px-4 text-xs font-semibold rounded-xl text-neutral-200 transition"
@@ -548,14 +600,41 @@ export default function App() {
               onSelectVenue={setSelectedVenue}
               adminMode={true}
               onCoordsSelect={handleMapCoordsClick}
-              eventsList={events}
               filters={filters}
+              mapStyle={mapStyle}
+              userCoords={userCoords}
+              pendingCoords={pendingCoords}
             />
 
           </section>
 
         </main>
       )}
+
+      {/* Settings & Profile Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        auth={auth}
+        onAuth={handleTelegramWidgetAuth}
+        onLogout={handleLogout}
+        mapStyle={mapStyle}
+        onChangeMapStyle={handleMapStyleChange}
+        nearbySort={nearbySort}
+        onChangeNearbySort={handleNearbySortChange}
+        adminMode={adminMode}
+        onChangeAdminMode={(val) => {
+          window.location.hash = val ? "#admin" : "";
+        }}
+      />
+
+      {/* Auth Prompt Modal (triggers on reactions click when unauthenticated) */}
+      <AuthPromptModal
+        isOpen={showAuthPromptModal}
+        onClose={() => setShowAuthPromptModal(false)}
+        onAuth={handleTelegramWidgetAuth}
+        actionText={authPromptActionText}
+      />
     </div>
   );
 }
