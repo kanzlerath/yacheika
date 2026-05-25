@@ -58,6 +58,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        - VITE_TELEGRAM_BOT_USERNAME=${TELEGRAM_BOT_USERNAME}
     container_name: yacheyka_frontend
     restart: always
     depends_on:
@@ -67,6 +69,8 @@ services:
     image: caddy:2-alpine
     container_name: yacheyka_caddy
     restart: always
+    env_file:
+      - .env
     ports:
       - "80:80"
       - "443:443"

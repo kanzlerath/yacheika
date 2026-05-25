@@ -1,68 +1,64 @@
-import { TelegramAuthSession, TelegramLoginWidgetUser } from "../types";
+import { TelegramAuthSession } from "../types";
 
-const AUTH_STORAGE_KEY = "yacheyka.telegramAuth";
+// Ключ для хранения сессии в localStorage
+const STORAGE_KEY = "yacheyka_auth_session";
 
-interface TelegramAuthRequest {
-  initData?: string;
-  loginWidgetUser?: TelegramLoginWidgetUser;
-}
-
-export const getAuthHeaders = (token?: string) =>
-  token ? { Authorization: `Bearer ${token}` } : {};
-
-export const readStoredTelegramAuth = (): TelegramAuthSession | null => {
+export function readStoredTelegramAuth(): TelegramAuthSession | null {
   try {
-    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return null;
-
-    const auth = JSON.parse(raw) as TelegramAuthSession;
-    if (!auth.token || !auth.user?.id || new Date(auth.expiresAt).getTime() <= Date.now()) {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
-      return null;
-    }
-
-    return auth;
-  } catch {
-    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    console.error("Failed to read auth from storage", e);
     return null;
   }
-};
+}
 
-export const storeTelegramAuth = (auth: TelegramAuthSession) => {
-  window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
-};
+export function storeTelegramAuth(session: TelegramAuthSession): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+}
 
-export const clearTelegramAuth = () => {
-  window.localStorage.removeItem(AUTH_STORAGE_KEY);
-};
+export function clearTelegramAuth(): void {
+  localStorage.removeItem(STORAGE_KEY);
+}
 
-export const authenticateTelegram = async (payload: TelegramAuthRequest) => {
-  const res = await fetch("/api/auth/telegram", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+export function getAuthHeaders(token: string): HeadersInit {
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => null);
-    throw new Error(error?.message || "Telegram авторизация не прошла.");
-  }
+/**
+ * Поскольку авторизация теперь происходит через редирект, 
+ * старый метод POST-запроса на бэкенд больше не выполняет валидацию.
+ * Изменим его так, чтобы он не ломал существующий код в модалках, если они его вызывают.
+ */
+export async function authenticateTelegram(payload: any): Promise<TelegramAuthSession> {
+  // Этот метод больше не должен вызываться, так как вход идёт через window.location.href.
+  // Но если где-то остался вызов, выбросим понятную ошибку для отладки.
+  throw new Error("authenticateTelegram is deprecated. Use OIDC redirect flow instead.");
+}
 
-  return (await res.json()) as TelegramAuthSession;
-};
-
-export const refreshTelegramSession = async (token: string) => {
+/**
+ * Метод обновления сессии (refresh)
+ */
+export async function refreshTelegramSession(token: string): Promise<TelegramAuthSession> {
   const res = await fetch("/api/auth/me", {
     headers: getAuthHeaders(token),
   });
 
   if (!res.ok) {
-    throw new Error("Сессия Telegram истекла.");
+    throw new Error("Session expired or invalid");
   }
 
-  const data = (await res.json()) as Omit<TelegramAuthSession, "token">;
-  return {
-    ...data,
-    token,
+  const data = await res.json();
+  
+  // Формируем обновленный объект сессии, сохраняя текущий токен
+  const freshSession: TelegramAuthSession = {
+    token: token,
+    isAdmin: data.isAdmin,
+    expiresAt: data.expiresAt,
+    user: data.user,
   };
-};
+
+  return freshSession;
+}

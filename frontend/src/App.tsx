@@ -249,6 +249,30 @@ export default function App() {
 
   // Validate persisted Telegram session once on app mount.
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+  const tgAuthSessionEncoded = urlParams.get("tg_auth_session");
+  const authError = urlParams.get("auth_error");
+
+  if (authError) {
+    alert("Ошибка авторизации через Telegram");
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+  }
+
+  if (tgAuthSessionEncoded) {
+    try {
+      // Декодируем base64 обратно в объект сессии
+      const sessionDataRaw = atob(decodeURIComponent(tgAuthSessionEncoded));
+      const parsedSession = JSON.parse(sessionDataRaw);
+      
+      // Сохраняем сессию и обновляем стейт приложения
+      handleAuthenticated(parsedSession);
+      
+      // Чистим URL от мусора, сохраняя хэш роутинга (например, #admin)
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    } catch (e) {
+      console.error("Failed to parse OIDC session data from URL", e);
+    }
+  }
     const storedAuth = readStoredTelegramAuth();
     if (!storedAuth) {
       fetchAllData(null);
