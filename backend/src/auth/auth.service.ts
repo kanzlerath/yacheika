@@ -4,15 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { HttpService } from '@nestjs/axios'; // <-- Добавлено
+import { firstValueFrom } from 'rxjs'; // <-- Добавлено
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
-import {
-  TelegramLoginWidgetPayload,
-  VerifiedTelegramUser,
-  verifyTelegramLoginWidgetPayload,
-  verifyTelegramWebAppInitData,
-} from './telegram-auth.utils';
 
 export interface TelegramSession {
   userId: string;
@@ -20,11 +16,6 @@ export interface TelegramSession {
   username?: string;
   isAdmin: boolean;
   exp: number;
-}
-
-interface TelegramAuthInput {
-  initData?: string;
-  loginWidgetUser?: TelegramLoginWidgetPayload;
 }
 
 const toBase64Url = (input: string | Buffer) =>
@@ -42,11 +33,7 @@ const fromBase64Url = (input: string) => {
 const secureTextEquals = (left: string, right: string) => {
   const leftBuffer = Buffer.from(left);
   const rightBuffer = Buffer.from(right);
-
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false;
-  }
-
+  if (leftBuffer.length !== rightBuffer.length) return false;
   return timingSafeEqual(leftBuffer, rightBuffer);
 };
 
@@ -56,26 +43,16 @@ export class AuthService {
   private readonly adminTelegramUsername = (process.env.ADMIN_TELEGRAM_USERNAME || 'nick_luzhkov')
     .replace(/^@/, '')
     .toLowerCase();
-  private readonly authMaxAgeSeconds = Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS || 86400);
   private readonly sessionTtlSeconds = Number(process.env.AUTH_SESSION_TTL_SECONDS || 604800);
 
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    private readonly httpService: HttpService, // <-- ВНЕДРЕНИЕ HTTP-КЛИЕНТА
   ) {}
-
-  private get botToken() {
-    return process.env.TELEGRAM_BOT_TOKEN;
-  }
 
   private get sessionSecret() {
     return process.env.AUTH_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN;
-  }
-
-  private assertTelegramConfigured() {
-    if (!this.botToken) {
-      throw new ServiceUnavailableException('Telegram auth is not configured');
-    }
   }
 
   private assertSessionConfigured() {
@@ -91,26 +68,19 @@ export class AuthService {
 
   private createSessionToken(session: TelegramSession) {
     this.assertSessionConfigured();
-
     const payload = toBase64Url(JSON.stringify(session));
     const signature = toBase64Url(
       createHmac('sha256', this.sessionSecret).update(payload).digest(),
     );
-
     return `${payload}.${signature}`;
   }
 
   verifySessionToken(token?: string): TelegramSession {
     this.assertSessionConfigured();
-
-    if (!token) {
-      throw new UnauthorizedException('Missing auth token');
-    }
+    if (!token) throw new UnauthorizedException('Missing auth token');
 
     const [payload, signature] = token.split('.');
-    if (!payload || !signature) {
-      throw new UnauthorizedException('Invalid auth token');
-    }
+    if (!payload || !signature) throw new UnauthorizedException('Invalid auth token');
 
     const expectedSignature = toBase64Url(
       createHmac('sha256', this.sessionSecret).update(payload).digest(),
@@ -130,75 +100,73 @@ export class AuthService {
     return session;
   }
 
-  async authenticate(input: TelegramAuthInput) {
-    this.assertTelegramConfigured();
-
-    let telegramUser: VerifiedTelegramUser | null = null;
-
-    if (input.initData) {
-      telegramUser = verifyTelegramWebAppInitData(
-        input.initData,
-        this.botToken,
-        this.authMaxAgeSeconds,
-      );
-    } else if (input.loginWidgetUser) {
-      telegramUser = verifyTelegramLoginWidgetPayload(
-        input.loginWidgetUser,
-        this.botToken,
-        this.authMaxAgeSeconds,
-      );
-    }
-
-    if (!telegramUser) {
-      throw new UnauthorizedException('Telegram auth payload is invalid or expired');
-    }
-
-    const id = `tg-${telegramUser.telegramId}`;
-    const username = telegramUser.username || `user_${telegramUser.telegramId}`;
-    const existingUser = await this.userRepository.findOne({ where: { telegramId: telegramUser.telegramId } });
-
-    const user = existingUser
-      ? this.userRepository.merge(existingUser, {
-          username,
-          firstName: telegramUser.firstName,
-          lastName: telegramUser.lastName || null,
-          avatarUrl: telegramUser.avatarUrl || null,
-        })
-      : this.userRepository.create({
-          id,
-          telegramId: telegramUser.telegramId,
-          username,
-          firstName: telegramUser.firstName,
-          lastName: telegramUser.lastName || null,
-          avatarUrl: telegramUser.avatarUrl || null,
-        });
-
-    const savedUser = await this.userRepository.save(user);
-    const now = Math.floor(Date.now() / 1000);
-    const isAdmin = this.isAdminUser(savedUser);
-    const token = this.createSessionToken({
-      userId: savedUser.id,
-      telegramId: savedUser.telegramId,
-      username: savedUser.username,
-      isAdmin,
-      exp: now + this.sessionTtlSeconds,
+  // --- НОВЫЙ МЕТОД АВТОРИЗАЦИИ ЧЕРЕЗ OPENID CONNECT ---
+  async authenticateOidc(code: string) {
+    const tokenUrl = 'https://oauth.telegram.org/token';
+    
+    const urlParams = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      client_id: process.env.TELEGRAM_CLIENT_ID || '',
+      client_secret: process.env.TELEGRAM_CLIENT_SECRET || '',
+      redirect_uri: process.env.TELEGRAM_REDIRECT_URI || '',
     });
 
-    return {
-      token,
-      isAdmin,
-      expiresAt: new Date((now + this.sessionTtlSeconds) * 1000).toISOString(),
-      user: savedUser,
-    };
+    try {
+      // Отправляем запрос обмена кода на id_token
+      const response = await firstValueFrom(
+        this.httpService.post(tokenUrl, urlParams.toString(), {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        })
+      );
+
+      const { id_token } = response.data;
+      if (!id_token) throw new UnauthorizedException('No id_token received from Telegram');
+
+      // Разбираем JWT id_token (Telegram возвращает данные пользователя в нем)
+      const [jwtPayload] = id_token.split('.').slice(1, 2);
+      const decoded: any = JSON.parse(Buffer.from(jwtPayload, 'base64').toString('utf8'));
+
+      const telegramId = String(decoded.sub);
+      const username = decoded.nickname || `user_${telegramId}`;
+      const firstName = decoded.given_name || 'User';
+      const lastName = decoded.family_name || null;
+      const avatarUrl = decoded.picture || null;
+
+      const id = `tg-${telegramId}`;
+      const existingUser = await this.userRepository.findOne({ where: { telegramId } });
+
+      const user = existingUser
+        ? this.userRepository.merge(existingUser, { username, firstName, lastName, avatarUrl })
+        : this.userRepository.create({ id, telegramId, username, firstName, lastName, avatarUrl });
+
+      const savedUser = await this.userRepository.save(user);
+      const now = Math.floor(Date.now() / 1000);
+      const isAdmin = this.isAdminUser(savedUser);
+      
+      const token = this.createSessionToken({
+        userId: savedUser.id,
+        telegramId: savedUser.telegramId,
+        username: savedUser.username,
+        isAdmin,
+        exp: now + this.sessionTtlSeconds,
+      });
+
+      return {
+        token,
+        isAdmin,
+        expiresAt: new Date((now + this.sessionTtlSeconds) * 1000).toISOString(),
+        user: savedUser,
+      };
+    } catch (error) {
+      console.error('OIDC Auth Error:', error?.response?.data || error.message);
+      throw new UnauthorizedException('Telegram OIDC auth payload is invalid or expired');
+    }
   }
 
   async resolveSessionUser(session: TelegramSession) {
     const user = await this.userRepository.findOne({ where: { id: session.userId } });
-
-    if (!user) {
-      throw new UnauthorizedException('Session user does not exist');
-    }
-
+    if (!user) throw new UnauthorizedException('Session user does not exist');
     const isAdmin = this.isAdminUser(user);
 
     return {
