@@ -9,7 +9,7 @@ export default function TelegramLoginWidget() {
     const state = Math.random().toString(36).substring(2, 11); // Защита от CSRF
     
     // Формируем URL по стандарту OIDC Telegram
-    const authUrl = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}&response_type=code`;
+    const authUrl = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_url=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}&response_type=code`;
     
     // Перенаправляем пользователя на авторизацию
     window.location.href = authUrl;
