@@ -9,8 +9,10 @@ import { TelegramAuthGuard } from './telegram-auth.guard';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity]),
-  HttpModule,],
+  imports: [
+    TypeOrmModule.forFeature([UserEntity]),
+    HttpModule,
+  ],
   controllers: [AuthController],
   providers: [AuthService, TelegramAuthGuard, AdminGuard],
   exports: [AuthService, TelegramAuthGuard, AdminGuard],
