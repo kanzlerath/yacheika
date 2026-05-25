@@ -1,7 +1,7 @@
 {
-  "name": "Ячейка — Nightlife Navigator",
-  "short_name": "Ячейка",
-  "description": "PWA-навигатор по атмосфере и ночной жизни Новосибирска",
+  "name": "скоуп",
+  "short_name": "скоуп",
+  "description": "Найди интересные места, куда можно сходить",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030303",
