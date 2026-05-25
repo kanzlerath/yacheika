@@ -62,8 +62,16 @@ export class AuthService {
   }
 
   private isAdminUser(user: { telegramId: string; username?: string | null }) {
-    const username = user.username?.replace(/^@/, '').toLowerCase();
-    return user.telegramId === this.adminTelegramId || username === this.adminTelegramUsername;
+    if (!user.telegramId) return false;
+  
+    const username = user.username?.replace(/^@/, '').toLowerCase().trim();
+    const adminUsername = this.adminTelegramUsername.replace(/^@/, '').toLowerCase().trim();
+    
+    // Принудительно кастим к строке и отрезаем пробелы, чтобы '123' точно было равно 123
+    const currentTgId = String(user.telegramId).trim();
+    const targetAdminId = String(this.adminTelegramId).trim();
+  
+    return currentTgId === targetAdminId || username === adminUsername;
   }
 
   private createSessionToken(session: TelegramSession) {
@@ -111,37 +119,61 @@ export class AuthService {
       client_secret: process.env.TELEGRAM_CLIENT_SECRET || '',
       redirect_uri: process.env.TELEGRAM_REDIRECT_URI || '',
     });
-
+  
     try {
-      // Отправляем запрос обмена кода на id_token
       const response = await firstValueFrom(
         this.httpService.post(tokenUrl, urlParams.toString(), {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
       );
-
+  
       const { id_token } = response.data;
       if (!id_token) throw new UnauthorizedException('No id_token received from Telegram');
-
-      // Разбираем JWT id_token (Telegram возвращает данные пользователя в нем)
+  
+      // Безопасно декодируем JWT payload
       const [jwtPayload] = id_token.split('.').slice(1, 2);
       const decoded: any = JSON.parse(Buffer.from(jwtPayload, 'base64').toString('utf8'));
-
-      const telegramId = String(decoded.sub);
+  
+      // Принудительно делаем ID строкой БЕЗ лишних символов
+      const telegramId = String(decoded.sub).trim();
       const username = decoded.nickname || `user_${telegramId}`;
       const firstName = decoded.given_name || 'User';
       const lastName = decoded.family_name || null;
       const avatarUrl = decoded.picture || null;
-
-      const id = `tg-${telegramId}`;
-      const existingUser = await this.userRepository.findOne({ where: { telegramId } });
-
+  
+      // Пытаемся найти вас в базе по telegramId
+      let existingUser = await this.userRepository.findOne({ where: { telegramId } });
+  
+      // Если по строковому id не нашлось, пробуем найти старую запись, где id мог быть сохранен как число
+      if (!existingUser) {
+        existingUser = await this.userRepository.findOne({ 
+          where: { telegramId: telegramId as any } 
+        });
+      }
+  
+      // Формируем внутренний ID для сущности в вашем проекте (например: tg-1859857121)
+      const systemId = `tg-${telegramId}`;
+  
       const user = existingUser
-        ? this.userRepository.merge(existingUser, { username, firstName, lastName, avatarUrl })
-        : this.userRepository.create({ id, telegramId, username, firstName, lastName, avatarUrl });
-
+        ? this.userRepository.merge(existingUser, { 
+            username, 
+            firstName, 
+            lastName, 
+            avatarUrl 
+          })
+        : this.userRepository.create({ 
+            id: systemId, 
+            telegramId, 
+            username, 
+            firstName, 
+            lastName, 
+            avatarUrl 
+          });
+  
       const savedUser = await this.userRepository.save(user);
       const now = Math.floor(Date.now() / 1000);
+      
+      // Проверяем статус админа
       const isAdmin = this.isAdminUser(savedUser);
       
       const token = this.createSessionToken({
@@ -151,7 +183,7 @@ export class AuthService {
         isAdmin,
         exp: now + this.sessionTtlSeconds,
       });
-
+  
       return {
         token,
         isAdmin,
