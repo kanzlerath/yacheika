@@ -1,7 +1,8 @@
 import { Settings } from "lucide-react";
 
 const clientId = "8930888716"; // ПОДСТАВЬТЕ СЮДА ВАШ ЧИСЛОВОЙ CLIENT_ID ИЗ BOTFATHER
-const redirectUri = "https://api.thescope.ru.com/api/auth/telegram/callback"; // Должен строго совпадать с настройками в BotFather
+const redirectUri = "https://thescope.ru/api/auth/telegram/callback"; // Должен строго совпадать с настройками в BotFather
+
 
 export default function TelegramLoginWidget() {
   const handleLogin = () => {
