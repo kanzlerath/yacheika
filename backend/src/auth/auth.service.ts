@@ -130,66 +130,67 @@ export class AuthService {
       const { id_token } = response.data;
       if (!id_token) throw new UnauthorizedException('No id_token received from Telegram');
   
-      // Безопасно декодируем JWT payload
-      const [jwtPayload] = id_token.split('.').slice(1, 2);
-      const decoded: any = JSON.parse(Buffer.from(jwtPayload, 'base64').toString('utf8'));
-  
-      // Принудительно делаем ID строкой БЕЗ лишних символов
-      const telegramId = String(decoded.sub).trim();
-      const username = decoded.nickname || `user_${telegramId}`;
-      const firstName = decoded.given_name || 'User';
-      const lastName = decoded.family_name || null;
-      const avatarUrl = decoded.picture || null;
-  
-      // Пытаемся найти вас в базе по telegramId
-      let existingUser = await this.userRepository.findOne({ where: { telegramId } });
-  
-      // Если по строковому id не нашлось, пробуем найти старую запись, где id мог быть сохранен как число
-      if (!existingUser) {
-        existingUser = await this.userRepository.findOne({ 
-          where: { telegramId: telegramId as any } 
-        });
-      }
-  
-      // Формируем внутренний ID для сущности в вашем проекте (например: tg-1859857121)
-      const systemId = `tg-${telegramId}`;
-  
-      const user = existingUser
-        ? this.userRepository.merge(existingUser, { 
-            username, 
-            firstName, 
-            lastName, 
-            avatarUrl 
-          })
-        : this.userRepository.create({ 
-            id: systemId, 
-            telegramId, 
-            username, 
-            firstName, 
-            lastName, 
-            avatarUrl 
-          });
-  
-      const savedUser = await this.userRepository.save(user);
-      const now = Math.floor(Date.now() / 1000);
-      
-      // Проверяем статус админа
-      const isAdmin = this.isAdminUser(savedUser);
-      
-      const token = this.createSessionToken({
-        userId: savedUser.id,
-        telegramId: savedUser.telegramId,
-        username: savedUser.username,
-        isAdmin,
-        exp: now + this.sessionTtlSeconds,
-      });
-  
-      return {
-        token,
-        isAdmin,
-        expiresAt: new Date((now + this.sessionTtlSeconds) * 1000).toISOString(),
-        user: savedUser,
-      };
+// --- НАЧАЛО БЛОКА РАЗБОРА ТОКЕНА В МЕТОДЕ authenticateOidc ---
+
+// Безопасно декодируем JWT payload
+const [jwtPayload] = id_token.split('.').slice(1, 2);
+const decoded: any = JSON.parse(Buffer.from(jwtPayload, 'base64').toString('utf8'));
+
+// Считываем данные строго по новой спецификации Telegram OIDC:
+const telegramId = String(decoded.id).trim(); // Берем реальный числовой ID из поля "id"!
+const fullName = decoded.name || 'User';      // Полное имя (например, "Nick Luzhkov")
+const username = decoded.preferred_username || `user_${telegramId}`; // Юзернейм (например, "nick_luzhkov")
+const avatarUrl = decoded.picture || null;    // URL аватарки
+
+// Разделяем имя для вашей базы данных (так как у вас в UserEntity есть firstName и lastName)
+const nameParts = fullName.split(' ');
+const firstName = nameParts[0] || 'User';
+const lastName = nameParts.slice(1).join(' ') || null;
+
+// Ищем старого админа или пользователя по правильному telegramId
+let existingUser = await this.userRepository.findOne({ where: { telegramId } });
+
+// Формируем системный ID, как это было изначально в вашем проекте
+const systemId = `tg-${telegramId}`;
+
+const user = existingUser
+  ? this.userRepository.merge(existingUser, { 
+      username, 
+      firstName, 
+      lastName, 
+      avatarUrl 
+    })
+  : this.userRepository.create({ 
+      id: systemId, 
+      telegramId, 
+      username, 
+      firstName, 
+      lastName, 
+      avatarUrl 
+    });
+
+const savedUser = await this.userRepository.save(user);
+const now = Math.floor(Date.now() / 1000);
+
+// Проверяем статус админа (теперь типы данных совпадут идеально)
+const isAdmin = this.isAdminUser(savedUser);
+
+const token = this.createSessionToken({
+  userId: savedUser.id,
+  telegramId: savedUser.telegramId,
+  username: savedUser.username,
+  isAdmin,
+  exp: now + this.sessionTtlSeconds,
+});
+
+return {
+  token,
+  isAdmin,
+  expiresAt: new Date((now + this.sessionTtlSeconds) * 1000).toISOString(),
+  user: savedUser,
+};
+
+// --- КОНЕЦ БЛОКА ---
     } catch (error) {
       console.error('OIDC Auth Error:', error?.response?.data || error.message);
       throw new UnauthorizedException('Telegram OIDC auth payload is invalid or expired');
