@@ -14,7 +14,6 @@ export interface TelegramSession {
   userId: string;
   telegramId: string;
   username?: string;
-  isAdmin: boolean;
   exp: number;
 }
 
@@ -76,10 +75,6 @@ const rawEcdsaSignatureToDer = (signature: Buffer) => {
 
 @Injectable()
 export class AuthService {
-  private readonly adminTelegramId = process.env.ADMIN_TELEGRAM_ID || '1859857121';
-  private readonly adminTelegramUsername = (process.env.ADMIN_TELEGRAM_USERNAME || 'nick_luzhkov')
-    .replace(/^@/, '')
-    .toLowerCase();
   private readonly sessionTtlSeconds = Number(process.env.AUTH_SESSION_TTL_SECONDS || 604800);
 
   constructor(
@@ -114,19 +109,6 @@ export class AuthService {
     if (!this.telegramClientId || !this.telegramClientSecret || !this.telegramRedirectUri) {
       throw new ServiceUnavailableException('Telegram OIDC is not configured');
     }
-  }
-
-  private isAdminUser(user: { telegramId: string; username?: string | null }) {
-    if (!user.telegramId) return false;
-  
-    const username = user.username?.replace(/^@/, '').toLowerCase().trim();
-    const adminUsername = this.adminTelegramUsername.replace(/^@/, '').toLowerCase().trim();
-    
-    // Принудительно кастим к строке и отрезаем пробелы, чтобы '123' точно было равно 123
-    const currentTgId = String(user.telegramId).trim();
-    const targetAdminId = String(this.adminTelegramId).trim();
-  
-    return currentTgId === targetAdminId || username === adminUsername;
   }
 
   private createSessionToken(session: TelegramSession) {
@@ -282,21 +264,18 @@ export class AuthService {
             firstName,
             lastName,
             avatarUrl,
-          });
+      });
       const savedUser = await this.userRepository.save(user);
       const now = Math.floor(Date.now() / 1000);
-      const isAdmin = this.isAdminUser(savedUser);
       const token = this.createSessionToken({
         userId: savedUser.id,
         telegramId: savedUser.telegramId,
         username: savedUser.username,
-        isAdmin,
         exp: now + this.sessionTtlSeconds,
       });
 
       return {
         token,
-        isAdmin,
         expiresAt: new Date((now + this.sessionTtlSeconds) * 1000).toISOString(),
         user: savedUser,
       };
@@ -309,11 +288,9 @@ export class AuthService {
   async resolveSessionUser(session: TelegramSession) {
     const user = await this.userRepository.findOne({ where: { id: session.userId } });
     if (!user) throw new UnauthorizedException('Session user does not exist');
-    const isAdmin = this.isAdminUser(user);
 
     return {
       user,
-      isAdmin,
       expiresAt: new Date(session.exp * 1000).toISOString(),
     };
   }

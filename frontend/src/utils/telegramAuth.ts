@@ -41,7 +41,6 @@ export async function refreshTelegramSession(token?: string): Promise<TelegramAu
   
   const freshSession: TelegramAuthSession = {
     token: data.token || token,
-    isAdmin: data.isAdmin,
     expiresAt: data.expiresAt,
     user: data.user,
   };

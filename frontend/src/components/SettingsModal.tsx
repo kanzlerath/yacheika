@@ -8,7 +8,6 @@ import {
   X,
   Compass,
   LogOut,
-  Settings,
   User,
   Sliders,
 } from "lucide-react";
@@ -24,8 +23,6 @@ interface SettingsModalProps {
   onChangeMapStyle: (style: "dark" | "light" | "voyager") => void;
   nearbySort: boolean;
   onChangeNearbySort: (val: boolean) => void;
-  adminMode: boolean;
-  onChangeAdminMode: (val: boolean) => void;
 }
 
 export default function SettingsModal({
@@ -37,11 +34,8 @@ export default function SettingsModal({
   onChangeMapStyle,
   nearbySort,
   onChangeNearbySort,
-  adminMode,
-  onChangeAdminMode,
 }: SettingsModalProps) {
   const currentUser = auth?.user ?? null;
-  const isAdmin = Boolean(auth?.isAdmin);
 
   return (
     <AnimatePresence>
@@ -112,32 +106,12 @@ export default function SettingsModal({
                     </div>
 
                     <span className="text-[10px] px-2 py-0.5 rounded bg-rose-950/20 text-rose-400 border border-rose-900/20 font-mono shrink-0">
-                      {isAdmin ? "Admin" : "User"}
+                      User
                     </span>
                   </div>
 
                   {/* Actions for authenticated */}
                   <div className="flex flex-col gap-2 pt-2 border-t border-neutral-900">
-                    {isAdmin && (
-                      <button
-                        onClick={() => {
-                          onChangeAdminMode(!adminMode);
-                          onClose();
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-semibold font-display transition cursor-pointer ${
-                          adminMode
-                            ? "bg-rose-950/30 text-rose-300 border-rose-900/50"
-                            : "bg-neutral-950 hover:bg-neutral-900 text-neutral-400 border-neutral-900 hover:border-neutral-800"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <Settings className="w-3.5 h-3.5" />
-                          <span>Панель Управления (CRUD)</span>
-                        </span>
-                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                      </button>
-                    )}
-
                     <button
                       onClick={() => {
                         onLogout();
