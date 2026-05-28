@@ -65,16 +65,18 @@ sudo systemctl enable --now docker
 * **`DB_DATABASE`** — имя базы данных (например, `yacheyka`).
 * **`MINIO_ACCESS_KEY`** — логин от панели MinIO/S3 (минимум 3 символа, например, `minio_root`).
 * **`MINIO_SECRET_KEY`** — пароль от панели MinIO/S3 (минимум 8 символов, придумайте сложный).
-* **`JWT_SECRET`** — секретный ключ для шифрования токенов сессий (придумайте любую длинную случайную строку).
+* **`AUTH_SESSION_SECRET`** — секретный ключ для подписи токенов сессий (придумайте длинную случайную строку).
 * **`TELEGRAM_BOT_TOKEN`** — токен вашего Telegram-бота от BotFather.
-* **`TELEGRAM_BOT_USERNAME`** — имя пользователя вашего бота без символа `@` (например, `yacheyka_bot`).
-* **`DOMAIN_NAME`** — доменное имя вашего сайта (например, `yacheyka.ru` или `subdomain.yacheyka.ru`).
+* **`TELEGRAM_CLIENT_ID`** — numeric client id из Telegram Login / BotFather.
+* **`TELEGRAM_CLIENT_SECRET`** — client secret из Telegram Login / BotFather.
+* **`TELEGRAM_REDIRECT_URI`** — полный callback URL, для текущего production: `https://thescope.ru/api/auth/telegram/callback`.
+* **`DOMAIN_NAME`** — production-домен без протокола, для текущего production: `thescope.ru`.
 
 ---
 
 ## Шаг 5. Запуск деплоя
 
-Теперь при каждом `git push` в ветку `main` или `feat-telegram-auth` GitHub Actions автоматически запустит процесс развертывания:
+Теперь при каждом `git push` в настроенную deploy-ветку GitHub Actions автоматически запустит процесс развертывания:
 1. Зайдет по SSH на сервер VPS.
 2. Склонирует проект в `/app/yacheyka` (если это первый запуск) или обновит его (`git pull`).
 3. Сгенерирует продакшн-файл `.env` из ваших GitHub Secrets.

@@ -6,19 +6,16 @@
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldAlert, X } from "lucide-react";
 import TelegramLoginWidget from "./TelegramLoginWidget";
-import { TelegramLoginWidgetUser } from "../types";
 
 interface AuthPromptModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAuth: (user: TelegramLoginWidgetUser) => void;
   actionText?: string;
 }
 
 export default function AuthPromptModal({
   isOpen,
   onClose,
-  onAuth,
   actionText = "чтобы ставить отметки заведениям и делиться вайбом",
 }: AuthPromptModalProps) {
   return (
@@ -68,12 +65,7 @@ export default function AuthPromptModal({
 
             {/* Login Widget Wrapper */}
             <div className="py-2.5 px-4 bg-neutral-900/40 rounded-2xl border border-neutral-900 flex flex-col justify-center items-center gap-3">
-              <TelegramLoginWidget
-                onAuth={(user) => {
-                  onAuth(user);
-                  onClose();
-                }}
-              />
+              <TelegramLoginWidget />
               <span className="text-[10px] text-neutral-500 font-mono">
                 Безопасный вход. Данные профиля проверяются сервером.
               </span>

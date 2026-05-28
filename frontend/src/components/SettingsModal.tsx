@@ -6,23 +6,19 @@
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
-  Map,
   Compass,
   LogOut,
   Settings,
-  ShieldCheck,
   User,
   Sliders,
-  Sparkles
 } from "lucide-react";
 import TelegramLoginWidget from "./TelegramLoginWidget";
-import { TelegramAuthSession, TelegramLoginWidgetUser } from "../types";
+import { TelegramAuthSession } from "../types";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   auth: TelegramAuthSession | null;
-  onAuth: (user: TelegramLoginWidgetUser) => void;
   onLogout: () => void;
   mapStyle: "dark" | "light" | "voyager";
   onChangeMapStyle: (style: "dark" | "light" | "voyager") => void;
@@ -36,7 +32,6 @@ export default function SettingsModal({
   isOpen,
   onClose,
   auth,
-  onAuth,
   onLogout,
   mapStyle,
   onChangeMapStyle,
@@ -168,11 +163,7 @@ export default function SettingsModal({
                   </div>
 
                   <div className="pt-2 border-t border-neutral-900 flex justify-center">
-                    <TelegramLoginWidget
-                      onAuth={(user) => {
-                        onAuth(user);
-                      }}
-                    />
+                    <TelegramLoginWidget />
                   </div>
                 </div>
               )}

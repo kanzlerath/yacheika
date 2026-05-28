@@ -41,7 +41,7 @@ jobs:
             echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
             echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
             echo "MINIO_BUCKET=yacheyka-gallery" >> .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "AUTH_SESSION_SECRET=${{ secrets.AUTH_SESSION_SECRET }}" >> .env
             echo "TELEGRAM_CLIENT_ID=${{ secrets.TELEGRAM_CLIENT_ID }}" >> .env
             echo "TELEGRAM_CLIENT_SECRET=${{ secrets.TELEGRAM_CLIENT_SECRET }}" >> .env
             echo "TELEGRAM_REDIRECT_URI=${{ secrets.TELEGRAM_REDIRECT_URI }}" >> .env
@@ -50,7 +50,6 @@ jobs:
             echo "ADMIN_TELEGRAM_ID=${{ secrets.ADMIN_TELEGRAM_ID }}" >> .env
             echo "ADMIN_TELEGRAM_USERNAME=${{ secrets.ADMIN_TELEGRAM_USERNAME }}" >> .env
             echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-            echo "TELEGRAM_BOT_USERNAME=${{ secrets.TELEGRAM_BOT_USERNAME }}" >> .env
             echo "DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" >> .env
             echo "MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}" >> .env
 

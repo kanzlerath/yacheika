@@ -1,19 +1,6 @@
-import { Settings } from "lucide-react";
-
-const clientId = "8930888716"; // ПОДСТАВЬТЕ СЮДА ВАШ ЧИСЛОВОЙ CLIENT_ID ИЗ BOTFATHER
-const redirectUri = "https://thescope.ru/api/auth/telegram/callback"; // Должен строго совпадать с настройками в BotFather
-
-
 export default function TelegramLoginWidget() {
   const handleLogin = () => {
-    const scope = "openid profile";
-    const state = Math.random().toString(36).substring(2, 11); // Защита от CSRF
-    
-    // Формируем URL по стандарту OIDC Telegram
-    const authUrl = `https://oauth.telegram.org/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&state=${state}&response_type=code`;
-    
-    // Перенаправляем пользователя на авторизацию
-    window.location.href = authUrl;
+    window.location.href = "/api/auth/telegram/start";
   };
 
   return (

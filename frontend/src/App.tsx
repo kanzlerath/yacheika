@@ -25,10 +25,9 @@ import VenueCard from "./components/VenueCard";
 import AdminPanel from "./components/AdminPanel";
 import SettingsModal from "./components/SettingsModal";
 import AuthPromptModal from "./components/AuthPromptModal";
-import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramAuthSession, TelegramLoginWidgetUser, Reaction } from "./types";
+import { Venue, Collection, VenueEvent, AnalyticsEvent, TelegramAuthSession, Reaction } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
 import {
-  authenticateTelegram,
   clearTelegramAuth,
   getAuthHeaders,
   readStoredTelegramAuth,
@@ -137,16 +136,6 @@ export default function App() {
     setAuth(nextAuth);
   };
 
-  const handleTelegramWidgetAuth = async (user: TelegramLoginWidgetUser) => {
-    try {
-      const session = await authenticateTelegram({ loginWidgetUser: user });
-      handleAuthenticated(session);
-    } catch (err) {
-      console.error("Telegram authentication failed:", err);
-      alert(err instanceof Error ? err.message : "Ошибка авторизации");
-    }
-  };
-
   const handleLogout = () => {
     clearTelegramAuth();
     setAuth(null);
@@ -250,29 +239,30 @@ export default function App() {
   // Validate persisted Telegram session once on app mount.
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-  const tgAuthSessionEncoded = urlParams.get("tg_auth_session");
-  const authError = urlParams.get("auth_error");
+    const authStatus = urlParams.get("auth");
+    const authError = urlParams.get("auth_error");
 
-  if (authError) {
-    alert("Ошибка авторизации через Telegram");
-    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-  }
-
-  if (tgAuthSessionEncoded) {
-    try {
-      // Декодируем base64 обратно в объект сессии
-      const sessionDataRaw = atob(decodeURIComponent(tgAuthSessionEncoded));
-      const parsedSession = JSON.parse(sessionDataRaw);
-      
-      // Сохраняем сессию и обновляем стейт приложения
-      handleAuthenticated(parsedSession);
-      
-      // Чистим URL от мусора, сохраняя хэш роутинга (например, #admin)
+    if (authError) {
+      alert("Ошибка авторизации через Telegram");
       window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-    } catch (e) {
-      console.error("Failed to parse OIDC session data from URL", e);
+      handleLogout();
+      fetchAllData(null);
+      return;
     }
-  }
+
+    if (authStatus === "success") {
+      window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+      refreshTelegramSession()
+        .then((freshAuth) => {
+          storeTelegramAuth(freshAuth);
+          setAuth(freshAuth);
+        })
+        .catch(() => {
+          handleLogout();
+        });
+      return;
+    }
+
     const storedAuth = readStoredTelegramAuth();
     if (!storedAuth) {
       fetchAllData(null);
@@ -702,7 +692,6 @@ export default function App() {
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         auth={auth}
-        onAuth={handleTelegramWidgetAuth}
         onLogout={handleLogout}
         mapStyle={mapStyle}
         onChangeMapStyle={handleMapStyleChange}
@@ -718,7 +707,6 @@ export default function App() {
       <AuthPromptModal
         isOpen={showAuthPromptModal}
         onClose={() => setShowAuthPromptModal(false)}
-        onAuth={handleTelegramWidgetAuth}
         actionText={authPromptActionText}
       />
     </div>

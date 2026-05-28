@@ -7,9 +7,6 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-# Add build-time ARG and export it as an ENV variable so Vite can read it
-ARG VITE_TELEGRAM_BOT_USERNAME
-ENV VITE_TELEGRAM_BOT_USERNAME=$VITE_TELEGRAM_BOT_USERNAME
 
 RUN npm run build
 

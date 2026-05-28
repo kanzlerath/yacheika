@@ -20,16 +20,6 @@ export interface TelegramAuthSession {
   user: TelegramUser;
 }
 
-export interface TelegramLoginWidgetUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  auth_date: number;
-  hash: string;
-}
-
 export type VenueStatus = 'draft' | 'published' | 'hidden' | 'archived';
 
 export interface PremiumConfig {

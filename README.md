@@ -31,8 +31,9 @@ cp .env.example .env
 3. Для реального входа через Telegram заполните в `.env`:
 
 - `TELEGRAM_BOT_TOKEN` - токен бота из BotFather.
+- `TELEGRAM_CLIENT_ID`, `TELEGRAM_CLIENT_SECRET`, `TELEGRAM_REDIRECT_URI` - OAuth/OIDC-настройки Telegram Login. Для production redirect URI: `https://thescope.ru/api/auth/telegram/callback`.
 - `AUTH_SESSION_SECRET` - длинный случайный секрет для подписи app session.
-- `VITE_TELEGRAM_BOT_USERNAME` - username бота без `@`.
+- `DOMAIN_NAME=thescope.ru` - production-домен для redirect и secure cookies.
 - `ADMIN_TELEGRAM_ID=1859857121` и `ADMIN_TELEGRAM_USERNAME=nick_luzhkov` - единственный админ-аккаунт.
 
 4. Поднимите проект:
@@ -91,8 +92,10 @@ docker exec yacheyka_backend npm run build
 
 Основные endpoints:
 
-- `POST /api/auth/telegram` - вход через Telegram Mini App `initData` или Telegram Login Widget payload.
-- `GET /api/auth/me` - проверка текущей app session по `Authorization: Bearer <token>`.
+- `GET /api/auth/telegram/start` - старт Telegram OAuth/OIDC Authorization Code Flow с PKCE.
+- `GET /api/auth/telegram/callback` - callback из Telegram, проверяет `state`, обменивает `code` и ставит временный httpOnly cookie для получения app session.
+- `GET /api/auth/me` - проверка текущей app session по `Authorization: Bearer <token>` или auth-cookie после callback.
+- `POST /api/auth/logout` - очистка auth-cookie.
 - `GET /api/venues` - список заведений с фильтрами `category`, `tag`, `search`, `userLat`, `userLng`.
 - `GET /api/venues/:id` - карточка заведения.
 - `POST /api/venues` - создание или обновление заведения, только admin token.
@@ -109,9 +112,9 @@ docker exec yacheyka_backend npm run build
 
 ## Telegram auth
 
-Frontend больше не использует dev-переключатель пользователей. При запуске внутри Telegram Mini App приложение автоматически отправляет `window.Telegram.WebApp.initData` на backend. В обычном PWA-режиме показывается Telegram Login Widget, если задан `VITE_TELEGRAM_BOT_USERNAME`.
+Frontend больше не использует dev-переключатель пользователей. Кнопка входа отправляет пользователя на backend endpoint `/api/auth/telegram/start`, чтобы `state` и PKCE verifier не создавались и не проверялись в браузере.
 
-Backend проверяет Telegram-подпись по `TELEGRAM_BOT_TOKEN`, создает или обновляет пользователя в PostgreSQL и выдает server-signed session token. Клиент хранит token в `localStorage` и передает его в `Authorization: Bearer <token>` для реакций, аналитики и admin API.
+Backend использует Telegram OAuth/OIDC Authorization Code Flow с PKCE, проверяет `state`, обменивает `code` на токены через `https://oauth.telegram.org/token`, валидирует `id_token` по JWKS и claims, создает или обновляет пользователя в PostgreSQL и выдает server-signed session token. Сессия больше не передается через query string; frontend получает ее через `/api/auth/me`.
 
 Админка отображается и принимает запросы только для Telegram id `1859857121` или username `nick_luzhkov`. UI-скрытие не считается единственной защитой: backend guards также закрывают CRUD, storage upload и analytics feed.
 
@@ -124,4 +127,4 @@ Backend проверяет Telegram-подпись по `TELEGRAM_BOT_TOKEN`, с
 - TypeORM `synchronize` включен для локальной разработки.
 - Frontend сейчас на Vite/React, хотя исходное ТЗ допускает дальнейшее решение по Next.js.
 - Расписание заведений хранится текстом, поэтому фильтр "открыто сейчас" требует отдельного улучшения.
-- Без заполненных Telegram env-переменных локальный frontend покажет экран входа и предупреждение о недостающем `VITE_TELEGRAM_BOT_USERNAME`.
+- Без заполненных Telegram OIDC env-переменных вход через Telegram не стартует.
