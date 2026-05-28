@@ -34,9 +34,9 @@ cp .env.example .env
 - `TELEGRAM_CLIENT_ID`, `TELEGRAM_CLIENT_SECRET`, `TELEGRAM_REDIRECT_URI` - OAuth/OIDC-настройки Telegram Login. Для production redirect URI: `https://thescope.ru/api/auth/telegram/callback`.
 - `AUTH_SESSION_SECRET` - длинный случайный секрет для подписи app session.
 - `DOMAIN_NAME=thescope.ru` - production-домен для redirect и secure cookies.
-- `ADMIN_OWNER_EMAIL=luzhkoff00@gmail.com`, `ADMIN_OWNER_PASSWORD_HASH`, `ADMIN_SESSION_SECRET` - первичный owner-доступ к `/admin`.
+- `ADMIN_OWNER_EMAIL=luzhkoff00@gmail.com`, `ADMIN_OWNER_PASSWORD_HASH`, `ADMIN_SESSION_SECRET` - первичный owner-доступ к `/admin`. `ADMIN_OWNER_PASSWORD_HASH` хранится как base64-encoded bcrypt hash без символов `$`.
 
-Хэш пароля owner-аккаунта генерируется в backend-папке:
+Хэш пароля owner-аккаунта генерируется в backend-папке. Команда выводит base64-строку без символов `$`, ее и нужно вставить в GitHub Secret:
 
 ```bash
 npm run admin:hash -- "your-password"

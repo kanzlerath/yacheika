@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   OnModuleInit,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -39,6 +40,7 @@ const secureTextEquals = (left: string, right: string) => {
 
 @Injectable()
 export class AdminAuthService implements OnModuleInit {
+  private readonly logger = new Logger(AdminAuthService.name);
   private readonly sessionTtlSeconds = Number(process.env.ADMIN_SESSION_TTL_SECONDS || 604800);
 
   constructor(
@@ -52,6 +54,20 @@ export class AdminAuthService implements OnModuleInit {
 
   private get sessionSecret() {
     return process.env.ADMIN_SESSION_SECRET || process.env.AUTH_SESSION_SECRET;
+  }
+
+  private decodePasswordHash(rawHash: string) {
+    const trimmed = rawHash.trim();
+    if (trimmed.startsWith('$2a$') || trimmed.startsWith('$2b$') || trimmed.startsWith('$2y$')) {
+      return trimmed;
+    }
+
+    const decoded = Buffer.from(trimmed, 'base64').toString('utf8').trim();
+    if (decoded.startsWith('$2a$') || decoded.startsWith('$2b$') || decoded.startsWith('$2y$')) {
+      return decoded;
+    }
+
+    throw new ServiceUnavailableException('Admin owner password hash is invalid');
   }
 
   private assertSessionConfigured() {
@@ -71,9 +87,14 @@ export class AdminAuthService implements OnModuleInit {
 
   async ensureOwnerAccount() {
     const email = process.env.ADMIN_OWNER_EMAIL?.trim().toLowerCase();
-    const passwordHash = process.env.ADMIN_OWNER_PASSWORD_HASH?.trim();
+    const rawPasswordHash = process.env.ADMIN_OWNER_PASSWORD_HASH?.trim();
 
-    if (!email || !passwordHash) return;
+    if (!email || !rawPasswordHash) {
+      this.logger.warn('Admin owner bootstrap skipped: ADMIN_OWNER_EMAIL or ADMIN_OWNER_PASSWORD_HASH is missing');
+      return;
+    }
+
+    const passwordHash = this.decodePasswordHash(rawPasswordHash);
 
     const existing = await this.adminRepository.findOne({ where: { email } });
     if (existing) {
@@ -84,6 +105,9 @@ export class AdminAuthService implements OnModuleInit {
           passwordHash,
         });
         await this.adminRepository.save(existing);
+        this.logger.log(`Admin owner account updated for ${email}`);
+      } else {
+        this.logger.log(`Admin owner account already configured for ${email}`);
       }
       return;
     }
@@ -96,6 +120,7 @@ export class AdminAuthService implements OnModuleInit {
         status: 'active',
       }),
     );
+    this.logger.log(`Admin owner account created for ${email}`);
   }
 
   verifySessionToken(token?: string): AdminSession {
@@ -126,16 +151,21 @@ export class AdminAuthService implements OnModuleInit {
   async login(emailInput: string, password: string) {
     const email = emailInput?.trim().toLowerCase();
     if (!email || !password) {
+      this.logger.warn('Admin login rejected: email or password is empty');
       throw new UnauthorizedException('Invalid admin credentials');
     }
 
     const admin = await this.adminRepository.findOne({ where: { email } });
     if (!admin || admin.status !== 'active') {
+      this.logger.warn(
+        `Admin login rejected for ${email}: ${admin ? `status is ${admin.status}` : 'admin user not found'}`,
+      );
       throw new UnauthorizedException('Invalid admin credentials');
     }
 
     const passwordMatches = await compare(password, admin.passwordHash);
     if (!passwordMatches) {
+      this.logger.warn(`Admin login rejected for ${email}: password hash did not match`);
       throw new UnauthorizedException('Invalid admin credentials');
     }
 

@@ -33,27 +33,29 @@ jobs:
             fi
 
             # Recreate production .env file from secrets
-            echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" > .env
-            echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
-            echo "DB_DATABASE=${{ secrets.DB_DATABASE }}" >> .env
-            echo "DB_PORT=5432" >> .env
-            echo "PORT=4002" >> .env
-            echo "MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> .env
-            echo "MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> .env
-            echo "MINIO_BUCKET=yacheyka-gallery" >> .env
-            echo "AUTH_SESSION_SECRET=${{ secrets.AUTH_SESSION_SECRET }}" >> .env
-            echo "TELEGRAM_CLIENT_ID=${{ secrets.TELEGRAM_CLIENT_ID }}" >> .env
-            echo "TELEGRAM_CLIENT_SECRET=${{ secrets.TELEGRAM_CLIENT_SECRET }}" >> .env
-            echo "TELEGRAM_REDIRECT_URI=${{ secrets.TELEGRAM_REDIRECT_URI }}" >> .env
-            echo "TELEGRAM_AUTH_MAX_AGE_SECONDS=86400" >> .env
-            echo "AUTH_SESSION_TTL_SECONDS=604800" >> .env
-            echo "ADMIN_OWNER_EMAIL=${{ secrets.ADMIN_OWNER_EMAIL }}" >> .env
-            echo "ADMIN_OWNER_PASSWORD_HASH=${{ secrets.ADMIN_OWNER_PASSWORD_HASH }}" >> .env
-            echo "ADMIN_SESSION_SECRET=${{ secrets.ADMIN_SESSION_SECRET }}" >> .env
-            echo "ADMIN_SESSION_TTL_SECONDS=604800" >> .env
-            echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-            echo "DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" >> .env
-            echo "MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}" >> .env
+            cat > .env <<'EOF'
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_DATABASE=${{ secrets.DB_DATABASE }}
+            DB_PORT=5432
+            PORT=4002
+            MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}
+            MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}
+            MINIO_BUCKET=yacheyka-gallery
+            AUTH_SESSION_SECRET=${{ secrets.AUTH_SESSION_SECRET }}
+            TELEGRAM_CLIENT_ID=${{ secrets.TELEGRAM_CLIENT_ID }}
+            TELEGRAM_CLIENT_SECRET=${{ secrets.TELEGRAM_CLIENT_SECRET }}
+            TELEGRAM_REDIRECT_URI=${{ secrets.TELEGRAM_REDIRECT_URI }}
+            TELEGRAM_AUTH_MAX_AGE_SECONDS=86400
+            AUTH_SESSION_TTL_SECONDS=604800
+            ADMIN_OWNER_EMAIL=${{ secrets.ADMIN_OWNER_EMAIL }}
+            ADMIN_OWNER_PASSWORD_HASH=${{ secrets.ADMIN_OWNER_PASSWORD_HASH }}
+            ADMIN_SESSION_SECRET=${{ secrets.ADMIN_SESSION_SECRET }}
+            ADMIN_SESSION_TTL_SECONDS=604800
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
+            MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}
+            EOF
 
             # Restart Docker Compose services in production mode
             docker-compose -f docker-compose.prod.yml down

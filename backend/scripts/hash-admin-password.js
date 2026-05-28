@@ -9,7 +9,7 @@ if (!password) {
 
 hash(password, 12)
   .then((passwordHash) => {
-    console.log(passwordHash);
+    console.log(Buffer.from(passwordHash, 'utf8').toString('base64'));
   })
   .catch((error) => {
     console.error(error);
