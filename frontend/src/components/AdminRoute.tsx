@@ -143,7 +143,11 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   }
 
   return (
-    <div className="absolute inset-0 w-full bg-[#070707] flex flex-col overflow-hidden">
+    <div
+      data-theme={mapStyle}
+      className="absolute inset-0 w-full flex flex-col overflow-hidden"
+      style={{ backgroundColor: "var(--app-bg)" }}
+    >
       <header className="h-16 shrink-0 border-b border-neutral-900 bg-[#090909] flex items-center justify-between px-4 sm:px-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-neutral-100">

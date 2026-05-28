@@ -184,8 +184,8 @@ export default function VenueCard({
           : compactHeight
       }}
       exit={{ y: "100%" }}
-      transition={{ type: "spring", damping: 28, stiffness: 220 }}
-      className="absolute bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-3xl border border-neutral-800/80 text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden transition-all duration-300"
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      className="absolute bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border border-neutral-800/80 text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden transition-all duration-300"
       style={{
         background: isPremiumActive 
           ? "linear-gradient(to bottom, #09090b, #020202)" 
@@ -263,7 +263,7 @@ export default function VenueCard({
                   }}
                   className="w-7 h-7 bg-neutral-900/60 hover:bg-neutral-800 border border-neutral-800/80 rounded-full flex items-center justify-center text-[10px] text-neutral-400 hover:text-white transition shrink-0"
                 >
-                  ✕
+                  ×
                 </button>
               </div>
 
@@ -349,7 +349,7 @@ export default function VenueCard({
                     onClick={() => setIsExpanded(false)}
                     className="w-7 h-7 bg-neutral-900/80 border border-neutral-800 rounded-full flex items-center justify-center text-xs text-neutral-400 hover:text-white transition"
                   >
-                    ✕
+                    ×
                   </button>
                 </div>
               </div>
@@ -455,7 +455,7 @@ export default function VenueCard({
                   }`}
                 >
                   События сегодня
-                  {vEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />}
+                  {vEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
                   {activeTab === "events" && (
                     <motion.div
                       layoutId="activeTabUnderline"
@@ -708,7 +708,7 @@ export default function VenueCard({
                           onClick={() => setShowVibeCreator(!showVibeCreator)}
                           className="flex items-center gap-1.5 text-xs text-white bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 py-3 px-5 rounded-2xl transition cursor-pointer"
                         >
-                          <Plus className="w-4 h-4 animate-pulse" /> Выразить Свой Вайб
+                          <Plus className="w-4 h-4" /> Выразить свой вайб
                         </button>
 
                         <AnimatePresence>

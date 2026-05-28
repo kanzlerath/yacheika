@@ -7,8 +7,6 @@ import { useState, Dispatch, SetStateAction } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Search,
-  Sparkles,
-  MapPin,
   X,
   BookOpen,
   Heart,
@@ -339,7 +337,7 @@ export default function DiscoveryPanel({
         {/* Micro Elegant Curated Lists Shelf */}
         <div className="space-y-2 shrink-0">
           <div className="flex items-center gap-1.5 px-0.5">
-            <Sparkles className="w-3 h-3 text-amber-500" />
+            <BookOpen className="w-3 h-3 text-amber-500" />
             <h3 className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">Редакторские списки</h3>
           </div>
 

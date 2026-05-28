@@ -78,6 +78,141 @@ body {
   font-family: var(--font-sans);
 }
 
+:root {
+  --app-bg: #050505;
+  --app-bg-elevated: #0a0a0a;
+  --app-panel: rgba(9, 9, 10, 0.96);
+  --app-panel-soft: rgba(16, 16, 17, 0.72);
+  --app-border: rgba(255, 255, 255, 0.08);
+  --app-border-strong: rgba(255, 255, 255, 0.14);
+  --app-text: #f5f2ee;
+  --app-text-muted: #a7a29b;
+  --app-text-subtle: #756f68;
+  --app-accent: #c7a469;
+  --app-accent-soft: rgba(199, 164, 105, 0.14);
+  --app-danger: #b76e63;
+  --app-success: #8aa78a;
+  --app-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  --app-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme="light"] {
+  --app-bg: #f3f0e9;
+  --app-bg-elevated: #ebe6dc;
+  --app-panel: rgba(247, 244, 237, 0.96);
+  --app-panel-soft: rgba(255, 252, 245, 0.78);
+  --app-border: rgba(46, 40, 33, 0.13);
+  --app-border-strong: rgba(46, 40, 33, 0.2);
+  --app-text: #1f1c18;
+  --app-text-muted: #6d665d;
+  --app-text-subtle: #958b7e;
+  --app-accent: #8f6f3d;
+  --app-accent-soft: rgba(143, 111, 61, 0.14);
+  --app-danger: #9a544d;
+  --app-success: #60795f;
+  --app-shadow: 0 24px 60px rgba(57, 45, 29, 0.18);
+}
+
+[data-theme="voyager"] {
+  --app-bg: #06100f;
+  --app-bg-elevated: #0b1816;
+  --app-panel: rgba(8, 22, 20, 0.96);
+  --app-panel-soft: rgba(17, 36, 32, 0.76);
+  --app-border: rgba(192, 216, 199, 0.12);
+  --app-border-strong: rgba(192, 216, 199, 0.2);
+  --app-text: #eef4eb;
+  --app-text-muted: #9ba99e;
+  --app-text-subtle: #65756a;
+  --app-accent: #b9a66a;
+  --app-accent-soft: rgba(185, 166, 106, 0.14);
+  --app-danger: #b07666;
+  --app-success: #8aaa7c;
+  --app-shadow: 0 24px 60px rgba(0, 15, 12, 0.52);
+}
+
+[data-theme] {
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+[data-theme] .app-header {
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--app-bg) 92%, transparent), color-mix(in srgb, var(--app-bg) 42%, transparent), transparent);
+}
+
+[data-theme] .app-sidebar,
+[data-theme] #discovery-panel {
+  background: var(--app-panel) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] #discovery-panel input,
+[data-theme] #discovery-panel button,
+[data-theme] .settings-surface,
+[data-theme] .auth-prompt-surface,
+[data-theme] [id^="venue-card-"] {
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] #discovery-panel input {
+  background: var(--app-panel-soft) !important;
+  color: var(--app-text) !important;
+}
+
+[data-theme] #discovery-panel h3,
+[data-theme] #discovery-panel h4,
+[data-theme] [id^="venue-card-"] h1,
+[data-theme] [id^="venue-card-"] h2,
+[data-theme] [id^="venue-card-"] h3 {
+  color: var(--app-text) !important;
+}
+
+[data-theme] #discovery-panel p,
+[data-theme] #discovery-panel span,
+[data-theme] [id^="venue-card-"] p,
+[data-theme] [id^="venue-card-"] span {
+  color: inherit;
+}
+
+[data-theme] #discovery-panel .text-rose-500,
+[data-theme] #discovery-panel .text-amber-500,
+[data-theme] [id^="venue-card-"] .text-rose-500,
+[data-theme] [id^="venue-card-"] .text-amber-500,
+[data-theme] .text-rose-500,
+[data-theme] .text-amber-500 {
+  color: var(--app-accent) !important;
+}
+
+[data-theme] #discovery-panel .fill-rose-500,
+[data-theme] [id^="venue-card-"] .fill-rose-500 {
+  fill: var(--app-accent) !important;
+}
+
+[data-theme] [id^="venue-card-"] {
+  background: linear-gradient(to bottom, var(--app-panel), var(--app-bg)) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+[data-theme] .settings-surface,
+[data-theme] .auth-prompt-surface {
+  background: var(--app-panel) !important;
+  color: var(--app-text) !important;
+  box-shadow: var(--app-shadow) !important;
+}
+
+[data-theme] .theme-button {
+  background: var(--app-panel-soft);
+  color: var(--app-text-muted);
+  border-color: var(--app-border);
+}
+
+[data-theme] .theme-button-active {
+  background: var(--app-text);
+  color: var(--app-bg);
+  border-color: var(--app-text);
+}
+
 @supports (height: 100dvh) {
   html,
   body,
