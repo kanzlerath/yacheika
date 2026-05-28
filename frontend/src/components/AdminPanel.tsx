@@ -378,7 +378,7 @@ export default function AdminPanel({
                   {v.category}
                 </span>
                 {v.premiumConfig?.premiumActive && (
-                  <span className="text-[9px] px-1 bg-amber-950 text-amber-500 rounded font-semibold font-display">💎 P</span>
+                  <span className="text-[9px] px-1 bg-amber-950 text-amber-500 rounded font-semibold font-display">P</span>
                 )}
               </div>
             </button>
@@ -387,7 +387,7 @@ export default function AdminPanel({
 
         {/* Dynamic coordinate picker capture button */}
         {pendingCoords && (
-          <div className="p-3 bg-indigo-950/40 border border-indigo-900 rounded-xl space-y-2 animate-pulse text-xs">
+          <div className="p-3 bg-indigo-950/40 border border-indigo-900 rounded-xl space-y-2 text-xs">
             <div className="flex items-center gap-1 text-indigo-300 font-semibold font-display">
               <MapPin className="w-4 h-4" /> Позиция выбрана!
             </div>
@@ -545,7 +545,7 @@ export default function AdminPanel({
                 </button>
                 
                 {pendingCoords && (
-                  <div className="p-3 bg-rose-950/20 border border-rose-900/60 rounded-xl space-y-2 animate-pulse text-xs">
+                  <div className="p-3 bg-rose-950/20 border border-rose-900/60 rounded-xl space-y-2 text-xs">
                     <div className="flex items-center gap-1 text-rose-300 font-semibold font-display">
                       <MapPin className="w-4 h-4" /> Точка выбрана на карте!
                     </div>

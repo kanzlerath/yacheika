@@ -55,8 +55,8 @@ export default function SettingsModal({
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: "spring", duration: 0.3 }}
-            className="relative w-full max-w-md rounded-3xl border border-neutral-850 bg-neutral-950 p-6 shadow-2xl z-10 space-y-6 overflow-hidden max-h-[90vh] overflow-y-auto"
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="settings-surface relative w-full max-w-md rounded-2xl border border-neutral-850 bg-neutral-950 p-6 shadow-2xl z-10 space-y-6 overflow-hidden max-h-[90vh] overflow-y-auto"
           >
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-neutral-900">
@@ -164,8 +164,8 @@ export default function SettingsModal({
                       onClick={() => onChangeMapStyle(style)}
                       className={`py-2 px-3 rounded-xl border text-xs font-semibold font-display transition cursor-pointer text-center ${
                         isActive
-                          ? "bg-white text-black border-white shadow"
-                          : "bg-neutral-950 text-neutral-400 border-neutral-900 hover:border-neutral-800 hover:text-white"
+                          ? "theme-button-active shadow"
+                          : "theme-button hover:text-white"
                       }`}
                     >
                       {label}

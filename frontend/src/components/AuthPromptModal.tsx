@@ -36,8 +36,8 @@ export default function AuthPromptModal({
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ type: "spring", duration: 0.3 }}
-            className="relative w-full max-w-sm rounded-3xl border border-neutral-850 bg-neutral-950 p-6 shadow-2xl z-10 text-center space-y-6 overflow-hidden"
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="auth-prompt-surface relative w-full max-w-sm rounded-2xl border border-neutral-850 bg-neutral-950 p-6 shadow-2xl z-10 text-center space-y-6 overflow-hidden"
           >
             {/* Close Button */}
             <button
@@ -49,7 +49,7 @@ export default function AuthPromptModal({
 
             {/* Icon & Heading */}
             <div className="flex flex-col items-center space-y-3 pt-2">
-              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-900/30 text-rose-500 animate-pulse">
+              <div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-900/30 text-rose-500">
                 <ShieldAlert className="w-6 h-6" />
               </div>
               

@@ -144,7 +144,7 @@ export default function MapContainer({
       el.className = "relative flex justify-center items-center w-8 h-8";
 
       const pulse = document.createElement("div");
-      pulse.className = "absolute rounded-full w-8 h-8 bg-sky-500/35 animate-ping";
+      pulse.className = "absolute rounded-full w-8 h-8 bg-sky-500/20";
       el.appendChild(pulse);
 
       const dot = document.createElement("div");
@@ -192,7 +192,7 @@ export default function MapContainer({
       el.className = "relative flex justify-center items-center w-8 h-8 pointer-events-none";
 
       const pulse = document.createElement("div");
-      pulse.className = "absolute rounded-full w-6 h-6 bg-rose-500/20 border border-rose-500 animate-pulse";
+      pulse.className = "absolute rounded-full w-6 h-6 bg-rose-500/15 border border-rose-500/70";
       el.appendChild(pulse);
 
       const dot = document.createElement("div");
@@ -370,8 +370,8 @@ export default function MapContainer({
       </div>
 
       {adminMode && (
-        <div className="absolute top-4 left-4 right-16 bg-rose-950/90 border border-rose-800 text-rose-200 px-3 py-2 rounded-lg text-xs z-10 flex items-center gap-2 backdrop-blur-md animate-pulse">
-          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+        <div className="absolute top-4 left-4 right-16 bg-rose-950/90 border border-rose-800 text-rose-200 px-3 py-2 rounded-lg text-xs z-10 flex items-center gap-2 backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
           <span>Режим Админа: Кликните по карте для изменения координат заведения</span>
         </div>
       )}

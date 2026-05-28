@@ -262,9 +262,14 @@ export default function App() {
   }
 
   return (
-    <div id="application-root" className="absolute inset-0 w-full bg-[#030303] flex flex-col overflow-hidden">
+    <div
+      id="application-root"
+      data-theme={mapStyle}
+      className="absolute inset-0 w-full flex flex-col overflow-hidden transition-colors duration-300"
+      style={{ backgroundColor: "var(--app-bg)" }}
+    >
       <header
-        className="absolute top-0 left-0 right-0 flex-shrink-0 bg-gradient-to-b from-black/85 via-black/35 to-transparent flex items-center justify-between px-4 sm:px-6 z-40 pointer-events-none"
+        className="app-header absolute top-0 left-0 right-0 flex-shrink-0 flex items-center justify-between px-4 sm:px-6 z-40 pointer-events-none"
         style={{
           paddingTop: "env(safe-area-inset-top, 0px)",
           height: "calc(4.5rem + env(safe-area-inset-top, 0px))",
@@ -312,7 +317,7 @@ export default function App() {
 
       <main className="w-full flex-1 h-0 min-h-0 flex flex-col md:grid md:grid-cols-12 relative overflow-hidden">
         <section
-          className={`h-full md:col-span-4 lg:col-span-3.5 border-r border-neutral-900/60 bg-black/95 md:block absolute md:relative inset-0 z-30 transition-transform duration-300 ${
+          className={`app-sidebar h-full md:col-span-4 lg:col-span-3.5 border-r md:block absolute md:relative inset-0 z-30 transition-transform duration-300 ${
             mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
         >
@@ -348,10 +353,15 @@ export default function App() {
             >
               <button
                 onClick={() => setMobileView("list")}
-                className="flex items-center justify-center w-12 h-12 bg-zinc-950/90 border border-zinc-800 hover:border-zinc-700 rounded-full text-white shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                className="flex items-center justify-center w-12 h-12 border rounded-full shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                style={{
+                  backgroundColor: "var(--app-panel)",
+                  borderColor: "var(--app-border-strong)",
+                  color: "var(--app-text)",
+                }}
                 aria-label="Открыть подборки"
               >
-                <Grid className="w-5 h-5 text-rose-500 animate-pulse" />
+                <Grid className="w-5 h-5" style={{ color: "var(--app-accent)" }} />
               </button>
             </div>
           )}
