@@ -7,6 +7,7 @@
   "scripts": {
     "build": "nest build",
     "admin:hash": "node scripts/hash-admin-password.js",
+    "admin:check": "node scripts/check-admin-owner.js",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
