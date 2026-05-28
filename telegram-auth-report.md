@@ -4,10 +4,7 @@
 
 Implemented real Telegram authentication for the MVP and removed the dev user switcher from the runtime flow.
 
-Admin access is limited to:
-
-- Telegram id: `1859857121`
-- Telegram username: `nick_luzhkov`
+Telegram auth is now user-only. Admin access is handled by the separate `/admin` login flow backed by `admin_users`.
 
 ## Backend
 
@@ -18,7 +15,8 @@ Admin access is limited to:
 - Issues a server-signed HMAC session token.
 - Added guards:
   - `TelegramAuthGuard` for authenticated user actions.
-  - `AdminGuard` for admin-only APIs.
+  - `AdminGuard` for admin-only APIs through an httpOnly admin session cookie.
+- Added `admin_users` table and `/api/admin/login`, `/api/admin/me`, `/api/admin/logout`.
 
 Protected endpoints:
 
@@ -42,8 +40,8 @@ User-bound endpoints:
 - Replaced mock Telegram user switcher with a redirect-based Telegram login button.
 - PWA mode starts login through `/api/auth/telegram/start`; OIDC state and PKCE verifier stay server-side.
 - Stores the backend session token in `localStorage`.
-- Sends `Authorization: Bearer <token>` for reactions, analytics, admin CRUD and image uploads.
-- Shows the `Админка CRUD` button only when backend returns `isAdmin=true`.
+- Sends `Authorization: Bearer <token>` only for user reactions and analytics events.
+- Admin UI lives at `/admin` and is not linked from the public app.
 
 ## Environment
 
@@ -56,8 +54,9 @@ TELEGRAM_CLIENT_SECRET=...
 TELEGRAM_REDIRECT_URI=https://thescope.ru/api/auth/telegram/callback
 AUTH_SESSION_SECRET=...
 DOMAIN_NAME=thescope.ru
-ADMIN_TELEGRAM_ID=1859857121
-ADMIN_TELEGRAM_USERNAME=nick_luzhkov
+ADMIN_OWNER_EMAIL=luzhkoff00@gmail.com
+ADMIN_OWNER_PASSWORD_HASH=...
+ADMIN_SESSION_SECRET=...
 ```
 
 Frontend no longer needs Telegram build-time env variables. The backend owns the OIDC redirect, state, and token exchange.
@@ -72,16 +71,7 @@ docker exec yacheyka_frontend npm run lint
 docker exec yacheyka_frontend npm run build
 ```
 
-Backend auth smoke with a temporary test token:
-
-- Valid Telegram Login Widget signature accepted.
-- Modified signature rejected.
-- Admin login for `1859857121 / nick_luzhkov` returned `isAdmin=true`.
-- Regular Telegram user returned `isAdmin=false`.
-- `GET /api/analytics` without token returned `401`.
-- `GET /api/analytics` with regular user token returned `403`.
-- `GET /api/analytics` with admin token returned `200`.
-- `POST /api/venues/:id/react` with authenticated user token returned `201`.
+Backend admin access is no longer derived from Telegram identity. A regular Telegram session cannot call admin APIs; `/api/analytics`, CRUD endpoints, and storage upload require the admin session cookie created by `/api/admin/login`.
 
 Browser smoke at `http://localhost:3002`:
 
@@ -92,11 +82,10 @@ Browser smoke at `http://localhost:3002`:
 
 ## Deployment Notes
 
-Telegram Login Widget requires the configured bot domain to match the deployed frontend domain. For local Telegram Mini App testing, expose `localhost:3002` through HTTPS tunnel and set that URL in BotFather / Mini App settings.
+Telegram Login requires the configured bot domain to match the deployed frontend domain. For local Telegram testing, expose the app through HTTPS tunnel and set that URL in BotFather / Login settings.
 
 Without Telegram env variables the app intentionally stays on the login gate and shows a configuration warning. There is no dev bypass in the committed auth flow.
 
 ## References
 
-- Telegram Mini Apps validation: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-- Telegram Login Widget authorization check: https://core.telegram.org/widgets/login#checking-authorization
+- Telegram Login: https://core.telegram.org/bots/telegram-login

@@ -70,7 +70,16 @@ sudo systemctl enable --now docker
 * **`TELEGRAM_CLIENT_ID`** — numeric client id из Telegram Login / BotFather.
 * **`TELEGRAM_CLIENT_SECRET`** — client secret из Telegram Login / BotFather.
 * **`TELEGRAM_REDIRECT_URI`** — полный callback URL, для текущего production: `https://thescope.ru/api/auth/telegram/callback`.
+* **`ADMIN_OWNER_EMAIL`** — email владельца админки, сейчас `luzhkoff00@gmail.com`.
+* **`ADMIN_OWNER_PASSWORD_HASH`** — bcrypt-хэш пароля owner-аккаунта.
+* **`ADMIN_SESSION_SECRET`** — отдельный секрет для подписи admin session.
 * **`DOMAIN_NAME`** — production-домен без протокола, для текущего production: `thescope.ru`.
+
+Сгенерировать bcrypt-хэш можно локально в папке `backend`:
+
+```bash
+npm run admin:hash -- "your-password"
+```
 
 ---
 

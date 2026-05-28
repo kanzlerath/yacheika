@@ -15,7 +15,6 @@ export interface TelegramUser {
 
 export interface TelegramAuthSession {
   token: string;
-  isAdmin: boolean;
   expiresAt: string;
   user: TelegramUser;
 }
