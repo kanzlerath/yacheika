@@ -11,9 +11,9 @@ Admin access is limited to:
 
 ## Backend
 
-- Added `AuthModule` with `POST /api/auth/telegram` and `GET /api/auth/me`.
-- Supports both Telegram Mini App `initData` and Telegram Login Widget payloads.
-- Verifies Telegram signatures with `TELEGRAM_BOT_TOKEN`.
+- Added `AuthModule` with `GET /api/auth/telegram/start`, `GET /api/auth/telegram/callback`, `GET /api/auth/me`, and `POST /api/auth/logout`.
+- Uses Telegram OAuth/OIDC Authorization Code Flow with PKCE.
+- Verifies callback `state` and validates Telegram `id_token` through JWKS and claims before trusting user data.
 - Stores or updates Telegram users in PostgreSQL.
 - Issues a server-signed HMAC session token.
 - Added guards:
@@ -39,9 +39,8 @@ User-bound endpoints:
 
 ## Frontend
 
-- Replaced mock Telegram user switcher with `TelegramLoginGate`.
-- Mini App mode automatically submits `window.Telegram.WebApp.initData`.
-- PWA mode renders Telegram Login Widget when `VITE_TELEGRAM_BOT_USERNAME` is configured.
+- Replaced mock Telegram user switcher with a redirect-based Telegram login button.
+- PWA mode starts login through `/api/auth/telegram/start`; OIDC state and PKCE verifier stay server-side.
 - Stores the backend session token in `localStorage`.
 - Sends `Authorization: Bearer <token>` for reactions, analytics, admin CRUD and image uploads.
 - Shows the `Админка CRUD` button only when backend returns `isAdmin=true`.
@@ -52,13 +51,16 @@ Required variables:
 
 ```env
 TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CLIENT_ID=...
+TELEGRAM_CLIENT_SECRET=...
+TELEGRAM_REDIRECT_URI=https://thescope.ru/api/auth/telegram/callback
 AUTH_SESSION_SECRET=...
+DOMAIN_NAME=thescope.ru
 ADMIN_TELEGRAM_ID=1859857121
 ADMIN_TELEGRAM_USERNAME=nick_luzhkov
-VITE_TELEGRAM_BOT_USERNAME=...
 ```
 
-`docker-compose.yml` now passes `.env` to the frontend service so Vite can read `VITE_` variables.
+Frontend no longer needs Telegram build-time env variables. The backend owns the OIDC redirect, state, and token exchange.
 
 ## Verification
 

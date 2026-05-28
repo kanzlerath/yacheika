@@ -19,6 +19,7 @@ export function storeTelegramAuth(session: TelegramAuthSession): void {
 
 export function clearTelegramAuth(): void {
   localStorage.removeItem(STORAGE_KEY);
+  fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
 }
 
 export function getAuthHeaders(token: string): HeadersInit {
@@ -27,23 +28,9 @@ export function getAuthHeaders(token: string): HeadersInit {
   };
 }
 
-/**
- * Поскольку авторизация теперь происходит через редирект, 
- * старый метод POST-запроса на бэкенд больше не выполняет валидацию.
- * Изменим его так, чтобы он не ломал существующий код в модалках, если они его вызывают.
- */
-export async function authenticateTelegram(payload: any): Promise<TelegramAuthSession> {
-  // Этот метод больше не должен вызываться, так как вход идёт через window.location.href.
-  // Но если где-то остался вызов, выбросим понятную ошибку для отладки.
-  throw new Error("authenticateTelegram is deprecated. Use OIDC redirect flow instead.");
-}
-
-/**
- * Метод обновления сессии (refresh)
- */
-export async function refreshTelegramSession(token: string): Promise<TelegramAuthSession> {
+export async function refreshTelegramSession(token?: string): Promise<TelegramAuthSession> {
   const res = await fetch("/api/auth/me", {
-    headers: getAuthHeaders(token),
+    headers: token ? getAuthHeaders(token) : undefined,
   });
 
   if (!res.ok) {
@@ -52,9 +39,8 @@ export async function refreshTelegramSession(token: string): Promise<TelegramAut
 
   const data = await res.json();
   
-  // Формируем обновленный объект сессии, сохраняя текущий токен
   const freshSession: TelegramAuthSession = {
-    token: token,
+    token: data.token || token,
     isAdmin: data.isAdmin,
     expiresAt: data.expiresAt,
     user: data.user,
