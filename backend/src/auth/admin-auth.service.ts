@@ -54,6 +54,20 @@ export class AdminAuthService implements OnModuleInit {
     return process.env.ADMIN_SESSION_SECRET || process.env.AUTH_SESSION_SECRET;
   }
 
+  private decodePasswordHash(rawHash: string) {
+    const trimmed = rawHash.trim();
+    if (trimmed.startsWith('$2a$') || trimmed.startsWith('$2b$') || trimmed.startsWith('$2y$')) {
+      return trimmed;
+    }
+
+    const decoded = Buffer.from(trimmed, 'base64').toString('utf8').trim();
+    if (decoded.startsWith('$2a$') || decoded.startsWith('$2b$') || decoded.startsWith('$2y$')) {
+      return decoded;
+    }
+
+    throw new ServiceUnavailableException('Admin owner password hash is invalid');
+  }
+
   private assertSessionConfigured() {
     if (!this.sessionSecret) {
       throw new ServiceUnavailableException('Admin session signing is not configured');
@@ -71,9 +85,11 @@ export class AdminAuthService implements OnModuleInit {
 
   async ensureOwnerAccount() {
     const email = process.env.ADMIN_OWNER_EMAIL?.trim().toLowerCase();
-    const passwordHash = process.env.ADMIN_OWNER_PASSWORD_HASH?.trim();
+    const rawPasswordHash = process.env.ADMIN_OWNER_PASSWORD_HASH?.trim();
 
-    if (!email || !passwordHash) return;
+    if (!email || !rawPasswordHash) return;
+
+    const passwordHash = this.decodePasswordHash(rawPasswordHash);
 
     const existing = await this.adminRepository.findOne({ where: { email } });
     if (existing) {
