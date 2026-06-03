@@ -139,6 +139,25 @@ body {
   background: linear-gradient(to bottom, color-mix(in srgb, var(--app-bg) 92%, transparent), color-mix(in srgb, var(--app-bg) 42%, transparent), transparent);
 }
 
+[data-theme] .app-header .text-white,
+[data-theme] .app-header .text-neutral-300,
+[data-theme] .app-header .text-neutral-400 {
+  color: var(--app-text) !important;
+}
+
+[data-theme] .app-control-button {
+  background: color-mix(in srgb, var(--app-panel) 88%, transparent) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text) !important;
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--app-bg) 44%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+[data-theme] .app-control-button:hover {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-accent) !important;
+}
+
 [data-theme] .app-sidebar,
 [data-theme] #discovery-panel {
   background: var(--app-panel) !important;
@@ -157,6 +176,74 @@ body {
 [data-theme] #discovery-panel input {
   background: var(--app-panel-soft) !important;
   color: var(--app-text) !important;
+}
+
+[data-theme] #discovery-panel {
+  scrollbar-color: color-mix(in srgb, var(--app-text) 20%, transparent) transparent;
+}
+
+[data-theme] .discovery-header {
+  background: color-mix(in srgb, var(--app-panel) 94%, transparent) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] .discovery-search-input {
+  background: color-mix(in srgb, var(--app-bg-elevated) 86%, transparent) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] .discovery-search-input::placeholder {
+  color: var(--app-text-subtle) !important;
+}
+
+[data-theme] .discovery-search-input:focus {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-accent) !important;
+  box-shadow: 0 0 0 3px var(--app-accent-soft);
+}
+
+[data-theme] .discovery-icon-button,
+[data-theme] .map-zoom-controls button {
+  background: transparent !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme] .discovery-icon-button:hover,
+[data-theme] .map-zoom-controls button:hover {
+  background: var(--app-panel-soft) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border-strong) !important;
+}
+
+[data-theme] .discovery-pill {
+  background: color-mix(in srgb, var(--app-bg-elevated) 70%, transparent) !important;
+  color: var(--app-text-muted) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] .discovery-pill:hover {
+  color: var(--app-text) !important;
+  border-color: var(--app-border-strong) !important;
+}
+
+[data-theme] .discovery-pill-active {
+  background: var(--app-text) !important;
+  color: var(--app-bg) !important;
+  border-color: var(--app-text) !important;
+}
+
+[data-theme] .discovery-soft-card,
+[data-theme] .discovery-list-row:hover {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] .map-zoom-controls {
+  background: color-mix(in srgb, var(--app-panel) 90%, transparent) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text-muted) !important;
 }
 
 [data-theme] #discovery-panel h3,
@@ -201,6 +288,68 @@ body {
   box-shadow: var(--app-shadow) !important;
 }
 
+[data-theme] .settings-surface h3,
+[data-theme] .settings-surface h4,
+[data-theme] .settings-surface p,
+[data-theme] .settings-surface span,
+[data-theme] .settings-surface div {
+  color: inherit;
+}
+
+[data-theme] .settings-surface h3 {
+  color: var(--app-text) !important;
+}
+
+[data-theme] .settings-surface h4,
+[data-theme] .settings-surface .text-neutral-500,
+[data-theme] .settings-surface .text-neutral-400 {
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme] .settings-divider {
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] .settings-card {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme] .settings-card .settings-strong,
+[data-theme] .settings-card .text-neutral-200,
+[data-theme] .settings-card .text-neutral-100 {
+  color: var(--app-text) !important;
+}
+
+[data-theme] .settings-avatar {
+  background: color-mix(in srgb, var(--app-bg-elevated) 86%, transparent) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme] .settings-icon-button,
+[data-theme] .settings-secondary-button {
+  background: color-mix(in srgb, var(--app-bg-elevated) 82%, transparent) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme] .settings-icon-button:hover,
+[data-theme] .settings-secondary-button:hover {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text) !important;
+}
+
+[data-theme] .settings-toggle-on {
+  background: var(--app-accent) !important;
+}
+
+[data-theme] .settings-toggle-off {
+  background: color-mix(in srgb, var(--app-text) 14%, transparent) !important;
+}
+
 [data-theme] .theme-button {
   background: var(--app-panel-soft);
   color: var(--app-text-muted);
@@ -211,6 +360,132 @@ body {
   background: var(--app-text);
   color: var(--app-bg);
   border-color: var(--app-text);
+}
+
+[data-theme] button,
+[data-theme] a,
+[data-theme] input,
+[data-theme] textarea,
+[data-theme] select {
+  transition-property: background-color, border-color, color, opacity, transform, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: var(--app-ease);
+}
+
+[data-theme] button:active {
+  transform: translateY(1px);
+}
+
+.venue-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 14px;
+  background: var(--app-panel-soft);
+}
+
+.venue-tab {
+  position: relative;
+  min-height: 40px;
+  border-radius: 10px;
+  color: var(--app-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.venue-tab-active {
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-text) 9%, transparent);
+}
+
+.venue-section {
+  border-top: 1px solid var(--app-border);
+  padding-top: 18px;
+}
+
+.venue-soft-panel {
+  background: var(--app-panel-soft) !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 16px !important;
+}
+
+.admin-panel-minimal {
+  background: var(--app-panel) !important;
+  border-color: var(--app-border) !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+}
+
+.admin-panel-minimal input,
+.admin-panel-minimal textarea,
+.admin-panel-minimal select {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+  border-radius: 10px !important;
+}
+
+.admin-panel-minimal input:focus,
+.admin-panel-minimal textarea:focus,
+.admin-panel-minimal select:focus {
+  border-color: var(--app-border-strong) !important;
+  box-shadow: 0 0 0 3px var(--app-accent-soft);
+}
+
+.admin-panel-minimal label,
+.admin-panel-minimal .admin-label {
+  color: var(--app-text-subtle) !important;
+}
+
+.admin-panel-minimal .admin-tab {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--app-text-muted);
+  padding: 8px 12px;
+}
+
+.admin-panel-minimal .admin-tab-active {
+  background: var(--app-panel-soft);
+  border-color: var(--app-border);
+  color: var(--app-text);
+}
+
+.admin-panel-minimal .admin-list-item {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--app-text-muted) !important;
+}
+
+.admin-panel-minimal .admin-list-item:hover,
+.admin-panel-minimal .admin-list-item-active {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
+}
+
+.admin-panel-minimal .admin-primary {
+  background: var(--app-text) !important;
+  color: var(--app-bg) !important;
+  border-color: var(--app-text) !important;
+}
+
+.admin-panel-minimal .admin-danger {
+  background: color-mix(in srgb, var(--app-danger) 12%, transparent) !important;
+  color: var(--app-danger) !important;
+  border-color: color-mix(in srgb, var(--app-danger) 32%, transparent) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme] *,
+  [data-theme] *::before,
+  [data-theme] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @supports (height: 100dvh) {

@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { Grid, Settings } from "lucide-react";
 import AdminRoute from "./components/AdminRoute";
 import AuthPromptModal from "./components/AuthPromptModal";
@@ -14,6 +14,7 @@ import SettingsModal from "./components/SettingsModal";
 import VenueCard from "./components/VenueCard";
 import { Collection, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
+import { appEase, softTransition } from "./utils/motionPresets";
 import {
   clearTelegramAuth,
   getAuthHeaders,
@@ -286,7 +287,7 @@ export default function App() {
           {auth ? (
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-1.5 transition text-xs font-display text-neutral-300 select-none cursor-pointer"
+              className="app-control-button flex items-center gap-2 border rounded-xl px-3 py-1.5 transition text-xs font-display select-none cursor-pointer"
             >
               {currentUser?.avatarUrl ? (
                 <img
@@ -306,9 +307,9 @@ export default function App() {
           ) : (
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3.5 py-1.5 transition text-xs font-display font-semibold text-neutral-300 hover:text-white cursor-pointer select-none"
+              className="app-control-button flex items-center gap-1.5 border rounded-xl px-3.5 py-1.5 transition text-xs font-display font-semibold cursor-pointer select-none"
             >
-              <Settings className="w-4 h-4 text-neutral-400" />
+              <Settings className="w-4 h-4" />
               <span>Войти / Настройки</span>
             </button>
           )}
@@ -316,7 +317,9 @@ export default function App() {
       </header>
 
       <main className="w-full flex-1 h-0 min-h-0 flex flex-col md:grid md:grid-cols-12 relative overflow-hidden">
-        <section
+        <motion.section
+          layout
+          transition={{ duration: 0.28, ease: appEase }}
           className={`app-sidebar h-full md:col-span-4 lg:col-span-3.5 border-r md:block absolute md:relative inset-0 z-30 transition-transform duration-300 ${
             mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }`}
@@ -331,7 +334,7 @@ export default function App() {
             eventsList={events}
             setMobileView={setMobileView}
           />
-        </section>
+        </motion.section>
 
         <section className="relative w-full h-full flex-1 md:col-span-8 lg:col-span-8.5 overflow-hidden block">
           <MapContainer
@@ -346,25 +349,31 @@ export default function App() {
             pendingCoords={null}
           />
 
-          {!selectedVenue && mobileView === "map" && (
-            <div
-              className="absolute left-1/2 -translate-x-1/2 z-25 md:hidden"
-              style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
-            >
-              <button
-                onClick={() => setMobileView("list")}
-                className="flex items-center justify-center w-12 h-12 border rounded-full shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
-                style={{
-                  backgroundColor: "var(--app-panel)",
-                  borderColor: "var(--app-border-strong)",
-                  color: "var(--app-text)",
-                }}
-                aria-label="Открыть подборки"
+          <AnimatePresence>
+            {!selectedVenue && mobileView === "map" && (
+              <motion.div
+                className="absolute left-1/2 -translate-x-1/2 z-25 md:hidden"
+                style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                transition={softTransition}
               >
-                <Grid className="w-5 h-5" style={{ color: "var(--app-accent)" }} />
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={() => setMobileView("list")}
+                  className="flex items-center justify-center w-12 h-12 border rounded-full shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
+                  style={{
+                    backgroundColor: "var(--app-panel)",
+                    borderColor: "var(--app-border-strong)",
+                    color: "var(--app-text)",
+                  }}
+                  aria-label="Открыть подборки"
+                >
+                  <Grid className="w-5 h-5" style={{ color: "var(--app-accent)" }} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence>
             {selectedVenue && (

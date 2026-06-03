@@ -16,7 +16,6 @@ import {
   Instagram,
   Globe,
   Plus,
-  Sparkles,
   Calendar,
   Share2,
   ChevronUp,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
+import { appEase, contentSwitch, panelTransition, revealItem, revealList, softTransition } from "../utils/motionPresets";
 
 interface VenueCardProps {
   key?: string | number;
@@ -176,15 +176,16 @@ export default function VenueCard({
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={{ top: 0.05, bottom: 0.6 }}
       onDragEnd={handleDragEnd}
-      initial={{ y: "100%" }}
+      initial={{ y: "100%", opacity: 0.96 }}
       animate={{ 
         y: 0,
+        opacity: 1,
         height: isExpanded 
           ? expandedHeight
           : compactHeight
       }}
-      exit={{ y: "100%" }}
-      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      exit={{ y: "100%", opacity: 0.96 }}
+      transition={panelTransition}
       className="absolute bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border border-neutral-800/80 text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden transition-all duration-300"
       style={{
         background: isPremiumActive 
@@ -214,9 +215,7 @@ export default function VenueCard({
             /* ==================== PEEK COMPACT PREVIEW (MORE AIR, NATIVE, CLASSY) ==================== */
             <motion.div
               key="peek"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...contentSwitch}
               className="px-5 space-y-4 text-left"
               style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
             >
@@ -315,9 +314,7 @@ export default function VenueCard({
             /* ==================== EXPANDED PANEL (CLEATER, LESS BOXED GRIDS, SPACIOUS) ==================== */
             <motion.div
               key="expanded"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...contentSwitch}
               className="px-5 space-y-6 text-left"
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
             >
@@ -355,7 +352,7 @@ export default function VenueCard({
               </div>
 
               {/* Airy Beautiful Photo Cover Gallery */}
-              <div className="relative h-48 sm:h-56 w-full rounded-3xl overflow-hidden group border border-neutral-900/60 shadow-xl bg-neutral-950">
+              <div className="relative h-48 sm:h-56 w-full rounded-2xl overflow-hidden group border border-neutral-900/60 shadow-xl bg-neutral-950">
                 <img
                   src={venue.gallery[0]}
                   alt={venue.name}
@@ -377,9 +374,9 @@ export default function VenueCard({
 
               {/* Premium Mood Daily Quote overlay if present */}
               {isPremiumActive && premium.moodBlock && (
-                <div className="p-4 rounded-2xl border border-neutral-900/60 bg-neutral-950/20 py-4.5 flex items-start gap-4 animate-fadeIn">
+                <div className="venue-soft-panel p-4 py-4.5 flex items-start gap-4">
                   <div className="p-1.5 rounded-xl bg-neutral-900 shrink-0 mt-0.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    <Calendar className="w-3.5 h-3.5 text-amber-500" />
                   </div>
                   <div>
                     <div className="text-[9px] font-mono uppercase tracking-[0.12em] text-[#a1a1aa]">Вайб дня сегодня:</div>
@@ -416,50 +413,53 @@ export default function VenueCard({
               </div>
 
               {/* Modern Segmented Tab Controls */}
-              <div className="flex border-b border-neutral-900/60 text-xs sm:text-sm pt-2">
+              <div className="venue-tabs text-xs sm:text-sm">
                 <button
                   onClick={() => setActiveTab("info")}
-                  className={`pb-3 px-4 font-display font-semibold relative transition cursor-pointer ${
-                    activeTab === "info" ? "text-white" : "text-neutral-400 hover:text-neutral-205"
+                  className={`venue-tab font-display transition cursor-pointer ${
+                    activeTab === "info" ? "venue-tab-active" : ""
                   }`}
                 >
                   О заведении
                   {activeTab === "info" && (
                     <motion.div
-                      layoutId="activeTabUnderline"
-                      className="absolute bottom-0 inset-x-0 h-0.5 bg-white"
+                      layoutId="activeTabSurface"
+                      transition={softTransition}
+                      className="absolute inset-0 rounded-[10px] -z-10"
                     />
                   )}
                 </button>
                 <button
                   onClick={() => setActiveTab("vibes")}
-                  className={`pb-3 px-4 font-display font-semibold relative transition flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === "vibes" ? "text-white" : "text-neutral-400 hover:text-neutral-205"
+                  className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeTab === "vibes" ? "venue-tab-active" : ""
                   }`}
                 >
-                  Народный вайб
+                  Вайб
                   <span className="text-[10px] w-4.5 h-4.5 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 font-mono">
                     {Object.keys(venue.vibeRatings || {}).length}
                   </span>
                   {activeTab === "vibes" && (
                     <motion.div
-                      layoutId="activeTabUnderline"
-                      className="absolute bottom-0 inset-x-0 h-0.5 bg-white"
+                      layoutId="activeTabSurface"
+                      transition={softTransition}
+                      className="absolute inset-0 rounded-[10px] -z-10"
                     />
                   )}
                 </button>
                 <button
                   onClick={handleEventsTabClick}
-                  className={`pb-3 px-4 font-display font-semibold relative transition flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === "events" ? "text-white" : "text-neutral-400 hover:text-neutral-205"
+                  className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeTab === "events" ? "venue-tab-active" : ""
                   }`}
                 >
-                  События сегодня
+                  События
                   {vEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
                   {activeTab === "events" && (
                     <motion.div
-                      layoutId="activeTabUnderline"
-                      className="absolute bottom-0 inset-x-0 h-0.5 bg-white"
+                      layoutId="activeTabSurface"
+                      transition={softTransition}
+                      className="absolute inset-0 rounded-[10px] -z-10"
                     />
                   )}
                 </button>
@@ -471,10 +471,7 @@ export default function VenueCard({
                   {activeTab === "info" && (
                     <motion.div
                       key="info-content"
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      transition={{ duration: 0.2 }}
+                      {...contentSwitch}
                       className="space-y-6 text-sm"
                     >
                       {/* Gorgeous airy Typography */}
@@ -518,20 +515,20 @@ export default function VenueCard({
 
                       {/* Curated featured suggestions */}
                       {isPremiumActive && premium.featuredDrinks && premium.featuredDrinks.length > 0 && (
-                        <div className="p-5 bg-neutral-950 border border-neutral-900/60 rounded-3xl space-y-3">
+                        <div className="venue-soft-panel p-5 space-y-3">
                           <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-amber-500" />
+                            <Check className="w-4 h-4 text-amber-500" />
                             <span className="text-[10px] font-display font-bold uppercase tracking-[0.1em] text-white">Рекомендации бармена:</span>
                           </div>
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" variants={revealList} initial="hidden" animate="show">
                             {premium.featuredDrinks.map((drink, i) => (
-                              <div key={i} className="flex items-center gap-2.5 bg-neutral-900/20 p-2 py-2.5 rounded-xl border border-neutral-900/40">
+                              <motion.div key={i} className="flex items-center gap-2.5 bg-neutral-900/20 p-2 py-2.5 rounded-xl border border-neutral-900/40" variants={revealItem}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-505 shrink-0" />
                                 <span className="font-semibold text-neutral-300">{drink}</span>
-                              </div>
+                              </motion.div>
                             ))}
-                          </div>
+                          </motion.div>
                         </div>
                       )}
 
@@ -627,7 +624,8 @@ export default function VenueCard({
                             href={premium.ctaUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="ml-auto text-[10px] font-display font-bold uppercase tracking-widest px-4.5 py-2.5 bg-white text-black hover:bg-neutral-200 rounded-xl transition shadow"
+                            className="ml-auto text-[10px] font-display font-bold uppercase tracking-widest px-4.5 py-2.5 rounded-xl transition shadow"
+                            style={{ backgroundColor: "var(--app-text)", color: "var(--app-bg)" }}
                           >
                             {premium.ctaText || "Подробнее"}
                           </a>
@@ -639,14 +637,11 @@ export default function VenueCard({
                   {activeTab === "vibes" && (
                     <motion.div
                       key="vibes-content"
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      transition={{ duration: 0.2 }}
+                      {...contentSwitch}
                       className="space-y-4"
                     >
-                      <p className="text-xs text-[#8e8e93] leading-relaxed pt-1 font-mono">
-                        ГОЛОСА ЗАВЕДЕНИЯ: ТАДИТЕ НА ЛЮБОЙ ТЕГ ДЛЯ ОЦЕНКИ ИЛИ ПОДДЕРЖКИ
+                      <p className="text-xs text-[#8e8e93] leading-relaxed pt-1">
+                        Оценки гостей помогают понять настроение места. Нажмите на тег, чтобы поддержать его.
                       </p>
 
                       <div className="space-y-4 pt-1">
@@ -655,7 +650,7 @@ export default function VenueCard({
                             Рейтинг тегов пуст. Станьте первым!
                           </div>
                         ) : (
-                          <div className="space-y-3 pt-1">
+                          <motion.div className="space-y-3 pt-1" variants={revealList} initial="hidden" animate="show">
                             {Object.entries(venue.vibeRatings)
                               .sort((a, b) => b[1] - a[1])
                               .map(([tag, votes]) => {
@@ -666,11 +661,12 @@ export default function VenueCard({
                                 const activeColor = isPremiumActive ? accentColor : "#e11d48";
 
                                 return (
-                                  <button
+                                  <motion.button
                                     key={tag}
                                     onClick={() => {
                                       onReact(venue.id, "vibe_tag", tag);
                                     }}
+                                    variants={revealItem}
                                     className="w-full text-left py-2 px-1 relative transition duration-200 group cursor-pointer block"
                                   >
                                     <div className="flex justify-between items-center text-xs text-neutral-300 font-display relative z-10">
@@ -696,10 +692,10 @@ export default function VenueCard({
                                         }}
                                       />
                                     </div>
-                                  </button>
+                                  </motion.button>
                                 );
                               })}
-                          </div>
+                          </motion.div>
                         )}
                       </div>
 
@@ -714,21 +710,24 @@ export default function VenueCard({
                         <AnimatePresence>
                           {showVibeCreator && (
                             <motion.div
-                              initial={{ opacity: 0, y: -5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -5 }}
-                              className="mt-3.5 p-4.5 bg-neutral-950 border border-neutral-900/80 rounded-2xl space-y-3"
+                              initial={{ opacity: 0, height: 0, y: -6 }}
+                              animate={{ opacity: 1, height: "auto", y: 0 }}
+                              exit={{ opacity: 0, height: 0, y: -6 }}
+                              transition={{ duration: 0.22, ease: appEase }}
+                              className="venue-soft-panel mt-3.5 p-4.5 space-y-3"
                             >
                               <div className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest leading-none mb-1">Свободная подборка:</div>
-                              <div className="flex flex-wrap gap-2">
+                              <motion.div className="flex flex-wrap gap-2" variants={revealList} initial="hidden" animate="show">
                                 {AVAILABLE_VIBES.map((vibe) => {
                                   const isVoted = likedVibeTags.includes(vibe);
                                   return (
-                                    <button
+                                    <motion.button
                                       key={vibe}
                                       onClick={() => {
                                         onReact(venue.id, "vibe_tag", vibe);
                                       }}
+                                      variants={revealItem}
+                                      whileTap={{ scale: 0.98 }}
                                       className={`text-[11px] px-3.5 py-1.5 rounded-full border font-display transition duration-200 cursor-pointer ${
                                         isVoted
                                           ? "bg-rose-950/20 text-rose-400 border-rose-900"
@@ -736,10 +735,10 @@ export default function VenueCard({
                                       }`}
                                     >
                                       {isVoted ? `✓ ${vibe}` : `+ ${vibe}`}
-                                    </button>
+                                    </motion.button>
                                   );
                                 })}
-                              </div>
+                              </motion.div>
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -750,10 +749,7 @@ export default function VenueCard({
                   {activeTab === "events" && (
                     <motion.div
                       key="events-content"
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      transition={{ duration: 0.2 }}
+                      {...contentSwitch}
                       className="space-y-3.5"
                     >
                       {vEvents.length === 0 ? (
@@ -761,12 +757,14 @@ export default function VenueCard({
                           На сегодня событий в регламенте нет. Загляните позже!
                         </div>
                       ) : (
-                        <div className="space-y-4 pt-1">
+                        <motion.div className="space-y-4 pt-1" variants={revealList} initial="hidden" animate="show">
                           {vEvents.map((ev) => (
-                            <button
+                            <motion.button
                               key={ev.id}
                               onClick={() => handleEventOpen(ev)}
-                              className="w-full bg-neutral-950 rounded-2xl border border-neutral-900 overflow-hidden flex flex-col sm:flex-row gap-4 p-4.5 transition duration-200 hover:border-neutral-800 cursor-pointer"
+                              variants={revealItem}
+                              whileTap={{ scale: 0.99 }}
+                              className="venue-soft-panel w-full overflow-hidden flex flex-col sm:flex-row gap-4 p-4.5 transition duration-200 cursor-pointer"
                             >
                               {ev.coverImage && (
                                 <div className="w-full sm:w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
@@ -791,9 +789,9 @@ export default function VenueCard({
                                 <h4 className="text-xs sm:text-sm font-display font-medium text-white leading-snug">{ev.title}</h4>
                                 <p className="text-[11.5px] text-[#8e8e93] leading-relaxed">{ev.description}</p>
                               </div>
-                            </button>
+                            </motion.button>
                           ))}
-                        </div>
+                        </motion.div>
                       )}
                     </motion.div>
                   )}

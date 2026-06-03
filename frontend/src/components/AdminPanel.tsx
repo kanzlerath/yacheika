@@ -4,12 +4,12 @@
  */
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import {
   Save,
   Trash2,
   Plus,
   Compass,
-  Sparkles,
   Layers,
   Calendar,
   Eye,
@@ -19,6 +19,7 @@ import {
   Check
 } from "lucide-react";
 import { Venue, VenueEvent, AnalyticsEvent } from "../types";
+import { contentSwitch, revealItem, revealList, softTransition } from "../utils/motionPresets";
 
 interface AdminPanelProps {
   venues: Venue[];
@@ -343,7 +344,7 @@ export default function AdminPanel({
   };
 
   return (
-    <div id="admin-panel" className="bg-neutral-950 p-4 rounded-2xl border border-neutral-900 grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs sm:text-sm">
+    <div id="admin-panel" className="admin-panel-minimal bg-neutral-950 p-4 border grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs sm:text-sm">
       
       {/* Sidebar List of Venues */}
       <div className={`lg:col-span-4 space-y-3 lg:border-r border-neutral-900/60 lg:pr-3 ${mobileSubView === "list" ? "block" : "hidden lg:block"}`}>
@@ -354,7 +355,7 @@ export default function AdminPanel({
           </div>
           <button
             onClick={handleCreateNewVenueForm}
-            className="flex items-center gap-1 text-[10px] bg-white text-black py-1 px-2.5 rounded hover:bg-neutral-200 transition font-semibold"
+            className="admin-primary flex items-center gap-1 text-[10px] py-1 px-2.5 rounded transition font-semibold border"
           >
             <Plus className="w-3.5 h-3.5" /> Создать
           </button>
@@ -366,9 +367,9 @@ export default function AdminPanel({
             <button
               key={v.id}
               onClick={() => handleLoadVenue(v)}
-              className={`w-full text-left p-2 rounded-lg border flex items-center justify-between transition ${
+              className={`admin-list-item w-full text-left p-2 rounded-lg border flex items-center justify-between transition ${
                 selectedVenue?.id === v.id
-                  ? "bg-rose-950/20 text-rose-300 border-rose-900"
+                  ? "admin-list-item-active"
                   : "bg-neutral-900/50 text-neutral-400 border-neutral-900 hover:border-neutral-800"
               }`}
             >
@@ -387,16 +388,16 @@ export default function AdminPanel({
 
         {/* Dynamic coordinate picker capture button */}
         {pendingCoords && (
-          <div className="p-3 bg-indigo-950/40 border border-indigo-900 rounded-xl space-y-2 text-xs">
-            <div className="flex items-center gap-1 text-indigo-300 font-semibold font-display">
-              <MapPin className="w-4 h-4" /> Позиция выбрана!
+          <div className="venue-soft-panel p-3 rounded-xl space-y-2 text-xs">
+            <div className="flex items-center gap-1 font-semibold font-display">
+              <MapPin className="w-4 h-4" /> Позиция выбрана
             </div>
             <div className="text-[10px] text-neutral-400 font-mono">
               Lat: {pendingCoords.lat.toFixed(5)}, Lng: {pendingCoords.lng.toFixed(5)}
             </div>
             <button
               onClick={handleApplyCoords}
-              className="w-full select-none text-[11px] bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-1.5 rounded transition"
+              className="admin-primary w-full select-none text-[11px] font-medium py-1.5 rounded transition border"
             >
               Перенести в анкету заведения
             </button>
@@ -436,11 +437,11 @@ export default function AdminPanel({
       <div className={`lg:col-span-8 flex flex-col space-y-4 ${mobileSubView === "editor" ? "block" : "hidden lg:block"}`}>
         
         {/* Editor tab switches */}
-        <div className="flex border-b border-neutral-900 pb-2 gap-3 text-xs font-display">
+        <div className="flex border-b border-neutral-900 pb-2 gap-2 text-xs font-display">
           <button
             onClick={() => setActiveTab("venue")}
-            className={`pb-1 px-3 border-b-2 transition ${
-              activeTab === "venue" ? "border-rose-500 text-white font-semibold" : "border-transparent text-neutral-400 hover:text-neutral-200"
+            className={`admin-tab transition ${
+              activeTab === "venue" ? "admin-tab-active font-semibold" : ""
             }`}
           >
             Параметры заведения
@@ -449,16 +450,17 @@ export default function AdminPanel({
           <button
             onClick={() => setActiveTab("events")}
             disabled={!editingVenue.id}
-            className={`pb-1 px-3 border-b-2 transition disabled:opacity-30 disabled:pointer-events-none ${
-              activeTab === "events" ? "border-rose-500 text-white font-semibold" : "border-transparent text-neutral-400 hover:text-neutral-200"
+            className={`admin-tab transition disabled:opacity-30 disabled:pointer-events-none ${
+              activeTab === "events" ? "admin-tab-active font-semibold" : ""
             }`}
           >
             Управление событиями ({events.filter(e => e.venueId === editingVenue.id).length})
           </button>
         </div>
 
+        <AnimatePresence mode="wait">
         {activeTab === "venue" && (
-          <div className="space-y-4 max-h-[580px] overflow-y-auto pr-2">
+          <motion.div key="venue-admin-tab" {...contentSwitch} className="space-y-4 max-h-[580px] overflow-y-auto pr-2">
             
             {/* Back Button on Mobile */}
             <div className="lg:hidden">
@@ -539,15 +541,15 @@ export default function AdminPanel({
                 <button
                   type="button"
                   onClick={() => onToggleMobileMap(true)}
-                  className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs font-semibold text-rose-500 w-full justify-center cursor-pointer select-none"
+                  className="flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs font-semibold w-full justify-center cursor-pointer select-none"
                 >
                   <MapPin className="w-4 h-4" /> Указать на карте
                 </button>
                 
                 {pendingCoords && (
-                  <div className="p-3 bg-rose-950/20 border border-rose-900/60 rounded-xl space-y-2 text-xs">
-                    <div className="flex items-center gap-1 text-rose-300 font-semibold font-display">
-                      <MapPin className="w-4 h-4" /> Точка выбрана на карте!
+                  <div className="venue-soft-panel p-3 rounded-xl space-y-2 text-xs">
+                    <div className="flex items-center gap-1 font-semibold font-display">
+                      <MapPin className="w-4 h-4" /> Точка выбрана на карте
                     </div>
                     <div className="text-[10px] text-neutral-400 font-mono">
                       Широта: {pendingCoords.lat.toFixed(6)}<br />
@@ -556,7 +558,7 @@ export default function AdminPanel({
                     <button
                       type="button"
                       onClick={handleApplyCoords}
-                      className="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-1.5 rounded-lg transition cursor-pointer select-none"
+                      className="admin-primary w-full font-semibold py-1.5 rounded-lg transition cursor-pointer select-none"
                     >
                       Применить координаты
                     </button>
@@ -738,7 +740,7 @@ export default function AdminPanel({
             <div className="border-t border-neutral-900 pt-3 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-[10px] font-mono text-amber-500 uppercase tracking-widest font-semibold">
-                  <Sparkles className="w-3.5 h-3.5" /> Premium оформление карточки
+                  <Eye className="w-3.5 h-3.5" /> Premium оформление карточки
                 </div>
                 
                 <label className="relative inline-flex items-center cursor-pointer select-none">
@@ -756,20 +758,29 @@ export default function AdminPanel({
                 </label>
               </div>
 
+              <AnimatePresence initial={false}>
               {editingVenue.premiumConfig.premiumActive && (
-                <div className="p-3 bg-neutral-950 border border-neutral-900 rounded-xl space-y-3.5 animate-fadeIn">
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -6 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -6 }}
+                  transition={softTransition}
+                  className="p-3 bg-neutral-950 border border-neutral-900 rounded-xl space-y-3.5 overflow-hidden"
+                >
                   
                   {/* Presets Themes select line */}
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-neutral-500 uppercase">Готовые темы дизайна</label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <motion.div className="grid grid-cols-4 gap-2" variants={revealList} initial="hidden" animate="show">
                       {PRESET_THEMES.map((theme) => {
                         const active = editingVenue.premiumConfig.premiumTheme === theme.id;
                         return (
-                          <button
+                          <motion.button
                             key={theme.id}
                             type="button"
                             onClick={() => applyThemePreset(theme.id)}
+                            variants={revealItem}
+                            whileTap={{ scale: 0.98 }}
                             className={`p-2 rounded-lg border text-center transition ${
                               active
                                 ? "bg-neutral-900 border-white text-white"
@@ -778,10 +789,10 @@ export default function AdminPanel({
                           >
                             <div className="w-4 h-4 rounded-full mx-auto mb-1 border" style={{ backgroundColor: theme.accent }} />
                             <div className="text-[9px] font-display font-medium leading-none">{theme.title}</div>
-                          </button>
+                          </motion.button>
                         );
                       })}
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Colored overrides outputs */}
@@ -944,8 +955,9 @@ export default function AdminPanel({
                     </div>
                   </div>
 
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
 
             {/* Form Save triggers */}
@@ -958,7 +970,7 @@ export default function AdminPanel({
                       onDeleteVenue(editingVenue.id);
                     }
                   }}
-                  className="bg-rose-950 hover:bg-rose-900 text-rose-300 font-semibold py-2 px-4 rounded-xl flex items-center gap-1.5 transition select-none"
+                  className="admin-danger font-semibold py-2 px-4 rounded-xl flex items-center gap-1.5 transition select-none border"
                 >
                   <Trash2 className="w-4 h-4" /> Удалить
                 </button>
@@ -967,7 +979,7 @@ export default function AdminPanel({
               <button
                 type="button"
                 onClick={saveVenueForm}
-                className="bg-white text-black font-semibold py-2 px-5 rounded-xl flex items-center gap-1.5 hover:bg-neutral-200 transition select-none shadow-md"
+                className="admin-primary font-semibold py-2 px-5 rounded-xl flex items-center gap-1.5 transition select-none border"
               >
                 {savedSuccess ? (
                   <>
@@ -981,12 +993,12 @@ export default function AdminPanel({
               </button>
             </div>
 
-          </div>
+          </motion.div>
         )}
 
         {/* Live Event CRUD for active editingVenue selection */}
         {activeTab === "events" && editingVenue.id && (
-          <div className="space-y-4 animate-fadeIn">
+          <motion.div key="events-admin-tab" {...contentSwitch} className="space-y-4">
             <h3 className="font-display font-bold text-xs sm:text-sm text-neutral-200">
               События в &quot;{editingVenue.name}&quot;
             </h3>
@@ -996,12 +1008,13 @@ export default function AdminPanel({
               {events.filter(e => e.venueId === editingVenue.id).length === 0 ? (
                 <div className="text-neutral-500 italic py-4">Событий для этого заведения пока нет. Зарегистрируйте первое ниже!</div>
               ) : (
-                <div className="grid gap-2">
+                <motion.div className="grid gap-2" variants={revealList} initial="hidden" animate="show">
                   {events
                     .filter((e) => e.venueId === editingVenue.id)
                     .map((e) => (
-                      <div
+                      <motion.div
                         key={e.id}
+                        variants={revealItem}
                         className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl flex justify-between items-center text-xs"
                       >
                         <div className="space-y-1">
@@ -1018,9 +1031,9 @@ export default function AdminPanel({
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                      </div>
+                      </motion.div>
                     ))}
-                </div>
+                </motion.div>
               )}
             </div>
 
@@ -1098,15 +1111,16 @@ export default function AdminPanel({
                 <button
                   type="button"
                   onClick={handleAddEvent}
-                  className="bg-white text-black font-semibold py-1.5 px-4 rounded-lg flex items-center gap-1.5 hover:bg-neutral-200 transition text-xs"
+                className="admin-primary font-semibold py-1.5 px-4 rounded-lg flex items-center gap-1.5 transition text-xs border"
                 >
                   <Plus className="w-3.5 h-3.5" /> Создать событие
                 </button>
               </div>
             </div>
 
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
       </div>
 
