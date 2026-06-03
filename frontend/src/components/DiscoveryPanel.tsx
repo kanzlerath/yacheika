@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Venue, Collection, VenueEvent } from "../types";
 import { filterVenuesForDiscovery } from "../utils/venueFilters";
-import { contentSwitch, revealItem, revealList, softTransition } from "../utils/motionPresets";
+import { contentSwitch } from "../utils/motionPresets";
 
 interface DiscoveryPanelProps {
   venues: Venue[];
@@ -182,17 +182,15 @@ export default function DiscoveryPanel({
               В подборке: {filteredVenues.length} заведений
             </div>
 
-            <motion.div className="space-y-1" variants={revealList} initial="hidden" animate="show">
+            <div className="space-y-1">
               {filteredVenues.map((venue) => {
                 const total = venue.likesCount + venue.notMyPlaceCount;
                 const ratio = total > 0 ? `${Math.round((venue.likesCount / total) * 100)}%` : "нет оценок";
 
                 return (
-                  <motion.button
+                  <button
                     key={venue.id}
                     onClick={() => onSelectVenue(venue)}
-                    variants={revealItem}
-                    whileTap={{ scale: 0.995 }}
                     className="discovery-list-row w-full text-left py-2.5 px-2 flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
                   >
                     <div className="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)] items-center gap-3">
@@ -228,10 +226,10 @@ export default function DiscoveryPanel({
                       </div>
                       <div className="text-[9px] font-mono text-zinc-550">{ratio}</div>
                     </div>
-                  </motion.button>
+                  </button>
                 );
               })}
-            </motion.div>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -285,9 +283,11 @@ export default function DiscoveryPanel({
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <div
-              className={isFiltersExpanded ? "flex flex-wrap gap-1.5 py-0.5" : "overflow-x-auto scrollbar-none flex gap-1.5 py-0.5 -mx-1 px-1"}
+              className={`flex flex-wrap gap-1.5 overflow-hidden py-0.5 transition-[max-height] duration-300 ease-out ${
+                isFiltersExpanded ? "max-h-32" : "max-h-[32px]"
+              }`}
             >
-                {(isFiltersExpanded ? UNIFIED_PILLS : UNIFIED_PILLS.slice(0, 5)).map((pill) => {
+                {UNIFIED_PILLS.map((pill) => {
                   const active = isPillActive(pill);
                   return (
                     <button
@@ -297,7 +297,7 @@ export default function DiscoveryPanel({
                         active
                           ? "discovery-pill-active font-semibold shadow"
                           : "discovery-pill border"
-                      } ${isFiltersExpanded ? "" : "shrink-0"}`}
+                      }`}
                     >
                       {pill.label}
                     </button>
@@ -359,7 +359,7 @@ export default function DiscoveryPanel({
             )}
           </div>
 
-          <motion.div className="space-y-1" id="matching-venues-list" variants={revealList} initial="hidden" animate="show">
+          <div className="space-y-1" id="matching-venues-list">
             {filteredVenues.length === 0 ? (
               <div className="text-center py-10 text-xs text-zinc-500 border border-dashed border-zinc-900 rounded-xl space-y-1">
                 <div>Места не найдены.</div>
@@ -371,11 +371,9 @@ export default function DiscoveryPanel({
                 const ratio = total > 0 ? `${Math.round((venue.likesCount / total) * 100)}% лояльность` : "нет оценок";
 
                 return (
-                  <motion.button
+                  <button
                     key={venue.id}
                     onClick={() => onSelectVenue(venue)}
-                    variants={revealItem}
-                    whileTap={{ scale: 0.995 }}
                     className="discovery-list-row w-full text-left py-2.5 px-2 flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
                   >
                     <div className="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)] items-center gap-3">
@@ -417,11 +415,11 @@ export default function DiscoveryPanel({
                       </div>
                       <div className="text-[9px] font-mono text-zinc-550">{ratio}</div>
                     </div>
-                  </motion.button>
+                  </button>
                 );
               })
             )}
-          </motion.div>
+          </div>
         </div>
 
       </div>

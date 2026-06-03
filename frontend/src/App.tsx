@@ -320,8 +320,12 @@ export default function App() {
         }}
       >
         <div className="flex items-center gap-2.5 pointer-events-auto">
-          <img src="/logo.png" className="w-7.5 h-7.5 object-contain" alt="скоуп logo" />
-          <span className="font-display font-bold tracking-[0.15em] text-lg text-white lowercase select-none">
+          <img
+            src={mapStyle === "light" ? "/logo-black.svg" : "/logo-white.svg"}
+            className="w-7.5 h-7.5 object-contain"
+            alt="скоуп logo"
+          />
+          <span className="font-display font-bold tracking-[0.15em] text-lg lowercase select-none" style={{ color: "var(--app-text)" }}>
             скоуп
           </span>
         </div>
