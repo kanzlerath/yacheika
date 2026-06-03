@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Plus, Minus } from "lucide-react";
@@ -75,6 +75,7 @@ export default function MapContainer({
   const pendingMarkerRef = useRef<maplibregl.Marker | null>(null);
   const prevUserCoordsRef = useRef<string | null>(null);
   const prevMapStyleRef = useRef(mapStyle);
+  const [mapRevision, setMapRevision] = useState(0);
 
   // Initialize Map
   useEffect(() => {
@@ -91,6 +92,9 @@ export default function MapContainer({
     });
 
     mapRef.current = map;
+    const syncMarkers = () => setMapRevision((value) => value + 1);
+    map.on("moveend", syncMarkers);
+    map.on("zoomend", syncMarkers);
 
     // Resize observer to handle dynamic size changes of the container
     const resizeObserver = new ResizeObserver(() => {
@@ -100,6 +104,8 @@ export default function MapContainer({
 
     return () => {
       resizeObserver.disconnect();
+      map.off("moveend", syncMarkers);
+      map.off("zoomend", syncMarkers);
       map.remove();
       mapRef.current = null;
     };
@@ -265,8 +271,50 @@ export default function MapContainer({
       return true;
     });
 
-    // Populate markers
+    const zoom = map.getZoom();
+    const clusterDistance = zoom < 14 ? 58 : 42;
+    const clusters: Array<{ venues: Venue[]; longitude: number; latitude: number }> = [];
+
     filtered.forEach((venue) => {
+      const point = map.project([venue.longitude, venue.latitude]);
+      const existing = clusters.find((cluster) => {
+        if (zoom >= 15 || selectedVenue?.id === venue.id || cluster.venues.some((item) => selectedVenue?.id === item.id)) return false;
+        const clusterPoint = map.project([cluster.longitude, cluster.latitude]);
+        const distance = Math.hypot(point.x - clusterPoint.x, point.y - clusterPoint.y);
+        return distance < clusterDistance;
+      });
+
+      if (existing) {
+        existing.venues.push(venue);
+        existing.longitude = existing.venues.reduce((sum, item) => sum + item.longitude, 0) / existing.venues.length;
+        existing.latitude = existing.venues.reduce((sum, item) => sum + item.latitude, 0) / existing.venues.length;
+      } else {
+        clusters.push({ venues: [venue], longitude: venue.longitude, latitude: venue.latitude });
+      }
+    });
+
+    clusters.forEach((cluster) => {
+      if (cluster.venues.length > 1) {
+        const clusterEl = document.createElement("div");
+        clusterEl.className = "map-cluster-marker";
+        clusterEl.textContent = String(cluster.venues.length);
+        clusterEl.addEventListener("click", (event) => {
+          event.stopPropagation();
+          map.flyTo({
+            center: [cluster.longitude, cluster.latitude],
+            zoom: Math.min(16, map.getZoom() + 1.6),
+            essential: true,
+            duration: 650,
+          });
+        });
+        const marker = new maplibregl.Marker({ element: clusterEl })
+          .setLngLat([cluster.longitude, cluster.latitude])
+          .addTo(map);
+        markersRef.current[`cluster-${cluster.venues.map((venue) => venue.id).join("-")}`] = marker;
+        return;
+      }
+
+      const venue = cluster.venues[0];
       const isSelected = selectedVenue?.id === venue.id;
       const isPremium = venue.premiumConfig?.premiumActive;
       const themeColor = venue.premiumConfig?.customColors?.accent || "#d2a56b";
@@ -331,7 +379,7 @@ export default function MapContainer({
 
       markersRef.current[venue.id] = marker;
     });
-  }, [venues, selectedVenue, filters, adminMode]);
+  }, [venues, selectedVenue, filters, adminMode, mapRevision]);
 
   return (
     <div id="map-root" className="w-full h-full relative overflow-hidden bg-neutral-950">

@@ -16,8 +16,7 @@ interface AdminRouteProps {
 }
 
 export default function AdminRoute({ mapStyle }: AdminRouteProps) {
-  const [admin, setAdmin] = useState<AdminUser | null>(null);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  const [admin, setAdmin] = useState<AdminUser | null | undefined>(undefined);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [events, setEvents] = useState<VenueEvent[]>([]);
@@ -72,9 +71,11 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
         if (data?.admin) {
           setAdmin(data.admin);
           fetchAdminData().catch((error) => console.error("Failed to load admin data:", error));
+        } else {
+          setAdmin(null);
         }
       })
-      .finally(() => setIsCheckingSession(false));
+      .finally(() => undefined);
   }, []);
 
   const handleLogin = async (email: string, password: string) => {
@@ -150,12 +151,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
     setPendingCoords({ lat, lng });
   };
 
-  if (isCheckingSession) {
-    return (
-      <div className="min-h-screen bg-[#070707] flex items-center justify-center text-neutral-400 text-sm">
-        Проверка доступа...
-      </div>
-    );
+  if (admin === undefined) {
+    return <div className="min-h-screen bg-[#070707]" />;
   }
 
   if (!admin) {

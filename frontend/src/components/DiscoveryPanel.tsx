@@ -182,7 +182,7 @@ export default function DiscoveryPanel({
               В подборке: {filteredVenues.length} заведений
             </div>
 
-            <motion.div className="space-y-0.5 divide-y divide-zinc-950" variants={revealList} initial="hidden" animate="show">
+            <motion.div className="space-y-1" variants={revealList} initial="hidden" animate="show">
               {filteredVenues.map((venue) => {
                 const total = venue.likesCount + venue.notMyPlaceCount;
                 const ratio = total > 0 ? `${Math.round((venue.likesCount / total) * 100)}%` : "нет оценок";
@@ -193,9 +193,9 @@ export default function DiscoveryPanel({
                     onClick={() => onSelectVenue(venue)}
                     variants={revealItem}
                     whileTap={{ scale: 0.995 }}
-                    className="discovery-list-row w-full text-left py-2.5 px-2 rounded-xl flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
+                    className="discovery-list-row w-full text-left py-2.5 px-2 flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)] items-center gap-3">
                       <div className="w-11 h-11 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
                         <img
                           src={venue.gallery[0] || "/logo.png"}
@@ -208,16 +208,16 @@ export default function DiscoveryPanel({
                           }}
                         />
                       </div>
-                      <div className="space-y-0.5 overflow-hidden">
+                      <div className="min-w-0 space-y-0.5 overflow-hidden">
                         <h4 className="text-xs sm:text-[13px] font-semibold text-zinc-250 group-hover:text-white truncate">
                           {venue.name}
                         </h4>
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                          <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-450 shrink-0">
+                        <div className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-1.5 text-[10px] text-zinc-500">
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-450">
                             {venue.category}
                           </span>
                           <span>•</span>
-                          <span className="truncate max-w-[120px]">{venue.address}</span>
+                          <span className="min-w-0 truncate">{venue.address}</span>
                         </div>
                       </div>
                     </div>
@@ -284,9 +284,7 @@ export default function DiscoveryPanel({
         {/* Collapsible filter tags row with chevron toggle */}
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <motion.div
-              layout
-              transition={softTransition}
+            <div
               className={isFiltersExpanded ? "flex flex-wrap gap-1.5 py-0.5" : "overflow-x-auto scrollbar-none flex gap-1.5 py-0.5 -mx-1 px-1"}
             >
                 {(isFiltersExpanded ? UNIFIED_PILLS : UNIFIED_PILLS.slice(0, 5)).map((pill) => {
@@ -305,7 +303,7 @@ export default function DiscoveryPanel({
                     </button>
                   );
                 })}
-              </motion.div>
+              </div>
           </div>
           <button
             onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
@@ -361,7 +359,7 @@ export default function DiscoveryPanel({
             )}
           </div>
 
-          <motion.div className="space-y-0.5 divide-y divide-zinc-950" id="matching-venues-list" variants={revealList} initial="hidden" animate="show">
+          <motion.div className="space-y-1" id="matching-venues-list" variants={revealList} initial="hidden" animate="show">
             {filteredVenues.length === 0 ? (
               <div className="text-center py-10 text-xs text-zinc-500 border border-dashed border-zinc-900 rounded-xl space-y-1">
                 <div>Места не найдены.</div>
@@ -378,9 +376,9 @@ export default function DiscoveryPanel({
                     onClick={() => onSelectVenue(venue)}
                     variants={revealItem}
                     whileTap={{ scale: 0.995 }}
-                    className="discovery-list-row w-full text-left py-2.5 px-2 rounded-xl flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
+                    className="discovery-list-row w-full text-left py-2.5 px-2 flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
                   >
-                    <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)] items-center gap-3">
                       
                       {/* Micro clean photo without aggressive sizes */}
                       <div className="w-11 h-11 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
@@ -397,17 +395,17 @@ export default function DiscoveryPanel({
                       </div>
                       
                       {/* Name and secondary meta */}
-                      <div className="space-y-0.5 overflow-hidden">
+                      <div className="min-w-0 space-y-0.5 overflow-hidden">
                         <h4 className="text-xs sm:text-[13px] font-semibold text-zinc-250 group-hover:text-white truncate">
                           {venue.name}
                         </h4>
                         
-                        <div className="flex items-center gap-1.5 text-[10px] text-zinc-500">
-                          <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-450 shrink-0">
+                        <div className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-1.5 text-[10px] text-zinc-500">
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-450">
                             {venue.category}
                           </span>
                           <span>•</span>
-                          <span className="truncate max-w-[120px]">{venue.address}</span>
+                          <span className="min-w-0 truncate">{venue.address}</span>
                         </div>
                       </div>
                     </div>

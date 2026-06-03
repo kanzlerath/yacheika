@@ -56,6 +56,7 @@ export default function VenueCard({
 }: VenueCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "events" | "vibes">("info");
+  const [tabDirection, setTabDirection] = useState(1);
   const [showVibeCreator, setShowVibeCreator] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -73,7 +74,7 @@ export default function VenueCard({
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
   const accentColor = customColors?.accent || "#d2a56b";
   const glowColor = customColors?.glowColor || accentColor;
-  const compactHeight = "calc(286px + env(safe-area-inset-bottom, 0px))";
+  const compactHeight = "calc(226px + env(safe-area-inset-bottom, 0px))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
   const galleryImages = venue.gallery.filter(Boolean);
   const lightboxImages = isPremiumActive && premium.heroImage ? [premium.heroImage, ...galleryImages] : galleryImages;
@@ -83,6 +84,17 @@ export default function VenueCard({
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
   const likesRatio = totalFeedback > 0 ? Math.round((venue.likesCount / totalFeedback) * 100) : null;
+  const tabOrder = ["info", "vibes", "events"] as const;
+  const setVenueTab = (tab: "info" | "events" | "vibes") => {
+    setTabDirection(tabOrder.indexOf(tab) > tabOrder.indexOf(activeTab) ? 1 : -1);
+    setActiveTab(tab);
+  };
+  const tabSwipe = {
+    initial: { opacity: 0, x: 24 * tabDirection },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -24 * tabDirection },
+    transition: softTransition,
+  };
 
   const handleRouteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -109,7 +121,7 @@ export default function VenueCard({
   };
 
   const handleEventsTabClick = () => {
-    setActiveTab("events");
+    setVenueTab("events");
 
     if (vEvents.length > 0) {
       logAnalyticsEvent({
@@ -173,10 +185,10 @@ export default function VenueCard({
       }}
       exit={isExpanded ? { x: "100%", opacity: 1 } : { y: "100%", opacity: 0.96 }}
       transition={panelTransition}
-      className={`absolute text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden ${
+      className={`${isExpanded ? "fixed" : "absolute"} text-neutral-200 shadow-2xl backdrop-blur-2xl overflow-hidden ${
         isExpanded
-          ? "inset-0 h-full w-full border-0"
-          : "bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border"
+          ? "inset-0 h-full w-full border-0 z-[70]"
+          : "bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border z-30"
       } ${
         isPremiumActive ? "venue-card-premium" : ""
       }`}
@@ -298,7 +310,7 @@ export default function VenueCard({
           ) : (
             /* ==================== EXPANDED PANEL (CLEATER, LESS BOXED GRIDS, SPACIOUS) ==================== */
             <div
-              className="px-5 space-y-6 text-left"
+              className="px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left"
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
             >
               {/* Simplified airy title and header bar */}
@@ -395,7 +407,7 @@ export default function VenueCard({
               {/* Modern Segmented Tab Controls */}
               <div className="venue-tabs text-xs sm:text-sm">
                 <button
-                  onClick={() => setActiveTab("info")}
+                  onClick={() => setVenueTab("info")}
                   className={`venue-tab font-display transition cursor-pointer ${
                     activeTab === "info" ? "venue-tab-active" : ""
                   }`}
@@ -410,7 +422,7 @@ export default function VenueCard({
                   )}
                 </button>
                 <button
-                  onClick={() => setActiveTab("vibes")}
+                  onClick={() => setVenueTab("vibes")}
                   className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "vibes" ? "venue-tab-active" : ""
                   }`}
@@ -451,7 +463,7 @@ export default function VenueCard({
                   {activeTab === "info" && (
                     <motion.div
                       key="info-content"
-                      {...contentSwitch}
+                      {...tabSwipe}
                       className="space-y-6 text-sm"
                     >
                       {/* Gorgeous airy Typography */}
@@ -624,7 +636,7 @@ export default function VenueCard({
                   {activeTab === "vibes" && (
                     <motion.div
                       key="vibes-content"
-                      {...contentSwitch}
+                      {...tabSwipe}
                       className="space-y-4"
                     >
                       <p className="text-xs text-[#8e8e93] leading-relaxed pt-1">
@@ -735,7 +747,7 @@ export default function VenueCard({
                   {activeTab === "events" && (
                     <motion.div
                       key="events-content"
-                      {...contentSwitch}
+                      {...tabSwipe}
                       className="space-y-3.5"
                     >
                       {vEvents.length === 0 ? (
