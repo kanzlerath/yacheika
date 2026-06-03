@@ -8,6 +8,7 @@ import { CollectionModule } from './collection/collection.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
+import { AdminDataModule } from './admin/admin-data.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AuthModule } from './auth/auth.module';
       synchronize: true, // Auto schema sync for development
     }),
     AuthModule,
+    AdminDataModule,
     DatabaseModule,
     VenueModule,
     ReactionModule,

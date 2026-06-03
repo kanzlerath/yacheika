@@ -5,6 +5,7 @@ import {
   IsIn,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   ValidateNested,
@@ -70,6 +71,11 @@ class PremiumConfigDto {
   featuredDrinks?: string[];
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  topItems?: string[];
+
+  @IsOptional()
   @IsString()
   ctaUrl?: string;
 
@@ -112,6 +118,10 @@ export class SaveVenueDto {
 
   @IsString()
   workingHours: string;
+
+  @IsOptional()
+  @IsObject()
+  workingHoursSchedule?: Record<string, Array<{ from: string; to: string }> | string | undefined>;
 
   @ValidateNested()
   @Type(() => VenueContactsDto)

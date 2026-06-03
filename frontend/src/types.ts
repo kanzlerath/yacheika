@@ -21,17 +21,29 @@ export interface TelegramAuthSession {
 
 export type VenueStatus = 'draft' | 'published' | 'hidden' | 'archived';
 
+export type WeekdayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface WorkingHoursInterval {
+  from: string;
+  to: string;
+}
+
+export type WorkingHoursSchedule = Record<WeekdayKey, WorkingHoursInterval[]> & {
+  note?: string;
+};
+
 export interface PremiumConfig {
   premiumActive: boolean;
-  premiumTheme?: string; // 'crimson-glow' | 'emerald-vault' | 'violet-night' | 'amber-smoke'
+  premiumTheme?: string;
   customColors?: {
-    primary: string; // Background custom colors
-    accent: string;  // Glow and button highlight
+    primary: string;
+    accent: string;
     glowColor: string;
   };
   heroImage?: string;
   moodBlock?: string; // Current mood or event overlay (e.g. "сегодня техно")
   featuredDrinks?: string[];
+  topItems?: string[];
   ctaUrl?: string;
   ctaText?: string;
 }
@@ -47,6 +59,7 @@ export interface Venue {
   latitude: number;
   longitude: number;
   workingHours: string;
+  workingHoursSchedule?: WorkingHoursSchedule;
   contacts: {
     phone?: string;
     telegram?: string;
@@ -100,4 +113,41 @@ export interface AnalyticsEvent {
   userId?: string;
   timestamp: string;
   metadata?: Record<string, any>;
+}
+
+export interface AdminDashboard {
+  totals: {
+    users: number;
+    newUsers7d: number;
+    newUsers30d: number;
+    venues: number;
+    publishedVenues: number;
+    draftVenues: number;
+    hiddenVenues: number;
+    events: number;
+    reactions: number;
+    analytics24h: number;
+    analytics7d: number;
+  };
+  topVenues: Array<{
+    venueId: string;
+    name: string;
+    opens: number;
+    routes: number;
+    socials: number;
+    total: number;
+  }>;
+  recentActivity: AnalyticsEvent[];
+  recentUsers: AdminTelegramUser[];
+  upcomingEvents: VenueEvent[];
+  incompleteVenues: Array<{
+    id: string;
+    name: string;
+    status: VenueStatus;
+    issues: string[];
+  }>;
+}
+
+export interface AdminTelegramUser extends TelegramUser {
+  reactionsCount: number;
 }

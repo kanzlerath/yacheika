@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { LogOut, Map, ShieldCheck } from "lucide-react";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
-import { AnalyticsEvent, Venue, VenueEvent } from "../types";
+import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, Venue, VenueEvent } from "../types";
 
 interface AdminUser {
   id: string;
@@ -22,6 +22,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [events, setEvents] = useState<VenueEvent[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsEvent[]>([]);
+  const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
+  const [users, setUsers] = useState<AdminTelegramUser[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [adminMobileShowMap, setAdminMobileShowMap] = useState(false);
@@ -34,20 +36,30 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   });
 
   const fetchAdminData = async () => {
-    const [vRes, eRes, aRes] = await Promise.all([
+    const [vRes, eRes, aRes, dRes, uRes] = await Promise.all([
       fetch("/api/venues"),
       fetch("/api/events"),
       fetch("/api/analytics"),
+      fetch("/api/admin/dashboard"),
+      fetch("/api/admin/users"),
     ]);
 
-    if ([vRes, eRes, aRes].some((res) => !res.ok)) {
+    if ([vRes, eRes, aRes, dRes, uRes].some((res) => !res.ok)) {
       throw new Error("Admin data loading failed");
     }
 
-    const [vData, eData, aData] = await Promise.all([vRes.json(), eRes.json(), aRes.json()]);
+    const [vData, eData, aData, dData, uData] = await Promise.all([
+      vRes.json(),
+      eRes.json(),
+      aRes.json(),
+      dRes.json(),
+      uRes.json(),
+    ]);
     setVenues(vData);
     setEvents(eData);
     setAnalytics(aData);
+    setDashboard(dData);
+    setUsers(uData);
   };
 
   useEffect(() => {
@@ -89,6 +101,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
     setSelectedVenue(null);
     setPendingCoords(null);
     setAnalytics([]);
+    setDashboard(null);
+    setUsers([]);
   };
 
   const refreshAdminData = () => {
@@ -101,7 +115,13 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(venueForm),
     });
-    if (res.ok) refreshAdminData();
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({}));
+      throw new Error(error.message || "Не удалось сохранить заведение");
+    }
+    const saved = await res.json();
+    setSelectedVenue(saved);
+    refreshAdminData();
   };
 
   const handleDeleteVenue = async (id: string) => {
@@ -174,6 +194,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
             venues={venues}
             events={events}
             analytics={analytics}
+            dashboard={dashboard}
+            users={users}
             selectedVenue={selectedVenue}
             onSelectVenue={setSelectedVenue}
             onSaveVenue={handleSaveVenue}

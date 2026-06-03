@@ -1,8 +1,28 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { VenueEntity } from '../entities/venue.entity';
-import { ReactionEntity } from '../entities/reaction.entity';
+
+const transliterationMap: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z',
+  и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',
+  с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh',
+  щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+};
+
+const makeSlug = (value: string) => {
+  const transliterated = value
+    .trim()
+    .toLowerCase()
+    .split('')
+    .map((char) => transliterationMap[char] ?? char)
+    .join('');
+
+  return transliterated
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+};
 
 @Injectable()
 export class VenueService {
@@ -91,7 +111,34 @@ export class VenueService {
 
   async createOrUpdate(data: any) {
     const id = data.id || `v-${Math.random().toString(36).substring(2, 11)}`;
-    const slug = data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const normalizedName = data.name?.trim().toLowerCase();
+    const existingName = normalizedName
+      ? await this.venueRepository
+          .createQueryBuilder('venue')
+          .where('LOWER(venue.name) = :name', { name: normalizedName })
+          .andWhere(data.id ? 'venue.id != :id' : '1=1', { id: data.id })
+          .getOne()
+      : null;
+
+    if (existingName) {
+      throw new ConflictException('Venue name already exists');
+    }
+
+    const slug = makeSlug(data.slug || data.name || id) || id;
+    const existingSlug = await this.venueRepository.findOne({
+      where: data.id ? { slug, id: Not(data.id) } : { slug },
+    });
+
+    if (existingSlug) {
+      throw new ConflictException('Venue slug already exists');
+    }
+
+    const premiumConfig = {
+      ...(data.premiumConfig || {}),
+      topItems: data.premiumConfig?.topItems || data.premiumConfig?.featuredDrinks || [],
+      featuredDrinks: data.premiumConfig?.featuredDrinks || data.premiumConfig?.topItems || [],
+      premiumTheme: undefined,
+    };
 
     let venue = await this.venueRepository.findOne({ where: { id } });
 
@@ -100,6 +147,7 @@ export class VenueService {
       venue = this.venueRepository.merge(venue, {
         ...data,
         slug,
+        premiumConfig,
         updatedAt: new Date(),
       });
     } else {
@@ -108,6 +156,7 @@ export class VenueService {
         ...data,
         id,
         slug,
+        premiumConfig,
         likesCount: 0,
         notMyPlaceCount: 0,
         vibeRatings: {},

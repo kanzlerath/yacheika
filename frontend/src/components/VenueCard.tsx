@@ -24,6 +24,7 @@ import {
 import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
 import { appEase, contentSwitch, panelTransition, revealItem, revealList, softTransition } from "../utils/motionPresets";
+import { WEEKDAYS, formatTodaySchedule, normalizeSchedule } from "../utils/venueAdmin";
 
 interface VenueCardProps {
   key?: string | number;
@@ -76,6 +77,9 @@ export default function VenueCard({
   const accentColor = customColors?.accent || "#e11d48"; // Default rose
   const compactHeight = "calc(256px + env(safe-area-inset-bottom, 0px))";
   const expandedHeight = "min(84dvh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px)))";
+  const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
+  const primaryImage = (isPremiumActive && premium.heroImage) || venue.gallery[0];
+  const topItems = premium.topItems || premium.featuredDrinks || [];
 
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
@@ -224,7 +228,7 @@ export default function VenueCard({
                   {/* Classiest image thumbnail rounded */}
                   <div className="w-16 h-16 rounded-2xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-800/60 shadow">
                     <img
-                      src={venue.gallery[0]}
+                      src={primaryImage}
                       alt={venue.name}
                       className="w-full h-full object-cover filter brightness-[0.9]"
                       referrerPolicy="no-referrer"
@@ -275,7 +279,7 @@ export default function VenueCard({
                 <div className="w-1 h-1 bg-neutral-800 rounded-full" />
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-neutral-500" />
-                  <span>{venue.workingHours}</span>
+                  <span>{formatTodaySchedule(schedule || undefined, venue.workingHours)}</span>
                 </div>
               </div>
 
@@ -354,7 +358,7 @@ export default function VenueCard({
               {/* Airy Beautiful Photo Cover Gallery */}
               <div className="relative h-48 sm:h-56 w-full rounded-2xl overflow-hidden group border border-neutral-900/60 shadow-xl bg-neutral-950">
                 <img
-                  src={venue.gallery[0]}
+                  src={primaryImage}
                   alt={venue.name}
                   className="w-full h-full object-cover filter brightness-[0.85]"
                   referrerPolicy="no-referrer"
@@ -514,15 +518,15 @@ export default function VenueCard({
                       </div>
 
                       {/* Curated featured suggestions */}
-                      {isPremiumActive && premium.featuredDrinks && premium.featuredDrinks.length > 0 && (
+                      {isPremiumActive && topItems.length > 0 && (
                         <div className="venue-soft-panel p-5 space-y-3">
                           <div className="flex items-center gap-2">
                             <Check className="w-4 h-4 text-amber-500" />
-                            <span className="text-[10px] font-display font-bold uppercase tracking-[0.1em] text-white">Рекомендации бармена:</span>
+                            <span className="text-[10px] font-display font-bold uppercase tracking-[0.1em] text-white">Топы:</span>
                           </div>
                           
                           <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" variants={revealList} initial="hidden" animate="show">
-                            {premium.featuredDrinks.map((drink, i) => (
+                            {topItems.map((drink, i) => (
                               <motion.div key={i} className="flex items-center gap-2.5 bg-neutral-900/20 p-2 py-2.5 rounded-xl border border-neutral-900/40" variants={revealItem}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-505 shrink-0" />
                                 <span className="font-semibold text-neutral-300">{drink}</span>
@@ -539,7 +543,22 @@ export default function VenueCard({
                             <Clock className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
                             <div>
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">ВРЕМЯ РАБОТЫ</div>
-                              <span className="text-neutral-200 font-sans text-xs">{venue.workingHours}</span>
+                              {schedule ? (
+                                <div className="space-y-1 font-sans text-xs text-neutral-200">
+                                  {WEEKDAYS.map((day) => {
+                                    const intervals = schedule[day.key] || [];
+                                    return (
+                                      <div key={day.key} className="flex justify-between gap-3">
+                                        <span className="text-neutral-500">{day.short}</span>
+                                        <span>{intervals.length ? intervals.map((slot) => `${slot.from}-${slot.to}`).join(", ") : "выходной"}</span>
+                                      </div>
+                                    );
+                                  })}
+                                  {schedule.note && <div className="pt-1 text-[11px] text-neutral-500">{schedule.note}</div>}
+                                </div>
+                              ) : (
+                                <span className="text-neutral-200 font-sans text-xs">{venue.workingHours}</span>
+                              )}
                             </div>
                           </div>
                           
