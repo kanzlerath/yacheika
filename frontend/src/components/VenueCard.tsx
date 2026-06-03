@@ -90,10 +90,10 @@ export default function VenueCard({
     setActiveTab(tab);
   };
   const tabSwipe = {
-    initial: { opacity: 0, x: 24 * tabDirection },
+    initial: { opacity: 0, x: 10 * tabDirection },
     animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -24 * tabDirection },
-    transition: softTransition,
+    exit: { opacity: 0, x: -10 * tabDirection },
+    transition: { duration: 0.18, ease: appEase },
   };
 
   const handleRouteClick = (e: React.MouseEvent) => {
@@ -171,25 +171,22 @@ export default function VenueCard({
   };
 
   return (
+    <>
     <motion.div
       drag={isExpanded ? false : "y"}
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={{ top: 0.05, bottom: 0.6 }}
       onDragEnd={handleDragEnd}
-      initial={isExpanded ? { x: "100%", opacity: 1 } : { y: "100%", opacity: 0.96 }}
+      initial={{ y: "100%", opacity: 0.96 }}
       animate={{ 
         x: 0,
         y: 0,
         opacity: 1,
-        height: isExpanded ? "100dvh" : compactHeight
+        height: compactHeight
       }}
-      exit={isExpanded ? { x: "100%", opacity: 1 } : { y: "100%", opacity: 0.96 }}
+      exit={{ y: "100%", opacity: 0.96 }}
       transition={panelTransition}
-      className={`${isExpanded ? "fixed" : "absolute"} text-neutral-200 shadow-2xl backdrop-blur-2xl overflow-hidden ${
-        isExpanded
-          ? "inset-0 h-full w-full border-0 z-[70]"
-          : "bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border z-30"
-      } ${
+      className={`absolute text-neutral-200 shadow-2xl backdrop-blur-2xl overflow-hidden bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border z-30 ${
         isPremiumActive ? "venue-card-premium" : ""
       }`}
       style={{
@@ -215,12 +212,12 @@ export default function VenueCard({
       {/* Main Contents Wrapper */}
       <div 
         className={`flex flex-col h-full ${
-          isExpanded ? "overflow-y-auto" : "overflow-hidden"
+          "overflow-hidden"
         }`}
-        style={{ paddingBottom: isExpanded ? "env(safe-area-inset-bottom, 0px)" : 0 }}
+        style={{ paddingBottom: 0 }}
       >
         <AnimatePresence initial={false}>
-          {!isExpanded ? (
+          {(
             /* ==================== PEEK COMPACT PREVIEW (MORE AIR, NATIVE, CLASSY) ==================== */
             <div
               className="px-5 space-y-4 text-left"
@@ -307,11 +304,27 @@ export default function VenueCard({
                 </button>
               </div>
             </div>
-          ) : (
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
+
+    <AnimatePresence>
+      {isExpanded && (
             /* ==================== EXPANDED PANEL (CLEATER, LESS BOXED GRIDS, SPACIOUS) ==================== */
-            <div
-              className="px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left"
-              style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
+            <motion.div
+              key="venue-fullscreen"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={panelTransition}
+              className="fixed inset-0 z-[80] overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl"
+              style={{
+                paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
+                background: "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
+                ["--venue-accent" as any]: accentColor,
+                ["--venue-glow" as any]: glowColor,
+              }}
             >
               {/* Simplified airy title and header bar */}
               <div className="flex items-start justify-between gap-4">
@@ -458,8 +471,8 @@ export default function VenueCard({
               </div>
 
               {/* Tab Workspace Panel */}
-              <div className="min-h-[160px] pb-6">
-                <AnimatePresence initial={false}>
+              <div className="min-h-[160px] overflow-hidden pb-6">
+                <AnimatePresence initial={false} mode="wait">
                   {activeTab === "info" && (
                     <motion.div
                       key="info-content"
@@ -601,7 +614,7 @@ export default function VenueCard({
                               href={`https://t.me/${venue.contacts.telegram}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
+                              className="inline-flex h-10 w-10 items-center justify-center bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
                               onClick={() => handleSocialClick("telegram", venue.contacts.telegram)}
                             >
                               <Send className="w-4 h-4 text-[#38bdf8] fill-[#38bdf8]/10" />
@@ -612,7 +625,7 @@ export default function VenueCard({
                               href={`https://instagram.com/${venue.contacts.instagram}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
+                              className="inline-flex h-10 w-10 items-center justify-center bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
                               onClick={() => handleSocialClick("instagram", venue.contacts.instagram)}
                             >
                               <Instagram className="w-4 h-4 text-[#fb7185]" />
@@ -623,7 +636,7 @@ export default function VenueCard({
                               href={venue.contacts.website}
                               target="_blank"
                               rel="noreferrer"
-                              className="p-2.5 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
+                              className="inline-flex h-10 w-10 items-center justify-center bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
                               onClick={() => handleSocialClick("website", venue.contacts.website)}
                             >
                               <Globe className="w-4 h-4 text-[#818cf8]" />
@@ -796,10 +809,10 @@ export default function VenueCard({
                   )}
                 </AnimatePresence>
               </div>
-            </div>
-          )}
-        </AnimatePresence>
-      </div>
+            </motion.div>
+      )}
+    </AnimatePresence>
+
       <AnimatePresence>
         {lightboxIndex !== null && lightboxImages[lightboxIndex] && (
           <motion.div
@@ -855,6 +868,6 @@ export default function VenueCard({
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 }
