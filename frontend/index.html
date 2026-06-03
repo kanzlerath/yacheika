@@ -34,6 +34,9 @@
         opacity: 0;
         pointer-events: none;
       }
+      .admin-route .preloader-overlay {
+        display: none;
+      }
       .preloader-logo-container {
         display: flex;
         flex-direction: column;
@@ -124,6 +127,11 @@
     </style>
   </head>
   <body class="text-zinc-300 antialiased">
+    <script>
+      if (window.location.pathname === '/admin') {
+        document.documentElement.classList.add('admin-route');
+      }
+    </script>
     <!-- PWA App Animated Preloader -->
     <div id="pwa-preloader" class="preloader-overlay">
       <div class="preloader-logo-container">
@@ -153,6 +161,10 @@
     <!-- Automatic preloader dismissal -->
     <script>
       window.addEventListener('load', () => {
+        if (window.location.pathname === '/admin') {
+          document.getElementById('pwa-preloader')?.remove();
+          return;
+        }
         setTimeout(() => {
           const preloader = document.getElementById('pwa-preloader');
           if (preloader) {

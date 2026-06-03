@@ -219,9 +219,19 @@ body {
   border-color: var(--app-text) !important;
 }
 
-[data-theme] .discovery-list-row:hover {
-  background: var(--app-panel-soft) !important;
-  border-color: var(--app-border) !important;
+[data-theme] .discovery-list-row {
+  border-radius: 0;
+  box-shadow: none !important;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[data-theme] .discovery-list-row:hover,
+[data-theme] .discovery-list-row:focus,
+[data-theme] .discovery-list-row:focus-visible {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 [data-theme] .discovery-soft-card {
@@ -696,4 +706,20 @@ body {
   color: #9ca3af !important;
   font-size: 16px !important;
   padding: 4px 8px !important;
+}
+
+.map-cluster-marker {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-panel) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 58%, var(--app-border));
+  color: var(--app-text);
+  font: 700 12px/1 var(--font-display);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(14px);
+  cursor: pointer;
 }
