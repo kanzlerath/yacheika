@@ -475,6 +475,35 @@ body {
   box-shadow: 0 14px 30px color-mix(in srgb, var(--venue-accent) 18%, transparent);
 }
 
+.recommended-panel {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--venue-accent, var(--app-accent)) 42%, var(--app-border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-panel-soft) 52%, transparent);
+  animation: recommended-pulse 2.8s var(--app-ease) infinite;
+}
+
+@keyframes recommended-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--venue-glow, var(--app-accent)) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--venue-glow, var(--app-accent)) 32%, transparent);
+  }
+}
+
+.venue-info-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.venue-info-row > svg {
+  margin-top: 2px;
+}
+
 .admin-panel-minimal {
   background: var(--app-panel) !important;
   border-color: var(--app-border) !important;

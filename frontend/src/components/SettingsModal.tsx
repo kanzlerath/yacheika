@@ -149,16 +149,14 @@ export default function SettingsModal({
                 Стиль карты
               </h4>
 
-              <motion.div className="grid grid-cols-2 gap-2" variants={revealList}>
+              <div className="grid grid-cols-2 gap-2">
                 {(["dark", "light"] as const).map((style) => {
                   const isActive = mapStyle === style;
                   const label = style === "dark" ? "Тёмная" : "Светлая";
                   return (
-                    <motion.button
+                    <button
                       key={style}
                       onClick={() => onChangeMapStyle(style)}
-                      variants={revealItem}
-                      whileTap={{ scale: 0.98 }}
                       className={`py-2 px-3 rounded-xl border text-xs font-semibold font-display transition cursor-pointer text-center ${
                         isActive
                           ? "theme-button-active shadow"
@@ -166,10 +164,10 @@ export default function SettingsModal({
                       }`}
                     >
                       {label}
-                    </motion.button>
+                    </button>
                   );
                 })}
-              </motion.div>
+              </div>
             </motion.div>
 
             {/* GPS Proximity Sort Settings */}
