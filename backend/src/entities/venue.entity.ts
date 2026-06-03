@@ -34,6 +34,18 @@ export class VenueEntity {
   @Column()
   workingHours: string;
 
+  @Column({ type: 'jsonb', nullable: true })
+  workingHoursSchedule: {
+    mon?: Array<{ from: string; to: string }>;
+    tue?: Array<{ from: string; to: string }>;
+    wed?: Array<{ from: string; to: string }>;
+    thu?: Array<{ from: string; to: string }>;
+    fri?: Array<{ from: string; to: string }>;
+    sat?: Array<{ from: string; to: string }>;
+    sun?: Array<{ from: string; to: string }>;
+    note?: string;
+  };
+
   @Column({ type: 'jsonb' })
   contacts: {
     phone?: string;
@@ -64,6 +76,7 @@ export class VenueEntity {
     heroImage?: string;
     moodBlock?: string;
     featuredDrinks?: string[];
+    topItems?: string[];
     ctaUrl?: string;
     ctaText?: string;
   };
