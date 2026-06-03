@@ -20,6 +20,7 @@ export interface TelegramAuthSession {
 }
 
 export type VenueStatus = 'draft' | 'published' | 'hidden' | 'archived';
+export type MapStyle = 'dark' | 'light';
 
 export type WeekdayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 

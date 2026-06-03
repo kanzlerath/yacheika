@@ -79,55 +79,40 @@ body {
 }
 
 :root {
-  --app-bg: #050505;
-  --app-bg-elevated: #0a0a0a;
-  --app-panel: rgba(9, 9, 10, 0.96);
-  --app-panel-soft: rgba(16, 16, 17, 0.72);
-  --app-border: rgba(255, 255, 255, 0.08);
-  --app-border-strong: rgba(255, 255, 255, 0.14);
-  --app-text: #f5f2ee;
-  --app-text-muted: #a7a29b;
-  --app-text-subtle: #756f68;
-  --app-accent: #c7a469;
-  --app-accent-soft: rgba(199, 164, 105, 0.14);
+  --app-bg: #05070a;
+  --app-bg-elevated: #0d1117;
+  --app-panel: rgba(13, 17, 23, 0.96);
+  --app-panel-soft: rgba(19, 25, 35, 0.72);
+  --app-border: rgba(218, 221, 226, 0.09);
+  --app-border-strong: rgba(218, 221, 226, 0.16);
+  --app-text: #f4f5f7;
+  --app-text-muted: #9aa1ab;
+  --app-text-subtle: #707783;
+  --app-accent: #d2a56b;
+  --app-accent-soft: rgba(210, 165, 107, 0.16);
+  --app-focus: #93a9d8;
   --app-danger: #b76e63;
   --app-success: #8aa78a;
-  --app-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  --app-shadow: 0 24px 56px rgba(0, 0, 0, 0.38);
   --app-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 [data-theme="light"] {
-  --app-bg: #f3f0e9;
-  --app-bg-elevated: #ebe6dc;
-  --app-panel: rgba(247, 244, 237, 0.96);
-  --app-panel-soft: rgba(255, 252, 245, 0.78);
-  --app-border: rgba(46, 40, 33, 0.13);
-  --app-border-strong: rgba(46, 40, 33, 0.2);
-  --app-text: #1f1c18;
-  --app-text-muted: #6d665d;
-  --app-text-subtle: #958b7e;
-  --app-accent: #8f6f3d;
-  --app-accent-soft: rgba(143, 111, 61, 0.14);
+  --app-bg: #f4f5f7;
+  --app-bg-elevated: #daddde;
+  --app-panel: rgba(244, 245, 247, 0.96);
+  --app-panel-soft: rgba(218, 221, 226, 0.56);
+  --app-border: rgba(5, 7, 10, 0.12);
+  --app-border-strong: rgba(5, 7, 10, 0.2);
+  --app-text: #05070a;
+  --app-text-muted: #5f6670;
+  --app-text-subtle: #8a9098;
+  --app-accent: #9b7444;
+  --app-accent-soft: rgba(155, 116, 68, 0.15);
+  --app-focus: #6f84b4;
   --app-danger: #9a544d;
   --app-success: #60795f;
-  --app-shadow: 0 24px 60px rgba(57, 45, 29, 0.18);
-}
-
-[data-theme="voyager"] {
-  --app-bg: #06100f;
-  --app-bg-elevated: #0b1816;
-  --app-panel: rgba(8, 22, 20, 0.96);
-  --app-panel-soft: rgba(17, 36, 32, 0.76);
-  --app-border: rgba(192, 216, 199, 0.12);
-  --app-border-strong: rgba(192, 216, 199, 0.2);
-  --app-text: #eef4eb;
-  --app-text-muted: #9ba99e;
-  --app-text-subtle: #65756a;
-  --app-accent: #b9a66a;
-  --app-accent-soft: rgba(185, 166, 106, 0.14);
-  --app-danger: #b07666;
-  --app-success: #8aaa7c;
-  --app-shadow: 0 24px 60px rgba(0, 15, 12, 0.52);
+  --app-shadow: 0 24px 52px rgba(5, 7, 10, 0.16);
 }
 
 [data-theme] {
@@ -234,10 +219,16 @@ body {
   border-color: var(--app-text) !important;
 }
 
-[data-theme] .discovery-soft-card,
 [data-theme] .discovery-list-row:hover {
   background: var(--app-panel-soft) !important;
   border-color: var(--app-border) !important;
+}
+
+[data-theme] .discovery-soft-card {
+  background: transparent !important;
+  border-color: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 [data-theme] .map-zoom-controls {
@@ -270,15 +261,18 @@ body {
   color: var(--app-accent) !important;
 }
 
+[data-theme] .text-violet-400,
+[data-theme] .bg-violet-500 {
+  color: var(--app-focus) !important;
+}
+
 [data-theme] #discovery-panel .fill-rose-500,
 [data-theme] [id^="venue-card-"] .fill-rose-500 {
   fill: var(--app-accent) !important;
 }
 
 [data-theme] [id^="venue-card-"] {
-  background: linear-gradient(to bottom, var(--app-panel), var(--app-bg)) !important;
   color: var(--app-text) !important;
-  box-shadow: var(--app-shadow) !important;
 }
 
 [data-theme] .settings-surface,
@@ -372,10 +366,6 @@ body {
   transition-timing-function: var(--app-ease);
 }
 
-[data-theme] button:active {
-  transform: translateY(1px);
-}
-
 .venue-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -406,9 +396,83 @@ body {
 }
 
 .venue-soft-panel {
-  background: var(--app-panel-soft) !important;
+  background: color-mix(in srgb, var(--app-panel-soft) 62%, transparent) !important;
   border: 1px solid var(--app-border) !important;
-  border-radius: 16px !important;
+  border-radius: 12px !important;
+}
+
+.app-text-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-bg-elevated) 72%, transparent);
+  color: var(--app-text);
+  padding: 0.75rem 1rem;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+}
+
+.app-text-button:hover {
+  border-color: var(--app-border-strong);
+  background: color-mix(in srgb, var(--app-bg-elevated) 92%, transparent);
+}
+
+.app-text-button-active,
+.premium-cta {
+  background: var(--app-accent) !important;
+  border-color: var(--app-accent) !important;
+  color: #05070a !important;
+}
+
+.app-text-button-muted-active {
+  background: color-mix(in srgb, var(--app-focus) 16%, transparent) !important;
+  border-color: color-mix(in srgb, var(--app-focus) 36%, transparent) !important;
+  color: var(--app-text) !important;
+}
+
+.app-icon-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-text);
+  color: var(--app-bg);
+  cursor: pointer;
+}
+
+.venue-close-button {
+  width: 32px;
+  height: 32px;
+  color: var(--app-text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.venue-close-button:hover {
+  color: var(--app-text);
+}
+
+.event-badge {
+  background: color-mix(in srgb, var(--app-focus) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-focus) 42%, transparent);
+  color: var(--app-text);
+}
+
+.venue-card-premium .venue-soft-panel {
+  border-color: color-mix(in srgb, var(--venue-accent) 28%, var(--app-border)) !important;
+}
+
+.venue-card-premium .premium-cta {
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--venue-accent) 18%, transparent);
 }
 
 .admin-panel-minimal {

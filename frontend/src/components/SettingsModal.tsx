@@ -7,12 +7,11 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   X,
   Compass,
-  LogOut,
   User,
   Sliders,
 } from "lucide-react";
 import TelegramLoginWidget from "./TelegramLoginWidget";
-import { TelegramAuthSession } from "../types";
+import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
 
 interface SettingsModalProps {
@@ -20,8 +19,8 @@ interface SettingsModalProps {
   onClose: () => void;
   auth: TelegramAuthSession | null;
   onLogout: () => void;
-  mapStyle: "dark" | "light" | "voyager";
-  onChangeMapStyle: (style: "dark" | "light" | "voyager") => void;
+  mapStyle: MapStyle;
+  onChangeMapStyle: (style: MapStyle) => void;
   nearbySort: boolean;
   onChangeNearbySort: (val: boolean) => void;
 }
@@ -121,7 +120,6 @@ export default function SettingsModal({
                       }}
                       className="settings-secondary-button w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
                     >
-                      <LogOut className="w-3.5 h-3.5" />
                       <span>Выйти из аккаунта</span>
                     </button>
                   </div>
@@ -151,15 +149,10 @@ export default function SettingsModal({
                 Стиль карты
               </h4>
 
-              <motion.div className="grid grid-cols-3 gap-2" variants={revealList}>
-                {(["dark", "voyager", "light"] as const).map((style) => {
+              <motion.div className="grid grid-cols-2 gap-2" variants={revealList}>
+                {(["dark", "light"] as const).map((style) => {
                   const isActive = mapStyle === style;
-                  const label =
-                    style === "dark"
-                      ? "Тёмная"
-                      : style === "voyager"
-                      ? "Цветная"
-                      : "Светлая";
+                  const label = style === "dark" ? "Тёмная" : "Светлая";
                   return (
                     <motion.button
                       key={style}

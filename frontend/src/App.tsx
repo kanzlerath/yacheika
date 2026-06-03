@@ -5,14 +5,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Grid, Settings } from "lucide-react";
+import { Grid } from "lucide-react";
 import AdminRoute from "./components/AdminRoute";
 import AuthPromptModal from "./components/AuthPromptModal";
 import DiscoveryPanel from "./components/DiscoveryPanel";
 import MapContainer from "./components/MapContainer";
 import SettingsModal from "./components/SettingsModal";
 import VenueCard from "./components/VenueCard";
-import { Collection, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
+import { Collection, MapStyle, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
 import { appEase, softTransition } from "./utils/motionPresets";
 import {
@@ -51,9 +51,9 @@ export default function App() {
     search: "",
   });
   const [userReactions, setUserReactions] = useState<Reaction[]>([]);
-  const [mapStyle, setMapStyle] = useState<"dark" | "light" | "voyager">(() => {
+  const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
     const val = localStorage.getItem("yacheyka.mapStyle");
-    return val === "dark" || val === "light" || val === "voyager" ? val : "dark";
+    return val === "dark" || val === "light" ? val : "dark";
   });
   const [nearbySort, setNearbySort] = useState<boolean>(() => {
     return localStorage.getItem("yacheyka.nearbySort") === "true";
@@ -67,7 +67,7 @@ export default function App() {
   const currentUser = auth?.user ?? null;
   const authToken = auth?.token;
 
-  const handleMapStyleChange = (style: "dark" | "light" | "voyager") => {
+  const handleMapStyleChange = (style: MapStyle) => {
     setMapStyle(style);
     localStorage.setItem("yacheyka.mapStyle", style);
   };
@@ -204,7 +204,7 @@ export default function App() {
     if (!authToken) {
       setAuthPromptActionText(
         type === "like"
-          ? "чтобы ставить отметку «Хочу пойти»"
+          ? "чтобы рекомендовать заведения"
           : type === "not_my_place"
             ? "чтобы помечать заведение как «Не моё место»"
             : `чтобы оценить вайб дня «${vibeTag}»`,
@@ -212,6 +212,46 @@ export default function App() {
       setShowAuthPromptModal(true);
       return;
     }
+
+    const previousVenues = venues;
+    const previousSelectedVenue = selectedVenue;
+    const previousReactions = userReactions;
+    const reactionMatches = (reaction: Reaction) =>
+      reaction.venueId === venueId && reaction.type === type && (type !== "vibe_tag" || reaction.vibeTag === vibeTag);
+    const alreadyReacted = userReactions.some(reactionMatches);
+
+    const optimisticVenueUpdate = (venue: Venue): Venue => {
+      if (venue.id !== venueId) return venue;
+      if (type === "like") {
+        return { ...venue, likesCount: Math.max(0, venue.likesCount + (alreadyReacted ? -1 : 1)) };
+      }
+      if (type === "not_my_place") {
+        return { ...venue, notMyPlaceCount: Math.max(0, venue.notMyPlaceCount + (alreadyReacted ? -1 : 1)) };
+      }
+      if (!vibeTag) return venue;
+      const nextRatings = { ...(venue.vibeRatings || {}) };
+      nextRatings[vibeTag] = Math.max(0, (nextRatings[vibeTag] || 0) + (alreadyReacted ? -1 : 1));
+      if (nextRatings[vibeTag] === 0) delete nextRatings[vibeTag];
+      return { ...venue, vibeRatings: nextRatings };
+    };
+
+    const nextReactions = alreadyReacted
+      ? userReactions.filter((reaction) => !reactionMatches(reaction))
+      : [
+          ...userReactions,
+          {
+            id: `optimistic-${venueId}-${type}-${vibeTag || "main"}`,
+            userId: currentUser?.id || "me",
+            venueId,
+            type,
+            vibeTag,
+            createdAt: new Date().toISOString(),
+          },
+        ];
+
+    setUserReactions(nextReactions);
+    setVenues((prev) => prev.map(optimisticVenueUpdate));
+    setSelectedVenue((prev) => (prev ? optimisticVenueUpdate(prev) : prev));
 
     try {
       const res = await fetch(`/api/venues/${venueId}/react`, {
@@ -228,7 +268,7 @@ export default function App() {
         setVenues((prev) => prev.map((v) => (v.id === venue.id ? venue : v)));
         if (selectedVenue?.id === venue.id) setSelectedVenue(venue);
 
-        await logAnalyticsEvent({
+        void logAnalyticsEvent({
           eventType: type === "like" ? "like" : "reaction",
           venueId,
           metadata: {
@@ -238,10 +278,13 @@ export default function App() {
           },
           authToken,
         });
-
-        fetchAllData(auth);
+      } else {
+        throw new Error("Reaction request failed");
       }
     } catch (e) {
+      setVenues(previousVenues);
+      setSelectedVenue(previousSelectedVenue);
+      setUserReactions(previousReactions);
       console.error("Reaction registering critical failure:", e);
     }
   };
@@ -307,9 +350,8 @@ export default function App() {
           ) : (
             <button
               onClick={() => setShowSettingsModal(true)}
-              className="app-control-button flex items-center gap-1.5 border rounded-xl px-3.5 py-1.5 transition text-xs font-display font-semibold cursor-pointer select-none"
+              className="app-control-button flex items-center border rounded-xl px-3.5 py-1.5 transition text-xs font-display font-semibold cursor-pointer select-none"
             >
-              <Settings className="w-4 h-4" />
               <span>Войти / Настройки</span>
             </button>
           )}

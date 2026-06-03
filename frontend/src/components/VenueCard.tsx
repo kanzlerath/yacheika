@@ -7,7 +7,6 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Heart,
-  Frown,
   MapPin,
   Clock,
   Phone,
@@ -17,9 +16,7 @@ import {
   Globe,
   Plus,
   Calendar,
-  Share2,
   ChevronUp,
-  ChevronDown
 } from "lucide-react";
 import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
@@ -60,7 +57,6 @@ export default function VenueCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "events" | "vibes">("info");
   const [showVibeCreator, setShowVibeCreator] = useState(false);
-  const [copiedSlug, setCopiedSlug] = useState(false);
 
   // Filter user's reactions
   const hasLiked = userReactions.some(r => r.venueId === venue.id && r.type === "like");
@@ -74,8 +70,8 @@ export default function VenueCard({
 
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
-  const accentColor = customColors?.accent || "#e11d48"; // Default rose
-  const compactHeight = "calc(256px + env(safe-area-inset-bottom, 0px))";
+  const accentColor = customColors?.accent || "#d2a56b";
+  const compactHeight = "calc(286px + env(safe-area-inset-bottom, 0px))";
   const expandedHeight = "min(84dvh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px)))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
   const primaryImage = (isPremiumActive && premium.heroImage) || venue.gallery[0];
@@ -83,22 +79,7 @@ export default function VenueCard({
 
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
-  const likesRatio = totalFeedback > 0 ? Math.round((venue.likesCount / totalFeedback) * 100) : 100;
-
-  const handleCopyLink = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = `${window.location.origin}/#venue=${venue.slug}`;
-    navigator.clipboard.writeText(url);
-    setCopiedSlug(true);
-    setTimeout(() => setCopiedSlug(false), 2000);
-
-    logAnalyticsEvent({
-      eventType: "click_social",
-      venueId: venue.id,
-      metadata: { platform: "share", slug: venue.slug },
-      authToken,
-    });
-  };
+  const likesRatio = totalFeedback > 0 ? Math.round((venue.likesCount / totalFeedback) * 100) : null;
 
   const handleRouteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -190,17 +171,23 @@ export default function VenueCard({
       }}
       exit={{ y: "100%", opacity: 0.96 }}
       transition={panelTransition}
-      className="absolute bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border border-neutral-800/80 text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden transition-all duration-300"
+      className={`absolute bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden ${
+        isPremiumActive ? "venue-card-premium" : ""
+      }`}
       style={{
-        background: isPremiumActive 
-          ? "linear-gradient(to bottom, #09090b, #020202)" 
-          : "linear-gradient(to bottom, #08080a, #010101)",
-        boxShadow: "0 25px 50px -12px rgba(0,0,0,0.8)"
+        background: isPremiumActive
+          ? `linear-gradient(180deg, color-mix(in srgb, ${accentColor} 14%, var(--app-panel)) 0%, var(--app-panel) 34%, var(--app-bg) 100%)`
+          : "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
+        borderColor: isPremiumActive ? `color-mix(in srgb, ${accentColor} 38%, var(--app-border))` : "var(--app-border)",
+        boxShadow: isPremiumActive
+          ? `0 24px 60px rgba(0,0,0,0.62), 0 0 0 1px color-mix(in srgb, ${accentColor} 16%, transparent)`
+          : "var(--app-shadow)",
+        ["--venue-accent" as any]: accentColor,
       }}
       id={`venue-card-${venue.id}`}
     >
       {/* Native Drag Handle Trigger Area */}
-      <div 
+      <div
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex flex-col items-center pt-3 pb-2 cursor-pointer select-none active:bg-neutral-900/10"
       >
@@ -214,7 +201,7 @@ export default function VenueCard({
         }`}
         style={{ paddingBottom: isExpanded ? "env(safe-area-inset-bottom, 0px)" : 0 }}
       >
-        <AnimatePresence mode="wait">
+        <AnimatePresence initial={false}>
           {!isExpanded ? (
             /* ==================== PEEK COMPACT PREVIEW (MORE AIR, NATIVE, CLASSY) ==================== */
             <motion.div
@@ -242,8 +229,8 @@ export default function VenueCard({
                         {venue.category}
                       </span>
                       {vEvents.length > 0 && (
-                        <span className="text-[8px] font-mono font-medium tracking-wide text-violet-400 bg-violet-950/15 border border-violet-900/25 px-1.5 py-0.2 rounded" title="Событие сегодня">
-                          Событие сегодня
+                        <span className="event-badge text-[9px] font-semibold tracking-wide px-2 py-0.5 rounded-full" title="Событие сегодня">
+                          сегодня событие
                         </span>
                       )}
                     </div>
@@ -252,7 +239,7 @@ export default function VenueCard({
                       {venue.name}
                     </h2>
                     
-                    <p className="text-xs text-neutral-400 truncate leading-snug">
+                    <p className="text-xs text-neutral-400 leading-snug line-clamp-2">
                       {venue.shortDescription}
                     </p>
                   </div>
@@ -264,7 +251,8 @@ export default function VenueCard({
                     e.stopPropagation();
                     if (onClose) onClose();
                   }}
-                  className="w-7 h-7 bg-neutral-900/60 hover:bg-neutral-800 border border-neutral-800/80 rounded-full flex items-center justify-center text-[10px] text-neutral-400 hover:text-white transition shrink-0"
+                  className="venue-close-button flex items-center justify-center text-2xl leading-none transition shrink-0"
+                  aria-label="Закрыть карточку"
                 >
                   ×
                 </button>
@@ -274,7 +262,9 @@ export default function VenueCard({
               <div className="flex items-center gap-4 text-[11px] text-neutral-400 font-mono border-t border-neutral-900/70 pt-2.5">
                 <div className="flex items-center gap-1.5">
                   <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
-                  <span className="text-neutral-200 font-semibold">{likesRatio}% одобрения</span>
+                  <span className="text-neutral-200 font-semibold">
+                    {likesRatio === null ? "оценок пока нет" : `${likesRatio}% одобрения`}
+                  </span>
                 </div>
                 <div className="w-1 h-1 bg-neutral-800 rounded-full" />
                 <div className="flex items-center gap-1.5">
@@ -286,29 +276,17 @@ export default function VenueCard({
               {/* Airy & Native Primary Buttons strip */}
               <div className="flex gap-2.5 pt-1.5">
                 <button
-                  onClick={() => onReact(venue.id, "like")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border font-display text-xs font-semibold transition duration-200 cursor-pointer ${
-                    hasLiked
-                      ? "bg-rose-950/10 text-rose-300 border-rose-900/80"
-                      : "bg-neutral-950/40 border-neutral-900 hover:border-neutral-800 text-neutral-300"
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${hasLiked ? "fill-rose-500 text-rose-500" : "text-neutral-500"}`} />
-                  <span>Хочу пойти</span>
-                </button>
-
-                <button
                   onClick={handleRouteClick}
-                  className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-neutral-950/40 hover:bg-neutral-900 border border-neutral-900 hover:border-neutral-800 rounded-2xl text-xs font-semibold text-neutral-300 transition duration-200 cursor-pointer"
+                  className="app-text-button flex-1"
                 >
-                  <MapPin className="w-4 h-4 text-neutral-500" />
-                  <span>Проложить маршрут</span>
+                  Проложить маршрут
                 </button>
 
                 <button
                   onClick={() => setIsExpanded(true)}
-                  className="w-12 flex items-center justify-center bg-white hover:bg-neutral-100 text-black rounded-2xl shadow transition duration-200 cursor-pointer"
+                  className="app-icon-button w-12"
                   title="Подробнее"
+                  aria-label="Подробнее"
                 >
                   <ChevronUp className="w-5 h-5" />
                 </button>
@@ -323,7 +301,7 @@ export default function VenueCard({
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
             >
               {/* Simplified airy title and header bar */}
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-[9px] uppercase font-mono tracking-widest text-[#a1a1aa]">{venue.category}</span>
@@ -334,25 +312,13 @@ export default function VenueCard({
                   <p className="text-xs text-neutral-400 font-sans leading-relaxed max-w-sm">{venue.shortDescription}</p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopyLink}
-                    className="p-2 bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/80 rounded-full transition text-neutral-400 hover:text-white"
-                    title="Поделиться"
-                  >
-                    {copiedSlug ? (
-                      <Check className="w-4 h-4 text-emerald-400" />
-                    ) : (
-                      <Share2 className="w-4 h-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setIsExpanded(false)}
-                    className="w-7 h-7 bg-neutral-900/80 border border-neutral-800 rounded-full flex items-center justify-center text-xs text-neutral-400 hover:text-white transition"
-                  >
-                    ×
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="venue-close-button flex items-center justify-center text-2xl leading-none transition"
+                  aria-label="Свернуть карточку"
+                >
+                  ×
+                </button>
               </div>
 
               {/* Airy Beautiful Photo Cover Gallery */}
@@ -363,18 +329,20 @@ export default function VenueCard({
                   className="w-full h-full object-cover filter brightness-[0.85]"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                
-                <div className="absolute bottom-5 left-5 right-5 flex justify-between items-end">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest">Атмосфера места</span>
-                    <div className="text-sm font-semibold text-white flex items-center gap-1.5">
-                      <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-                      <span>{likesRatio}% Одобрено гостями ({totalFeedback} оценок)</span>
-                    </div>
-                  </div>
-                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
               </div>
+
+              {isPremiumActive && premium.ctaUrl && (
+                <a
+                  href={premium.ctaUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="premium-cta app-text-button w-full"
+                  onClick={() => handleSocialClick("premium_cta", premium.ctaText || "Подробнее")}
+                >
+                  {premium.ctaText || "Подробнее"}
+                </a>
+              )}
 
               {/* Premium Mood Daily Quote overlay if present */}
               {isPremiumActive && premium.moodBlock && (
@@ -383,7 +351,7 @@ export default function VenueCard({
                     <Calendar className="w-3.5 h-3.5 text-amber-500" />
                   </div>
                   <div>
-                    <div className="text-[9px] font-mono uppercase tracking-[0.12em] text-[#a1a1aa]">Вайб дня сегодня:</div>
+                    <div className="text-[9px] font-mono uppercase tracking-[0.12em] text-[#a1a1aa]">Атмосфера сегодня:</div>
                     <p className="text-xs sm:text-sm text-neutral-200 mt-1 leading-relaxed italic">«{premium.moodBlock}»</p>
                   </div>
                 </div>
@@ -393,25 +361,23 @@ export default function VenueCard({
               <div className="grid grid-cols-2 gap-3" id="reactions-controls-expanded">
                 <button
                   onClick={() => onReact(venue.id, "like")}
-                  className={`flex items-center justify-center gap-2 py-4 rounded-2xl border font-display text-xs font-semibold transition duration-200 cursor-pointer ${
+                  className={`app-text-button ${
                     hasLiked
-                      ? "bg-rose-950/10 text-rose-300 border-rose-900"
-                      : "bg-neutral-950/50 border-neutral-900 hover:border-neutral-800 text-neutral-300"
+                      ? "app-text-button-active"
+                      : ""
                   }`}
                 >
-                  <Heart className={`w-4 h-4 ${hasLiked ? "fill-rose-500 text-rose-500" : "text-neutral-500"}`} />
                   <span>Рекомендую ({venue.likesCount})</span>
                 </button>
 
                 <button
                   onClick={() => onReact(venue.id, "not_my_place")}
-                  className={`flex items-center justify-center gap-2 py-4 rounded-2xl border font-display text-xs font-semibold transition duration-200 cursor-pointer ${
+                  className={`app-text-button ${
                     hasNotMyPlace
-                      ? "bg-amber-950/10 text-amber-300 border-amber-900/60"
-                      : "bg-neutral-950/50 border-neutral-900 hover:border-neutral-800 text-neutral-400"
+                      ? "app-text-button-muted-active"
+                      : ""
                   }`}
                 >
-                  <Frown className={`w-4 h-4 ${hasNotMyPlace ? "text-amber-500" : "text-neutral-500"}`} />
                   <span>Не моё место ({venue.notMyPlaceCount})</span>
                 </button>
               </div>
@@ -439,7 +405,7 @@ export default function VenueCard({
                     activeTab === "vibes" ? "venue-tab-active" : ""
                   }`}
                 >
-                  Вайб
+                  Атмосфера
                   <span className="text-[10px] w-4.5 h-4.5 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 font-mono">
                     {Object.keys(venue.vibeRatings || {}).length}
                   </span>
@@ -497,7 +463,6 @@ export default function VenueCard({
 
                       {/* Atmosphere Horizontal Scroll Gallery */}
                       <div className="space-y-3 pt-3 border-t border-neutral-905">
-                        <div className="text-[10px] font-mono text-neutral-500 uppercase tracking-[0.15em] px-0.5">Кадры атмосферы</div>
                         <div className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-none snap-x">
                           {venue.gallery.slice(1).map((photoUrl, index) => (
                             <div key={index} className="w-60 h-36 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-900/50 shadow shrink-0 snap-start">
@@ -522,7 +487,7 @@ export default function VenueCard({
                         <div className="venue-soft-panel p-5 space-y-3">
                           <div className="flex items-center gap-2">
                             <Check className="w-4 h-4 text-amber-500" />
-                            <span className="text-[10px] font-display font-bold uppercase tracking-[0.1em] text-white">Топы:</span>
+                            <span className="text-[10px] font-display font-bold uppercase tracking-[0.1em] text-white">Рекомендуем</span>
                           </div>
                           
                           <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" variants={revealList} initial="hidden" animate="show">
@@ -592,9 +557,9 @@ export default function VenueCard({
 
                           <button
                             onClick={handleRouteClick}
-                            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 rounded-xl text-xs font-semibold text-neutral-200 transition cursor-pointer font-sans"
+                            className="app-text-button w-full"
                           >
-                            <MapPin className="w-3.5 h-3.5" /> Найти на Яндекс Картах
+                            Найти на Яндекс Картах
                           </button>
                         </div>
                       </div>
@@ -637,18 +602,6 @@ export default function VenueCard({
                             </a>
                           )}
                         </div>
-
-                        {isPremiumActive && premium.ctaUrl && (
-                          <a
-                            href={premium.ctaUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="ml-auto text-[10px] font-display font-bold uppercase tracking-widest px-4.5 py-2.5 rounded-xl transition shadow"
-                            style={{ backgroundColor: "var(--app-text)", color: "var(--app-bg)" }}
-                          >
-                            {premium.ctaText || "Подробнее"}
-                          </a>
-                        )}
                       </div>
                     </motion.div>
                   )}
@@ -721,9 +674,11 @@ export default function VenueCard({
                       <div className="pt-3">
                         <button
                           onClick={() => setShowVibeCreator(!showVibeCreator)}
-                          className="flex items-center gap-1.5 text-xs text-white bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 py-3 px-5 rounded-2xl transition cursor-pointer"
+                          className="app-icon-button w-full min-h-11"
+                          aria-label="Выразить свою атмосферу"
+                          title="Выразить свою атмосферу"
                         >
-                          <Plus className="w-4 h-4" /> Выразить свой вайб
+                          <Plus className="w-5 h-5" />
                         </button>
 
                         <AnimatePresence>
@@ -753,7 +708,7 @@ export default function VenueCard({
                                           : "bg-neutral-900 text-neutral-400 border-neutral-800/70 hover:border-neutral-700"
                                       }`}
                                     >
-                                      {isVoted ? `✓ ${vibe}` : `+ ${vibe}`}
+                                      {vibe}
                                     </motion.button>
                                   );
                                 })}
@@ -790,7 +745,7 @@ export default function VenueCard({
                                   <img
                                     src={ev.coverImage}
                                     alt={ev.title}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain"
                                     referrerPolicy="no-referrer"
                                   />
                                 </div>
