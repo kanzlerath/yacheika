@@ -36,6 +36,10 @@ const VENUE_HIT_LAYER_ID = "venue-hit-area";
 const VENUE_POINTS_LAYER_ID = "venue-points";
 const VENUE_SELECTED_LAYER_ID = "venue-selected-ring";
 const VENUE_LABELS_LAYER_ID = "venue-labels";
+const SELECTED_VENUE_SOURCE_ID = "selected-venue";
+const SELECTED_VENUE_HALO_LAYER_ID = "selected-venue-halo";
+const SELECTED_VENUE_POINT_LAYER_ID = "selected-venue-point";
+const SELECTED_VENUE_RING_LAYER_ID = "selected-venue-ring";
 
 type VenueFeatureCollection = GeoJSON.FeatureCollection<
   GeoJSON.Point,
@@ -54,31 +58,9 @@ const EMPTY_VENUE_COLLECTION: VenueFeatureCollection = {
 };
 
 const getMapStyleObject = (styleName: MapStyle) => {
-  const url =
-    styleName === "light"
-      ? "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
-      : "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png";
-
-  return {
-    version: 8,
-    sources: {
-      "cartodb-raster": {
-        type: "raster",
-        tiles: [url],
-        tileSize: 256,
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO"
-      }
-    },
-    layers: [
-      {
-        id: "cartodb-raster-layer",
-        type: "raster",
-        source: "cartodb-raster",
-        minzoom: 0,
-        maxzoom: 20
-      }
-    ]
-  };
+  return styleName === "light"
+    ? "https://tiles.openfreemap.org/styles/liberty"
+    : "https://tiles.openfreemap.org/styles/dark";
 };
 
 const getFilteredVenues = (
@@ -106,20 +88,44 @@ const toVenueFeatureCollection = (
   selectedVenue: Venue | null,
 ): VenueFeatureCollection => ({
   type: "FeatureCollection",
-  features: venues.map((venue) => ({
-    type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: [venue.longitude, venue.latitude],
-    },
-    properties: {
-      id: venue.id,
-      name: venue.name,
-      category: venue.category,
-      accent: venue.premiumConfig?.customColors?.accent || "#71717a",
-      selected: selectedVenue?.id === venue.id,
-    },
-  })),
+  features: venues
+    .filter((venue) => venue.id !== selectedVenue?.id)
+    .map((venue) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: [venue.longitude, venue.latitude],
+      },
+      properties: {
+        id: venue.id,
+        name: venue.name,
+        category: venue.category,
+        accent: venue.premiumConfig?.customColors?.accent || "#71717a",
+        selected: false,
+      },
+    })),
+});
+
+const toSelectedVenueFeatureCollection = (venue: Venue | null): VenueFeatureCollection => ({
+  type: "FeatureCollection",
+  features: venue
+    ? [
+        {
+          type: "Feature",
+          geometry: {
+            type: "Point",
+            coordinates: [venue.longitude, venue.latitude],
+          },
+          properties: {
+            id: venue.id,
+            name: venue.name,
+            category: venue.category,
+            accent: venue.premiumConfig?.customColors?.accent || "#d2a56b",
+            selected: true,
+          },
+        },
+      ]
+    : [],
 });
 
 const ensureVenueLayers = (map: maplibregl.Map) => {
@@ -263,6 +269,55 @@ const ensureVenueLayers = (map: maplibregl.Map) => {
         "text-color": "#f4f4f5",
         "text-halo-color": "rgba(3, 3, 3, 0.88)",
         "text-halo-width": 1.4,
+      },
+    });
+  }
+
+  if (!map.getSource(SELECTED_VENUE_SOURCE_ID)) {
+    map.addSource(SELECTED_VENUE_SOURCE_ID, {
+      type: "geojson",
+      data: EMPTY_VENUE_COLLECTION,
+    });
+  }
+
+  if (!map.getLayer(SELECTED_VENUE_HALO_LAYER_ID)) {
+    map.addLayer({
+      id: SELECTED_VENUE_HALO_LAYER_ID,
+      type: "circle",
+      source: SELECTED_VENUE_SOURCE_ID,
+      paint: {
+        "circle-color": ["get", "accent"],
+        "circle-radius": 22,
+        "circle-opacity": 0.24,
+        "circle-blur": 0.35,
+      },
+    });
+  }
+
+  if (!map.getLayer(SELECTED_VENUE_POINT_LAYER_ID)) {
+    map.addLayer({
+      id: SELECTED_VENUE_POINT_LAYER_ID,
+      type: "circle",
+      source: SELECTED_VENUE_SOURCE_ID,
+      paint: {
+        "circle-color": ["get", "accent"],
+        "circle-radius": 8,
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+      },
+    });
+  }
+
+  if (!map.getLayer(SELECTED_VENUE_RING_LAYER_ID)) {
+    map.addLayer({
+      id: SELECTED_VENUE_RING_LAYER_ID,
+      type: "circle",
+      source: SELECTED_VENUE_SOURCE_ID,
+      paint: {
+        "circle-color": "rgba(255, 255, 255, 0)",
+        "circle-radius": 14,
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 1.5,
       },
     });
   }
@@ -450,7 +505,7 @@ export default function MapContainer({
       const coordinates = (feature.geometry as GeoJSON.Point).coordinates as [number, number];
       map.easeTo({
         center: coordinates,
-        zoom,
+        zoom: Math.max(map.getZoom() + 0.6, zoom),
         duration: 700,
       });
     };
@@ -506,12 +561,13 @@ export default function MapContainer({
   // Center/Fly to Selected Venue
   useEffect(() => {
     if (!mapRef.current || !selectedVenue) return;
+    const currentZoom = mapRef.current.getZoom();
     
     mapRef.current.flyTo({
       center: [selectedVenue.longitude, selectedVenue.latitude],
-      zoom: 15,
+      zoom: Math.max(currentZoom, 15.4),
       essential: true,
-      duration: 1200,
+      duration: 760,
     });
   }, [selectedVenue]);
 
@@ -525,14 +581,16 @@ export default function MapContainer({
 
     const updateSource = () => {
       ensureVenueLayers(map);
-      const source = map.getSource(VENUES_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      source?.setData(toVenueFeatureCollection(filtered, selectedVenue));
+      const venuesSource = map.getSource(VENUES_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      const selectedSource = map.getSource(SELECTED_VENUE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+      venuesSource?.setData(toVenueFeatureCollection(filtered, selectedVenue));
+      selectedSource?.setData(toSelectedVenueFeatureCollection(selectedVenue));
     };
 
     if (map.isStyleLoaded()) {
       updateSource();
     } else {
-      map.once("load", updateSource);
+      map.once("styledata", updateSource);
     }
   }, [venues, selectedVenue, filters, adminMode, mapStyle]);
 
