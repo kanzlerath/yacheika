@@ -94,13 +94,6 @@ export default function MapContainer({
 
     mapRef.current = map;
 
-    // Handle map clicks in Admin Mode for coordinates positioning
-    map.on("click", (e) => {
-      if (onCoordsSelect) {
-        onCoordsSelect(e.lngLat.lat, e.lngLat.lng);
-      }
-    });
-
     // Resize observer to handle dynamic size changes of the container
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
@@ -227,10 +220,13 @@ export default function MapContainer({
       }
     };
 
-    map.off("click", clickHandler);
     if (adminMode) {
       map.on("click", clickHandler);
     }
+
+    return () => {
+      map.off("click", clickHandler);
+    };
   }, [adminMode, onCoordsSelect]);
 
   // Center/Fly to Selected Venue
