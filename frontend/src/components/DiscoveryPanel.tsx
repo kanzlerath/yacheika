@@ -4,7 +4,7 @@
  */
 
 import { useState, Dispatch, SetStateAction } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import {
   Search,
   X,
@@ -198,10 +198,14 @@ export default function DiscoveryPanel({
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-11 h-11 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
                         <img
-                          src={venue.gallery[0]}
+                          src={venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
                           className="w-full h-full object-cover filter brightness-[0.85] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.src = "/logo.png";
+                          }}
                         />
                       </div>
                       <div className="space-y-0.5 overflow-hidden">
@@ -280,17 +284,12 @@ export default function DiscoveryPanel({
         {/* Collapsible filter tags row with chevron toggle */}
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <AnimatePresence initial={false} mode="wait">
-            {isFiltersExpanded ? (
-              <motion.div
-                key="filters-expanded"
-                initial={{ opacity: 0, height: 30, y: -4 }}
-                animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 30, y: -4 }}
-                transition={softTransition}
-                className="flex flex-wrap gap-1.5 py-0.5"
-              >
-                {UNIFIED_PILLS.map((pill) => {
+            <motion.div
+              layout
+              transition={softTransition}
+              className={isFiltersExpanded ? "flex flex-wrap gap-1.5 py-0.5" : "overflow-x-auto scrollbar-none flex gap-1.5 py-0.5 -mx-1 px-1"}
+            >
+                {(isFiltersExpanded ? UNIFIED_PILLS : UNIFIED_PILLS.slice(0, 5)).map((pill) => {
                   const active = isPillActive(pill);
                   return (
                     <button
@@ -300,41 +299,13 @@ export default function DiscoveryPanel({
                         active
                           ? "discovery-pill-active font-semibold shadow"
                           : "discovery-pill border"
-                      }`}
+                      } ${isFiltersExpanded ? "" : "shrink-0"}`}
                     >
                       {pill.label}
                     </button>
                   );
                 })}
               </motion.div>
-            ) : (
-              <motion.div
-                key="filters-compact"
-                initial={{ opacity: 0, height: 30, y: 4 }}
-                animate={{ opacity: 1, height: "auto", y: 0 }}
-                exit={{ opacity: 0, height: 30, y: 4 }}
-                transition={softTransition}
-                className="overflow-x-auto scrollbar-none flex gap-1.5 py-0.5 -mx-1 px-1"
-              >
-                {UNIFIED_PILLS.slice(0, 5).map((pill) => {
-                  const active = isPillActive(pill);
-                  return (
-                    <button
-                      key={pill.id}
-                      onClick={() => handlePillClick(pill)}
-                      className={`text-[11px] px-3.5 py-1.5 rounded-lg font-medium transition shrink-0 select-none cursor-pointer duration-150 ${
-                        active
-                          ? "discovery-pill-active font-semibold shadow"
-                          : "discovery-pill border"
-                      }`}
-                    >
-                      {pill.label}
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-            </AnimatePresence>
           </div>
           <button
             onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
@@ -414,10 +385,14 @@ export default function DiscoveryPanel({
                       {/* Micro clean photo without aggressive sizes */}
                       <div className="w-11 h-11 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
                         <img
-                          src={venue.gallery[0]}
+                          src={venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
                           className="w-full h-full object-cover filter brightness-[0.85] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
+                          loading="lazy"
+                          onError={(event) => {
+                            event.currentTarget.src = "/logo.png";
+                          }}
                         />
                       </div>
                       

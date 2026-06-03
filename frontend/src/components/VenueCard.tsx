@@ -10,13 +10,14 @@ import {
   MapPin,
   Clock,
   Phone,
-  Check,
   Send,
   Instagram,
   Globe,
   Plus,
   Calendar,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
@@ -57,6 +58,7 @@ export default function VenueCard({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "events" | "vibes">("info");
   const [showVibeCreator, setShowVibeCreator] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   // Filter user's reactions
   const hasLiked = userReactions.some(r => r.venueId === venue.id && r.type === "like");
@@ -70,11 +72,15 @@ export default function VenueCard({
 
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
+  const primaryColor = customColors?.primary || "#131923";
   const accentColor = customColors?.accent || "#d2a56b";
+  const glowColor = customColors?.glowColor || accentColor;
   const compactHeight = "calc(286px + env(safe-area-inset-bottom, 0px))";
   const expandedHeight = "min(84dvh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px)))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
-  const primaryImage = (isPremiumActive && premium.heroImage) || venue.gallery[0];
+  const galleryImages = venue.gallery.filter(Boolean);
+  const lightboxImages = isPremiumActive && premium.heroImage ? [premium.heroImage, ...galleryImages] : galleryImages;
+  const primaryImage = (isPremiumActive && premium.heroImage) || galleryImages[0] || "/logo.png";
   const topItems = premium.topItems || premium.featuredDrinks || [];
 
   // Reputation metrics
@@ -176,13 +182,14 @@ export default function VenueCard({
       }`}
       style={{
         background: isPremiumActive
-          ? `linear-gradient(180deg, color-mix(in srgb, ${accentColor} 14%, var(--app-panel)) 0%, var(--app-panel) 34%, var(--app-bg) 100%)`
+          ? `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 72%, var(--app-panel)) 0%, var(--app-panel) 42%, var(--app-bg) 100%)`
           : "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
         borderColor: isPremiumActive ? `color-mix(in srgb, ${accentColor} 38%, var(--app-border))` : "var(--app-border)",
         boxShadow: isPremiumActive
-          ? `0 24px 60px rgba(0,0,0,0.62), 0 0 0 1px color-mix(in srgb, ${accentColor} 16%, transparent)`
+          ? `0 24px 60px rgba(0,0,0,0.62), 0 0 28px color-mix(in srgb, ${glowColor} 20%, transparent)`
           : "var(--app-shadow)",
         ["--venue-accent" as any]: accentColor,
+        ["--venue-glow" as any]: glowColor,
       }}
       id={`venue-card-${venue.id}`}
     >
@@ -204,9 +211,7 @@ export default function VenueCard({
         <AnimatePresence initial={false}>
           {!isExpanded ? (
             /* ==================== PEEK COMPACT PREVIEW (MORE AIR, NATIVE, CLASSY) ==================== */
-            <motion.div
-              key="peek"
-              {...contentSwitch}
+            <div
               className="px-5 space-y-4 text-left"
               style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom, 0px))" }}
             >
@@ -219,6 +224,10 @@ export default function VenueCard({
                       alt={venue.name}
                       className="w-full h-full object-cover filter brightness-[0.9]"
                       referrerPolicy="no-referrer"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.src = "/logo.png";
+                      }}
                     />
                   </div>
 
@@ -228,11 +237,6 @@ export default function VenueCard({
                       <span className="text-[9px] uppercase font-mono tracking-widest text-neutral-400">
                         {venue.category}
                       </span>
-                      {vEvents.length > 0 && (
-                        <span className="event-badge text-[9px] font-semibold tracking-wide px-2 py-0.5 rounded-full" title="Событие сегодня">
-                          сегодня событие
-                        </span>
-                      )}
                     </div>
                     
                     <h2 className="text-lg font-display font-bold text-white tracking-tight leading-tight truncate">
@@ -291,12 +295,10 @@ export default function VenueCard({
                   <ChevronUp className="w-5 h-5" />
                 </button>
               </div>
-            </motion.div>
+            </div>
           ) : (
             /* ==================== EXPANDED PANEL (CLEATER, LESS BOXED GRIDS, SPACIOUS) ==================== */
-            <motion.div
-              key="expanded"
-              {...contentSwitch}
+            <div
               className="px-5 space-y-6 text-left"
               style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
             >
@@ -321,16 +323,25 @@ export default function VenueCard({
                 </button>
               </div>
 
-              {/* Airy Beautiful Photo Cover Gallery */}
-              <div className="relative h-48 sm:h-56 w-full rounded-2xl overflow-hidden group border border-neutral-900/60 shadow-xl bg-neutral-950">
-                <img
-                  src={primaryImage}
-                  alt={venue.name}
-                  className="w-full h-full object-cover filter brightness-[0.85]"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
-              </div>
+              {isPremiumActive && premium.heroImage && (
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex(0)}
+                  className="relative h-48 sm:h-56 w-full rounded-2xl overflow-hidden group border border-neutral-900/60 shadow-xl bg-neutral-950"
+                >
+                  <img
+                    src={premium.heroImage}
+                    alt={venue.name}
+                    className="w-full h-full object-cover filter brightness-[0.85]"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.src = "/logo.png";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+                </button>
+              )}
 
               {isPremiumActive && premium.ctaUrl && (
                 <a
@@ -437,7 +448,7 @@ export default function VenueCard({
 
               {/* Tab Workspace Panel */}
               <div className="min-h-[160px] pb-6">
-                <AnimatePresence mode="wait">
+                <AnimatePresence initial={false}>
                   {activeTab === "info" && (
                     <motion.div
                       key="info-content"
@@ -456,7 +467,7 @@ export default function VenueCard({
                             key={tag}
                             className="px-3.5 py-1.5 bg-neutral-900/60 text-[10px] text-neutral-400 font-mono border border-neutral-900 rounded-lg select-none"
                           >
-                            # {tag}
+                            {tag}
                           </span>
                         ))}
                       </div>
@@ -464,17 +475,26 @@ export default function VenueCard({
                       {/* Atmosphere Horizontal Scroll Gallery */}
                       <div className="space-y-3 pt-3 border-t border-neutral-905">
                         <div className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-none snap-x">
-                          {venue.gallery.slice(1).map((photoUrl, index) => (
-                            <div key={index} className="w-60 h-36 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-900/50 shadow shrink-0 snap-start">
+                          {galleryImages.map((photoUrl, index) => (
+                            <button
+                              key={photoUrl}
+                              type="button"
+                              onClick={() => setLightboxIndex((isPremiumActive && premium.heroImage ? 1 : 0) + index)}
+                              className="w-60 h-36 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-900/50 shadow shrink-0 snap-start"
+                            >
                               <img
                                 src={photoUrl}
                                 alt="Атмосфера"
                                 className="w-full h-full object-cover select-none filter brightness-95"
                                 referrerPolicy="no-referrer"
+                                loading="lazy"
+                                onError={(event) => {
+                                  event.currentTarget.src = "/logo.png";
+                                }}
                               />
-                            </div>
+                            </button>
                           ))}
-                          {venue.gallery.length < 2 && (
+                          {galleryImages.length === 0 && (
                             <div className="border border-dashed border-neutral-900 w-60 h-36 rounded-2xl flex items-center justify-center text-center p-5 text-neutral-500 text-xs shrink-0 bg-neutral-900/10 font-mono">
                               Дополнительные кадры пока не добавлены
                             </div>
@@ -484,15 +504,14 @@ export default function VenueCard({
 
                       {/* Curated featured suggestions */}
                       {isPremiumActive && topItems.length > 0 && (
-                        <div className="venue-soft-panel p-5 space-y-3">
-                          <div className="flex items-center gap-2">
-                            <Check className="w-4 h-4 text-amber-500" />
+                        <div className="recommended-panel p-5 space-y-3">
+                          <div>
                             <span className="text-[10px] font-display font-bold uppercase tracking-[0.1em] text-white">Рекомендуем</span>
                           </div>
                           
                           <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs" variants={revealList} initial="hidden" animate="show">
                             {topItems.map((drink, i) => (
-                              <motion.div key={i} className="flex items-center gap-2.5 bg-neutral-900/20 p-2 py-2.5 rounded-xl border border-neutral-900/40" variants={revealItem}>
+                              <motion.div key={i} className="flex items-center gap-2.5 py-1.5" variants={revealItem}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-505 shrink-0" />
                                 <span className="font-semibold text-neutral-300">{drink}</span>
                               </motion.div>
@@ -502,10 +521,10 @@ export default function VenueCard({
                       )}
 
                       {/* Clean classy contact coordinates */}
-                      <div className="grid sm:grid-cols-2 gap-6 border-t border-neutral-900 pt-5 text-xs font-mono">
+                      <div className="grid sm:grid-cols-2 gap-6 border-t border-neutral-900 pt-5 text-xs font-mono venue-info-grid">
                         <div className="space-y-4">
-                          <div className="flex items-start gap-3">
-                            <Clock className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
+                          <div className="venue-info-row">
+                            <Clock className="w-4 h-4 text-neutral-500 shrink-0" />
                             <div>
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">ВРЕМЯ РАБОТЫ</div>
                               {schedule ? (
@@ -527,8 +546,8 @@ export default function VenueCard({
                             </div>
                           </div>
                           
-                          <div className="flex items-start gap-3">
-                            <Phone className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
+                          <div className="venue-info-row">
+                            <Phone className="w-4 h-4 text-neutral-500 shrink-0" />
                             <div>
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">КОНТАКТЫ</div>
                               {venue.contacts.phone ? (
@@ -547,8 +566,8 @@ export default function VenueCard({
                         </div>
 
                         <div className="space-y-4 text-xs font-mono">
-                          <div className="flex items-start gap-3">
-                            <MapPin className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
+                          <div className="venue-info-row">
+                            <MapPin className="w-4 h-4 text-neutral-500 shrink-0" />
                             <div>
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">АДРЕС</div>
                               <span className="text-neutral-200 font-sans text-xs">{venue.address}</span>
@@ -565,9 +584,7 @@ export default function VenueCard({
                       </div>
 
                       {/* External Classy links row */}
-                      <div className="flex items-center gap-3 border-t border-neutral-900 pt-4">
-                        <span className="text-[10px] uppercase font-mono tracking-wider text-neutral-500">Ресурсы:</span>
-                        <div className="flex gap-2">
+                      <div className="flex items-center gap-2 border-t border-neutral-900 pt-4">
                           {venue.contacts.telegram && (
                             <a
                               href={`https://t.me/${venue.contacts.telegram}`}
@@ -601,7 +618,6 @@ export default function VenueCard({
                               <Globe className="w-4 h-4 text-[#818cf8]" />
                             </a>
                           )}
-                        </div>
                       </div>
                     </motion.div>
                   )}
@@ -622,7 +638,7 @@ export default function VenueCard({
                             Рейтинг тегов пуст. Станьте первым!
                           </div>
                         ) : (
-                          <motion.div className="space-y-3 pt-1" variants={revealList} initial="hidden" animate="show">
+                          <div className="space-y-3 pt-1">
                             {Object.entries(venue.vibeRatings)
                               .sort((a, b) => b[1] - a[1])
                               .map(([tag, votes]) => {
@@ -633,12 +649,11 @@ export default function VenueCard({
                                 const activeColor = isPremiumActive ? accentColor : "#e11d48";
 
                                 return (
-                                  <motion.button
+                                  <button
                                     key={tag}
                                     onClick={() => {
                                       onReact(venue.id, "vibe_tag", tag);
                                     }}
-                                    variants={revealItem}
                                     className="w-full text-left py-2 px-1 relative transition duration-200 group cursor-pointer block"
                                   >
                                     <div className="flex justify-between items-center text-xs text-neutral-300 font-display relative z-10">
@@ -664,10 +679,10 @@ export default function VenueCard({
                                         }}
                                       />
                                     </div>
-                                  </motion.button>
+                                  </button>
                                 );
                               })}
-                          </motion.div>
+                          </div>
                         )}
                       </div>
 
@@ -691,17 +706,15 @@ export default function VenueCard({
                               className="venue-soft-panel mt-3.5 p-4.5 space-y-3"
                             >
                               <div className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest leading-none mb-1">Свободная подборка:</div>
-                              <motion.div className="flex flex-wrap gap-2" variants={revealList} initial="hidden" animate="show">
+                              <div className="flex flex-wrap gap-2">
                                 {AVAILABLE_VIBES.map((vibe) => {
                                   const isVoted = likedVibeTags.includes(vibe);
                                   return (
-                                    <motion.button
+                                    <button
                                       key={vibe}
                                       onClick={() => {
                                         onReact(venue.id, "vibe_tag", vibe);
                                       }}
-                                      variants={revealItem}
-                                      whileTap={{ scale: 0.98 }}
                                       className={`text-[11px] px-3.5 py-1.5 rounded-full border font-display transition duration-200 cursor-pointer ${
                                         isVoted
                                           ? "bg-rose-950/20 text-rose-400 border-rose-900"
@@ -709,10 +722,10 @@ export default function VenueCard({
                                       }`}
                                     >
                                       {vibe}
-                                    </motion.button>
+                                    </button>
                                   );
                                 })}
-                              </motion.div>
+                              </div>
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -741,22 +754,23 @@ export default function VenueCard({
                               className="venue-soft-panel w-full overflow-hidden flex flex-col sm:flex-row gap-4 p-4.5 transition duration-200 cursor-pointer"
                             >
                               {ev.coverImage && (
-                                <div className="w-full sm:w-32 h-24 shrink-0 rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
+                                <div className="w-full sm:w-36 shrink-0 rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
                                   <img
                                     src={ev.coverImage}
                                     alt={ev.title}
-                                    className="w-full h-full object-contain"
+                                    className="w-full h-auto object-contain"
                                     referrerPolicy="no-referrer"
+                                    loading="lazy"
                                   />
                                 </div>
                               )}
                               <div className="space-y-2 text-left">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="flex items-center gap-1 text-[10px] font-mono text-violet-400 uppercase tracking-widest">
-                                    <Calendar className="w-3.5 h-3.5" /> Сегодня
-                                  </span>
-                                  <span className="text-[10px] bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded text-neutral-400 font-mono">
-                                    {ev.time}
+                                <div className="flex flex-wrap items-center gap-1 text-[10px] font-mono text-violet-400 uppercase tracking-widest">
+                                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                  <span>
+                                    {ev.date === new Date().toISOString().split("T")[0]
+                                      ? "Сегодня"
+                                      : new Date(ev.date).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}, {ev.time}
                                   </span>
                                 </div>
                                 
@@ -771,10 +785,65 @@ export default function VenueCard({
                   )}
                 </AnimatePresence>
               </div>
-            </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
+      <AnimatePresence>
+        {lightboxIndex !== null && lightboxImages[lightboxIndex] && (
+          <motion.div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/88 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightboxIndex(null)}
+          >
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setLightboxIndex(null);
+              }}
+              className="venue-close-button absolute right-4 top-4 text-3xl"
+              aria-label="Закрыть галерею"
+            >
+              ×
+            </button>
+            {lightboxImages.length > 1 && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightboxIndex((lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length);
+                }}
+                className="app-icon-button absolute left-4 top-1/2 h-11 w-11 -translate-y-1/2"
+                aria-label="Предыдущее фото"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            )}
+            <img
+              src={lightboxImages[lightboxIndex]}
+              alt=""
+              className="max-h-[86dvh] max-w-full object-contain"
+              referrerPolicy="no-referrer"
+            />
+            {lightboxImages.length > 1 && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightboxIndex((lightboxIndex + 1) % lightboxImages.length);
+                }}
+                className="app-icon-button absolute right-4 top-1/2 h-11 w-11 -translate-y-1/2"
+                aria-label="Следующее фото"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

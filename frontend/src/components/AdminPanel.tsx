@@ -15,7 +15,6 @@ import {
   Activity,
   Calendar,
   Check,
-  Eye,
   GripVertical,
   Image,
   LayoutDashboard,
@@ -77,6 +76,42 @@ const CATEGORIES = [
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
 const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
+const COMPRESSED_IMAGE_MAX_SIZE = 1800;
+const COMPRESSED_IMAGE_QUALITY = 0.86;
+
+const formatPhoneInput = (value: string) => {
+  const digits = value.replace(/\D/g, "").replace(/^8/, "7").slice(0, 11);
+  const normalized = digits.startsWith("7") ? digits : `7${digits}`;
+  const body = normalized.slice(1);
+  const parts = [
+    body.slice(0, 3),
+    body.slice(3, 6),
+    body.slice(6, 8),
+    body.slice(8, 10),
+  ].filter(Boolean);
+  if (!parts.length) return "+7 ";
+  return `+7 (${parts[0]}${parts[0].length === 3 ? ")" : ""}${parts[1] ? ` ${parts[1]}` : ""}${parts[2] ? `-${parts[2]}` : ""}${parts[3] ? `-${parts[3]}` : ""}`;
+};
+
+const compressImageFile = async (file: File) => {
+  if (file.type === "image/gif") return file;
+  const bitmap = await createImageBitmap(file);
+  const ratio = Math.min(1, COMPRESSED_IMAGE_MAX_SIZE / Math.max(bitmap.width, bitmap.height));
+  const width = Math.round(bitmap.width * ratio);
+  const height = Math.round(bitmap.height * ratio);
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+  context.drawImage(bitmap, 0, 0, width, height);
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/webp", COMPRESSED_IMAGE_QUALITY);
+  });
+  bitmap.close();
+  if (!blob || blob.size >= file.size) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, ".webp"), { type: "image/webp" });
+};
 
 const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
   id: "",
@@ -167,9 +202,7 @@ export default function AdminPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [pendingGalleryFile, setPendingGalleryFile] = useState<{ file: File; preview: string } | null>(null);
-  const [pendingHeroFile, setPendingHeroFile] = useState<{ file: File; preview: string } | null>(null);
-  const [pendingEventCover, setPendingEventCover] = useState<{ file: File; preview: string } | null>(null);
+  const [uploadingTarget, setUploadingTarget] = useState<"gallery" | "hero" | "event" | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
@@ -249,26 +282,10 @@ export default function AdminPanel({
     setTopItemInput("");
   };
 
-  const selectPendingFile = (
-    file: File | undefined,
-    setter: (value: { file: File; preview: string } | null) => void,
-  ) => {
-    setUploadError(null);
-    if (!file) return;
-    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      setUploadError("Поддерживаются только JPG, PNG, WebP, GIF или AVIF.");
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setUploadError("Размер изображения не должен превышать 8 МБ.");
-      return;
-    }
-    setter({ file, preview: URL.createObjectURL(file) });
-  };
-
   const uploadFile = async (file: File) => {
+    const finalFile = await compressImageFile(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", finalFile);
     const res = await fetch("/api/storage/upload", { method: "POST", body: formData });
     if (!res.ok) {
       const error = await res.json().catch(() => ({}));
@@ -276,6 +293,42 @@ export default function AdminPanel({
     }
     const data = await res.json();
     return data.url as string;
+  };
+
+  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "hero" | "event") => {
+    const list = Array.from(files || []);
+    if (!list.length) return;
+    setUploadError(null);
+    setUploadingTarget(target);
+    try {
+      const validFiles = list.filter((file) => {
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+          setUploadError("Поддерживаются только JPG, PNG, WebP, GIF или AVIF.");
+          return false;
+        }
+        if (file.size > MAX_IMAGE_SIZE_BYTES) {
+          setUploadError("Размер изображения не должен превышать 8 МБ.");
+          return false;
+        }
+        return true;
+      });
+      if (!validFiles.length) return;
+      const urls = await Promise.all(validFiles.map(uploadFile));
+      if (target === "gallery") {
+        setEditingVenue((prev: any) => ({ ...prev, gallery: [...prev.gallery, ...urls] }));
+      } else if (target === "hero") {
+        setEditingVenue((prev: any) => ({
+          ...prev,
+          premiumConfig: { ...prev.premiumConfig, heroImage: urls[0] },
+        }));
+      } else {
+        setNewEvent((prev) => ({ ...prev, coverImage: urls[0] }));
+      }
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Не удалось загрузить изображение");
+    } finally {
+      setUploadingTarget(null);
+    }
   };
 
   const saveVenue = async () => {
@@ -320,42 +373,6 @@ export default function AdminPanel({
     setPendingCoords(null);
   };
 
-  const uploadPendingGallery = async () => {
-    if (!pendingGalleryFile) return;
-    try {
-      const url = await uploadFile(pendingGalleryFile.file);
-      setEditingVenue((prev: any) => ({ ...prev, gallery: [...prev.gallery, url] }));
-      setPendingGalleryFile(null);
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Не удалось загрузить изображение");
-    }
-  };
-
-  const uploadPendingHero = async () => {
-    if (!pendingHeroFile) return;
-    try {
-      const url = await uploadFile(pendingHeroFile.file);
-      setEditingVenue((prev: any) => ({
-        ...prev,
-        premiumConfig: { ...prev.premiumConfig, heroImage: url },
-      }));
-      setPendingHeroFile(null);
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Не удалось загрузить изображение");
-    }
-  };
-
-  const uploadPendingEventCover = async () => {
-    if (!pendingEventCover) return;
-    try {
-      const url = await uploadFile(pendingEventCover.file);
-      setNewEvent((prev) => ({ ...prev, coverImage: url }));
-      setPendingEventCover(null);
-    } catch (error) {
-      setUploadError(error instanceof Error ? error.message : "Не удалось загрузить обложку");
-    }
-  };
-
   const handleGalleryDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -376,23 +393,12 @@ export default function AdminPanel({
       time: "21:00",
       coverImage: "",
     });
-    setPendingEventCover(null);
   };
 
   return (
     <div id="admin-panel" className="admin-panel-minimal min-h-full border bg-neutral-950 p-3 sm:p-4 text-xs sm:text-sm">
       <div className="grid min-h-full grid-cols-1 gap-4 lg:grid-cols-[190px_minmax(0,1fr)]">
         <nav className="space-y-2 border-b border-neutral-900 pb-3 lg:border-b-0 lg:border-r lg:pr-3">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-neutral-500">Админка</div>
-              <div className="font-display text-sm font-semibold text-neutral-100">Управление</div>
-            </div>
-            <button type="button" onClick={startCreateVenue} className="admin-primary rounded-lg border px-2 py-1.5 text-[10px] font-semibold">
-              <Plus className="inline h-3.5 w-3.5" /> Добавить
-            </button>
-          </div>
-
           {[
             ["dashboard", LayoutDashboard, "Дашборд"],
             ["venues", List, "Заведения"],
@@ -404,8 +410,8 @@ export default function AdminPanel({
               key={id as string}
               type="button"
               onClick={() => (id === "add" ? startCreateVenue() : setSection(id as AdminSection))}
-              className={`admin-tab flex w-full items-center gap-2 text-left ${section === id ? "admin-tab-active" : ""}`}
-            >
+            className={`admin-tab flex w-full items-center gap-2 text-left ${section === id ? "admin-tab-active" : ""}`}
+          >
               <Icon className="h-4 w-4" />
               {label as string}
             </button>
@@ -425,7 +431,7 @@ export default function AdminPanel({
 
           {(section === "venues" || section === "add") && (
             <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
-              <VenueList venues={venues} selectedVenue={selectedVenue} onSelectVenue={loadVenue} onCreate={startCreateVenue} />
+              <VenueList venues={venues} selectedVenue={selectedVenue} onSelectVenue={loadVenue} />
               <div className="space-y-4">
                 <VenueEditor
                   editingVenue={editingVenue}
@@ -440,13 +446,8 @@ export default function AdminPanel({
                   onToggleMobileMap={onToggleMobileMap}
                   applyPendingCoords={applyPendingCoords}
                   uploadError={uploadError}
-                  pendingGalleryFile={pendingGalleryFile}
-                  pendingHeroFile={pendingHeroFile}
-                  selectPendingFile={selectPendingFile}
-                  setPendingGalleryFile={setPendingGalleryFile}
-                  setPendingHeroFile={setPendingHeroFile}
-                  uploadPendingGallery={uploadPendingGallery}
-                  uploadPendingHero={uploadPendingHero}
+                  uploadingTarget={uploadingTarget}
+                  uploadSelectedImages={uploadSelectedImages}
                   sensors={sensors}
                   handleGalleryDragEnd={handleGalleryDragEnd}
                   topItemInput={topItemInput}
@@ -459,11 +460,9 @@ export default function AdminPanel({
                   events={selectedVenueEvents}
                   newEvent={newEvent}
                   setNewEvent={setNewEvent}
-                  pendingEventCover={pendingEventCover}
-                  setPendingEventCover={setPendingEventCover}
-                  selectPendingFile={selectPendingFile}
-                  uploadPendingEventCover={uploadPendingEventCover}
                   uploadError={uploadError}
+                  uploadingTarget={uploadingTarget}
+                  uploadSelectedImages={uploadSelectedImages}
                   onDeleteEvent={onDeleteEvent}
                   createEvent={createEvent}
                 />
@@ -550,15 +549,10 @@ function DashboardView({ dashboard, analytics, venues }: { dashboard: AdminDashb
   );
 }
 
-function VenueList({ venues, selectedVenue, onSelectVenue, onCreate }: { venues: Venue[]; selectedVenue: Venue | null; onSelectVenue: (venue: Venue) => void; onCreate: () => void }) {
+function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Venue[]; selectedVenue: Venue | null; onSelectVenue: (venue: Venue) => void }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-sm font-semibold text-neutral-100">Заведения</h2>
-        <button type="button" onClick={onCreate} className="admin-primary rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold">
-          <Plus className="inline h-3.5 w-3.5" /> Новое
-        </button>
-      </div>
+      <h2 className="font-display text-sm font-semibold text-neutral-100">Заведения</h2>
       <div className="max-h-[72vh] space-y-1.5 overflow-y-auto pr-1">
         {venues.map((venue) => (
           <button
@@ -593,13 +587,8 @@ function VenueEditor(props: any) {
     onToggleMobileMap,
     applyPendingCoords,
     uploadError,
-    pendingGalleryFile,
-    pendingHeroFile,
-    selectPendingFile,
-    setPendingGalleryFile,
-    setPendingHeroFile,
-    uploadPendingGallery,
-    uploadPendingHero,
+    uploadingTarget,
+    uploadSelectedImages,
     sensors,
     handleGalleryDragEnd,
     topItemInput,
@@ -667,12 +656,12 @@ function VenueEditor(props: any) {
             const interval = schedule[day.key]?.[0] || { from: "18:00", to: "02:00" };
             const closed = (schedule[day.key] || []).length === 0;
             return (
-              <div key={day.key} className="grid grid-cols-[92px_1fr] items-center gap-2 rounded-lg border border-neutral-900 p-2">
+              <div key={day.key} className="grid gap-2 rounded-lg border border-neutral-900 p-2 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-center">
                 <label className="flex items-center gap-2 text-xs font-semibold text-neutral-200">
                   <input type="checkbox" checked={!closed} onChange={(event) => updateSchedule(day.key, { closed: !event.target.checked })} />
                   {day.label}
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2">
                   <input type="time" disabled={closed} value={interval.from} onChange={(event) => updateSchedule(day.key, { from: event.target.value })} className="admin-input" />
                   <input type="time" disabled={closed} value={interval.to} onChange={(event) => updateSchedule(day.key, { to: event.target.value })} className="admin-input" />
                 </div>
@@ -706,7 +695,13 @@ function VenueEditor(props: any) {
               <Field key={key} label={key}>
                 <input
                   value={editingVenue.contacts[key] || ""}
-                  onChange={(event) => setEditingVenue({ ...editingVenue, contacts: { ...editingVenue.contacts, [key]: event.target.value } })}
+                  onChange={(event) => setEditingVenue({
+                    ...editingVenue,
+                    contacts: {
+                      ...editingVenue.contacts,
+                      [key]: key === "phone" ? formatPhoneInput(event.target.value) : event.target.value,
+                    },
+                  })}
                   className="admin-input"
                   placeholder={
                     key === "phone"
@@ -728,7 +723,7 @@ function VenueEditor(props: any) {
         <div className="flex flex-wrap gap-2">
           {editingVenue.tags.map((tag: string) => (
             <button key={tag} type="button" onClick={() => setEditingVenue({ ...editingVenue, tags: editingVenue.tags.filter((item: string) => item !== tag) })} className="rounded-full border border-neutral-800 px-3 py-1.5 text-xs text-neutral-300">
-              #{tag} ×
+              {tag} ×
             </button>
           ))}
         </div>
@@ -768,7 +763,12 @@ function VenueEditor(props: any) {
             </div>
           </SortableContext>
         </DndContext>
-        <ImageUploadBox pending={pendingGalleryFile} onSelect={(file) => selectPendingFile(file, setPendingGalleryFile)} onUpload={uploadPendingGallery} onClear={() => setPendingGalleryFile(null)} label="Добавить фото" />
+        <ImageUploadBox
+          multiple
+          uploading={uploadingTarget === "gallery"}
+          onSelect={(files) => uploadSelectedImages(files, "gallery")}
+          label="Добавить фото"
+        />
       </AdminBlock>
 
       <AdminBlock title="Premium">
@@ -782,21 +782,32 @@ function VenueEditor(props: any) {
         </label>
         {editingVenue.premiumConfig.premiumActive && (
           <div className="space-y-4">
+            <div
+              className="rounded-xl border p-4"
+              style={{
+                background: `linear-gradient(135deg, ${editingVenue.premiumConfig.customColors.primary}, #0d1117)`,
+                borderColor: editingVenue.premiumConfig.customColors.accent,
+                boxShadow: `0 0 24px color-mix(in srgb, ${editingVenue.premiumConfig.customColors.glowColor} 28%, transparent)`,
+              }}
+            >
+              <div className="text-[10px] uppercase tracking-wider text-neutral-300">Превью premium-акцентов</div>
+              <div className="mt-3 inline-flex rounded-lg px-3 py-2 text-xs font-semibold" style={{ backgroundColor: editingVenue.premiumConfig.customColors.accent, color: "#05070a" }}>
+                CTA / активная кнопка
+              </div>
+            </div>
             <div className="grid gap-2 sm:grid-cols-3">
-              <ColorField label="Фон" value={editingVenue.premiumConfig.customColors.primary} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, primary: value } } })} />
-              <ColorField label="Акцент" value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
-              <ColorField label="Свечение" value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
+              <ColorField label="Фон карточки" hint="Тонирует верх premium-карточки." value={editingVenue.premiumConfig.customColors.primary} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, primary: value } } })} />
+              <ColorField label="Акцент" hint="CTA, контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
+              <ColorField label="Свечение" hint="Мягкая подсветка premium-карточки." value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
             </div>
             <Field label="Вайб дня">
               <input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} className="admin-input" placeholder="Например: Сегодня винил и тихий свет до поздней ночи" />
             </Field>
             <TopItemsEditor editingVenue={editingVenue} setEditingVenue={setEditingVenue} input={topItemInput} setInput={setTopItemInput} addItem={addTopItem} />
             <ImageUploadBox
-              pending={pendingHeroFile}
               existingUrl={editingVenue.premiumConfig.heroImage}
-              onSelect={(file) => selectPendingFile(file, setPendingHeroFile)}
-              onUpload={uploadPendingHero}
-              onClear={() => setPendingHeroFile(null)}
+              uploading={uploadingTarget === "hero"}
+              onSelect={(files) => uploadSelectedImages(files, "hero")}
               label="Главное изображение premium"
             />
             <div className="grid gap-2 sm:grid-cols-2">
@@ -814,7 +825,7 @@ function VenueEditor(props: any) {
   );
 }
 
-function EventEditor({ editingVenue, events, newEvent, setNewEvent, pendingEventCover, setPendingEventCover, selectPendingFile, uploadPendingEventCover, uploadError, onDeleteEvent, createEvent }: any) {
+function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploadError, uploadingTarget, uploadSelectedImages, onDeleteEvent, createEvent }: any) {
   if (!editingVenue.id) {
     return <AdminBlock title="События"><EmptyLine>Сначала сохраните заведение.</EmptyLine></AdminBlock>;
   }
@@ -849,7 +860,12 @@ function EventEditor({ editingVenue, events, newEvent, setNewEvent, pendingEvent
         <textarea value={newEvent.description} onChange={(event) => setNewEvent({ ...newEvent, description: event.target.value })} rows={3} className="admin-input" placeholder="Коротко: что будет, кто играет, почему стоит прийти" />
       </Field>
       {uploadError && <div className="mb-2 rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-rose-200">{uploadError}</div>}
-      <ImageUploadBox pending={pendingEventCover} existingUrl={newEvent.coverImage} onSelect={(file) => selectPendingFile(file, setPendingEventCover)} onUpload={uploadPendingEventCover} onClear={() => setPendingEventCover(null)} label="Обложка события" />
+      <ImageUploadBox
+        existingUrl={newEvent.coverImage}
+        uploading={uploadingTarget === "event"}
+        onSelect={(files) => uploadSelectedImages(files, "event")}
+        label="Обложка события"
+      />
       <div className="mt-3 flex justify-end">
         <button type="button" onClick={createEvent} className="admin-primary rounded-xl border px-4 py-2 font-semibold">
           <Plus className="inline h-4 w-4" /> Создать событие
@@ -930,8 +946,8 @@ function TopItemsEditor({ editingVenue, setEditingVenue, input, setInput, addIte
   );
 }
 
-function ImageUploadBox({ pending, existingUrl, onSelect, onUpload, onClear, label }: any) {
-  const preview = pending?.preview || existingUrl;
+function ImageUploadBox({ existingUrl, onSelect, label, multiple = false, uploading = false }: any) {
+  const preview = existingUrl;
   return (
     <div className="mt-3 rounded-xl border border-neutral-900 p-3">
       <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-neutral-500">
@@ -940,15 +956,19 @@ function ImageUploadBox({ pending, existingUrl, onSelect, onUpload, onClear, lab
       {preview && <img src={preview} alt="" className="mb-3 h-36 w-full rounded-lg object-cover" />}
       <div className="flex flex-wrap gap-2">
         <label className="settings-secondary-button rounded-lg border px-3 py-2 text-xs font-semibold">
-          Выбрать файл
-          <input type="file" accept={IMAGE_ACCEPT_ATTRIBUTE} className="hidden" onChange={(event) => onSelect(event.target.files?.[0])} />
+          {uploading ? "Загрузка..." : multiple ? "Выбрать файлы" : "Выбрать файл"}
+          <input
+            type="file"
+            accept={IMAGE_ACCEPT_ATTRIBUTE}
+            multiple={multiple}
+            disabled={uploading}
+            className="hidden"
+            onChange={(event) => {
+              onSelect(event.target.files);
+              event.currentTarget.value = "";
+            }}
+          />
         </label>
-        {pending && (
-          <>
-            <button type="button" onClick={onUpload} className="admin-primary rounded-lg border px-3 py-2 text-xs font-semibold">Загрузить</button>
-            <button type="button" onClick={onClear} className="settings-secondary-button rounded-lg border px-3 py-2 text-xs font-semibold">Отмена</button>
-          </>
-        )}
       </div>
     </div>
   );
@@ -957,9 +977,9 @@ function ImageUploadBox({ pending, existingUrl, onSelect, onUpload, onClear, lab
 function SortableImage({ url, onDelete }: { key?: React.Key; url: string; onDelete: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: url });
   return (
-    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className="relative aspect-video overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900">
+    <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className="relative aspect-video overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900 shadow-sm">
       <img src={url} alt="" className="h-full w-full object-cover" />
-      <button type="button" {...attributes} {...listeners} className="absolute left-1 top-1 rounded bg-black/70 p-1 text-neutral-200">
+      <button type="button" {...attributes} {...listeners} className="absolute left-1 top-1 rounded bg-black/70 p-2 text-neutral-200 touch-none active:scale-95" aria-label="Перетащить фото">
         <GripVertical className="h-4 w-4" />
       </button>
       <button type="button" onClick={onDelete} className="absolute right-1 top-1 rounded bg-black/70 p-1 text-rose-300">
@@ -1011,7 +1031,7 @@ function Field({ label, children }: { key?: React.Key; label: string; children: 
   );
 }
 
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function ColorField({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (value: string) => void }) {
   const isHex = /^#[0-9a-f]{6}$/i.test(value);
   return (
     <Field label={label}>
@@ -1019,6 +1039,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
         <input type="color" value={isHex ? value : "#000000"} onChange={(event) => onChange(event.target.value)} className="h-10 w-12 rounded border border-neutral-800 bg-neutral-950" />
         <input value={value} onChange={(event) => onChange(event.target.value)} className="admin-input font-mono" placeholder="#c7a469 или rgb(...)" />
       </div>
+      {hint && <div className="mt-1 text-[10px] leading-relaxed text-neutral-500">{hint}</div>}
     </Field>
   );
 }
