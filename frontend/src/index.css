@@ -522,6 +522,8 @@ body {
 
 .admin-panel-minimal .admin-input {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 38px;
   background: var(--app-panel-soft) !important;
   border: 1px solid var(--app-border) !important;
@@ -529,6 +531,46 @@ body {
   border-radius: 10px !important;
   padding: 9px 10px;
   outline: none;
+}
+
+.admin-time-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  border: 1px solid rgb(23 23 23);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.admin-time-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-native-date-input {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden;
+}
+
+.admin-date-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .admin-time-row {
+    grid-template-columns: 112px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .admin-date-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 180px) minmax(150px, 220px);
+  }
 }
 
 .admin-panel-minimal .admin-input:disabled {

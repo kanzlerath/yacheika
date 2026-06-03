@@ -138,7 +138,7 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
   premiumConfig: {
     premiumActive: false,
     customColors: {
-      primary: "#09090b",
+      primary: "#131923",
       accent: "#c7a469",
       glowColor: "#c7a469",
     },
@@ -166,7 +166,7 @@ const normalizeVenueForEdit = (venue: Venue) => ({
   premiumConfig: {
     premiumActive: venue.premiumConfig?.premiumActive || false,
     customColors: venue.premiumConfig?.customColors || {
-      primary: "#09090b",
+      primary: "#131923",
       accent: "#c7a469",
       glowColor: "#c7a469",
     },
@@ -656,14 +656,14 @@ function VenueEditor(props: any) {
             const interval = schedule[day.key]?.[0] || { from: "18:00", to: "02:00" };
             const closed = (schedule[day.key] || []).length === 0;
             return (
-              <div key={day.key} className="grid gap-2 rounded-lg border border-neutral-900 p-2 sm:grid-cols-[112px_minmax(0,1fr)] sm:items-center">
+              <div key={day.key} className="admin-time-row">
                 <label className="flex items-center gap-2 text-xs font-semibold text-neutral-200">
                   <input type="checkbox" checked={!closed} onChange={(event) => updateSchedule(day.key, { closed: !event.target.checked })} />
                   {day.label}
                 </label>
-                <div className="grid min-w-0 grid-cols-2 gap-2">
-                  <input type="time" disabled={closed} value={interval.from} onChange={(event) => updateSchedule(day.key, { from: event.target.value })} className="admin-input" />
-                  <input type="time" disabled={closed} value={interval.to} onChange={(event) => updateSchedule(day.key, { to: event.target.value })} className="admin-input" />
+                <div className="admin-time-inputs">
+                  <input type="time" disabled={closed} value={interval.from} onChange={(event) => updateSchedule(day.key, { from: event.target.value })} className="admin-input admin-native-date-input" />
+                  <input type="time" disabled={closed} value={interval.to} onChange={(event) => updateSchedule(day.key, { to: event.target.value })} className="admin-input admin-native-date-input" />
                 </div>
               </div>
             );
@@ -783,9 +783,8 @@ function VenueEditor(props: any) {
         {editingVenue.premiumConfig.premiumActive && (
           <div className="space-y-4">
             <div
-              className="rounded-xl border p-4"
+              className="rounded-xl border bg-neutral-950/40 p-4"
               style={{
-                background: `linear-gradient(135deg, ${editingVenue.premiumConfig.customColors.primary}, #0d1117)`,
                 borderColor: editingVenue.premiumConfig.customColors.accent,
                 boxShadow: `0 0 24px color-mix(in srgb, ${editingVenue.premiumConfig.customColors.glowColor} 28%, transparent)`,
               }}
@@ -795,8 +794,7 @@ function VenueEditor(props: any) {
                 CTA / активная кнопка
               </div>
             </div>
-            <div className="grid gap-2 sm:grid-cols-3">
-              <ColorField label="Фон карточки" hint="Тонирует верх premium-карточки." value={editingVenue.premiumConfig.customColors.primary} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, primary: value } } })} />
+            <div className="grid gap-2 sm:grid-cols-2">
               <ColorField label="Акцент" hint="CTA, контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
               <ColorField label="Свечение" hint="Мягкая подсветка premium-карточки." value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
             </div>
@@ -845,7 +843,7 @@ function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploadError,
           </div>
         ))}
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="admin-date-grid">
         <Field label="Название события">
           <input value={newEvent.title} onChange={(event) => setNewEvent({ ...newEvent, title: event.target.value })} className="admin-input" placeholder="Например: Vinyl Night / гостевой сет" />
         </Field>
@@ -853,7 +851,7 @@ function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploadError,
           <input value={newEvent.time} onChange={(event) => setNewEvent({ ...newEvent, time: event.target.value })} className="admin-input" placeholder="21:00" />
         </Field>
         <Field label="Дата">
-          <input type="date" value={newEvent.date} onChange={(event) => setNewEvent({ ...newEvent, date: event.target.value })} className="admin-input" />
+          <input type="date" value={newEvent.date} onChange={(event) => setNewEvent({ ...newEvent, date: event.target.value })} className="admin-input admin-native-date-input" />
         </Field>
       </div>
       <Field label="Описание">
