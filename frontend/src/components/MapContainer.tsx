@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Plus, Minus } from "lucide-react";
-import { Venue } from "../types";
+import { MapStyle, Venue } from "../types";
 
 interface MapContainerProps {
   venues: Venue[];
@@ -22,19 +22,17 @@ interface MapContainerProps {
     hasEventToday: boolean;
     search: string;
   };
-  mapStyle: "dark" | "light" | "voyager";
+  mapStyle: MapStyle;
   userCoords: { lat: number; lng: number } | null;
   pendingCoords: { lat: number; lng: number } | null;
 }
 
 const NSK_CENTER: [number, number] = [82.9204, 55.0302]; // [lng, lat]
 
-const getMapStyleObject = (styleName: "dark" | "light" | "voyager") => {
+const getMapStyleObject = (styleName: MapStyle) => {
   const url =
     styleName === "light"
       ? "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"
-      : styleName === "voyager"
-      ? "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
       : "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png";
 
   return {
@@ -271,7 +269,7 @@ export default function MapContainer({
     filtered.forEach((venue) => {
       const isSelected = selectedVenue?.id === venue.id;
       const isPremium = venue.premiumConfig?.premiumActive;
-      const themeColor = venue.premiumConfig?.customColors?.accent || "#e11d48"; // Default rose
+      const themeColor = venue.premiumConfig?.customColors?.accent || "#d2a56b";
 
       // 1. Create elegant custom circular HTML marker element
       const markerEl = document.createElement("div");
@@ -340,7 +338,7 @@ export default function MapContainer({
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
       
       {/* Custom glassmorphic zoom controls */}
-      <div className="map-zoom-controls absolute top-28 right-4 sm:right-6 z-15 flex flex-col gap-1 border rounded-xl p-1 shadow-2xl backdrop-blur-md">
+      <div className="map-zoom-controls absolute top-1/2 -translate-y-1/2 right-4 sm:right-6 z-15 flex flex-col gap-1 border rounded-xl p-1 shadow-2xl backdrop-blur-md">
         <button
           onClick={() => mapRef.current?.zoomIn()}
           className="w-8 h-8 rounded-lg flex items-center justify-center active:scale-95 transition-all cursor-pointer"

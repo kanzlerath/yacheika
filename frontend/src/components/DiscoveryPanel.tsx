@@ -10,8 +10,6 @@ import {
   X,
   BookOpen,
   Heart,
-  Compass,
-  Map,
   ArrowLeft,
   ChevronDown,
   ChevronUp
@@ -187,7 +185,7 @@ export default function DiscoveryPanel({
             <motion.div className="space-y-0.5 divide-y divide-zinc-950" variants={revealList} initial="hidden" animate="show">
               {filteredVenues.map((venue) => {
                 const total = venue.likesCount + venue.notMyPlaceCount;
-                const ratio = total > 0 ? Math.round((venue.likesCount / total) * 100) : 100;
+                const ratio = total > 0 ? `${Math.round((venue.likesCount / total) * 100)}%` : "нет оценок";
 
                 return (
                   <motion.button
@@ -224,7 +222,7 @@ export default function DiscoveryPanel({
                         <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
                         <span>{venue.likesCount}</span>
                       </div>
-                      <div className="text-[9px] font-mono text-zinc-550">{ratio}%</div>
+                      <div className="text-[9px] font-mono text-zinc-550">{ratio}</div>
                     </div>
                   </motion.button>
                 );
@@ -369,7 +367,6 @@ export default function DiscoveryPanel({
                 whileTap={{ scale: 0.98 }}
                 className="discovery-pill flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] border transition duration-150 cursor-pointer text-nowrap select-none"
               >
-                <Compass className="w-3 h-3 text-rose-500" />
                 <span>{coll.title}</span>
                 <span className="text-[9px] font-mono text-zinc-550">({coll.venueIds.length})</span>
               </motion.button>
@@ -402,7 +399,7 @@ export default function DiscoveryPanel({
             ) : (
               filteredVenues.map((venue) => {
                 const total = venue.likesCount + venue.notMyPlaceCount;
-                const ratio = total > 0 ? Math.round((venue.likesCount / total) * 100) : 100;
+                const ratio = total > 0 ? `${Math.round((venue.likesCount / total) * 100)}% лояльность` : "нет оценок";
 
                 return (
                   <motion.button
@@ -445,7 +442,7 @@ export default function DiscoveryPanel({
                         <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
                         <span>{venue.likesCount}</span>
                       </div>
-                      <div className="text-[9px] font-mono text-zinc-550">{ratio}% лояльность</div>
+                      <div className="text-[9px] font-mono text-zinc-550">{ratio}</div>
                     </div>
                   </motion.button>
                 );

@@ -903,7 +903,7 @@ function TopItemsEditor({ editingVenue, setEditingVenue, input, setInput, addIte
   const items = editingVenue.premiumConfig.topItems || [];
   return (
     <div className="space-y-2">
-      <div className="text-[10px] uppercase tracking-wider text-neutral-500">Топы</div>
+      <div className="text-[10px] uppercase tracking-wider text-neutral-500">Рекомендуем</div>
       <div className="space-y-1.5">
         {items.map((item: string, index: number) => (
           <div key={`${item}-${index}`} className="flex items-center gap-2">

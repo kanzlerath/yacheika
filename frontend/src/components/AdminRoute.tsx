@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { LogOut, Map, ShieldCheck } from "lucide-react";
+import { Map, ShieldCheck } from "lucide-react";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
-import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, Venue, VenueEvent } from "../types";
+import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueEvent } from "../types";
 
 interface AdminUser {
   id: string;
@@ -12,7 +12,7 @@ interface AdminUser {
 }
 
 interface AdminRouteProps {
-  mapStyle: "dark" | "light" | "voyager";
+  mapStyle: MapStyle;
 }
 
 export default function AdminRoute({ mapStyle }: AdminRouteProps) {
@@ -178,9 +178,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-xs font-semibold text-neutral-300 hover:border-neutral-700 hover:text-white transition"
+          className="app-text-button"
         >
-          <LogOut className="w-3.5 h-3.5" />
           Выйти
         </button>
       </header>
