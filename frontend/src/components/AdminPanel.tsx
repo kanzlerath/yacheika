@@ -162,7 +162,6 @@ export default function AdminPanel({
 }: AdminPanelProps) {
   const [section, setSection] = useState<AdminSection>("dashboard");
   const [editingVenue, setEditingVenue] = useState<any>(() => createVenueDraft(pendingCoords));
-  const [slugTouched, setSlugTouched] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [topItemInput, setTopItemInput] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -195,14 +194,12 @@ export default function AdminPanel({
   const loadVenue = (venue: Venue) => {
     onSelectVenue(venue);
     setEditingVenue(normalizeVenueForEdit(venue));
-    setSlugTouched(true);
     setSection("venues");
     setSaveError(null);
   };
 
   const startCreateVenue = () => {
     setEditingVenue(createVenueDraft(pendingCoords));
-    setSlugTouched(false);
     setSaveError(null);
     setSection("add");
   };
@@ -211,7 +208,7 @@ export default function AdminPanel({
     setEditingVenue((prev: any) => ({
       ...prev,
       name,
-      slug: slugTouched ? prev.slug : slugifyVenueName(name),
+      slug: slugifyVenueName(name),
     }));
   };
 
@@ -296,7 +293,7 @@ export default function AdminPanel({
       const schedule = normalizeSchedule(editingVenue.workingHoursSchedule);
       await onSaveVenue({
         ...editingVenue,
-        slug: slugifyVenueName(editingVenue.slug || editingVenue.name),
+        slug: slugifyVenueName(editingVenue.name),
         workingHoursSchedule: schedule,
         workingHours: buildWorkingHoursText(schedule),
         premiumConfig: {
@@ -438,7 +435,6 @@ export default function AdminPanel({
                   setTagInput={setTagInput}
                   addTag={addTag}
                   updateVenueName={updateVenueName}
-                  setSlugTouched={setSlugTouched}
                   updateSchedule={updateSchedule}
                   pendingCoords={pendingCoords}
                   onToggleMobileMap={onToggleMobileMap}
@@ -592,7 +588,6 @@ function VenueEditor(props: any) {
     setTagInput,
     addTag,
     updateVenueName,
-    setSlugTouched,
     updateSchedule,
     pendingCoords,
     onToggleMobileMap,
@@ -619,18 +614,8 @@ function VenueEditor(props: any) {
       <AdminBlock title={editingVenue.id ? "Редактирование заведения" : "Добавление заведения"}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Имя">
-            <input value={editingVenue.name} onChange={(event) => updateVenueName(event.target.value)} className="admin-input" />
+            <input value={editingVenue.name} onChange={(event) => updateVenueName(event.target.value)} className="admin-input" placeholder="Например: Nobody Knows I Suppose" />
             {duplicateName && <div className="mt-1 text-[10px] text-rose-300">Такое имя уже есть.</div>}
-          </Field>
-          <Field label="Slug">
-            <input
-              value={editingVenue.slug}
-              onChange={(event) => {
-                setSlugTouched(true);
-                setEditingVenue({ ...editingVenue, slug: slugifyVenueName(event.target.value) });
-              }}
-              className="admin-input font-mono"
-            />
           </Field>
           <Field label="Категория">
             <select value={editingVenue.category} onChange={(event) => setEditingVenue({ ...editingVenue, category: event.target.value })} className="admin-input">
@@ -651,14 +636,14 @@ function VenueEditor(props: any) {
       <AdminBlock title="Адрес и координаты">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Адрес">
-            <input value={editingVenue.address} onChange={(event) => setEditingVenue({ ...editingVenue, address: event.target.value })} className="admin-input" />
+            <input value={editingVenue.address} onChange={(event) => setEditingVenue({ ...editingVenue, address: event.target.value })} className="admin-input" placeholder="Например: ул. Ленина, 12" />
           </Field>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Широта">
-              <input type="number" value={editingVenue.latitude} onChange={(event) => setEditingVenue({ ...editingVenue, latitude: Number(event.target.value) })} className="admin-input" />
+              <input type="number" value={editingVenue.latitude} onChange={(event) => setEditingVenue({ ...editingVenue, latitude: Number(event.target.value) })} className="admin-input" placeholder="55.030200" />
             </Field>
             <Field label="Долгота">
-              <input type="number" value={editingVenue.longitude} onChange={(event) => setEditingVenue({ ...editingVenue, longitude: Number(event.target.value) })} className="admin-input" />
+              <input type="number" value={editingVenue.longitude} onChange={(event) => setEditingVenue({ ...editingVenue, longitude: Number(event.target.value) })} className="admin-input" placeholder="82.920400" />
             </Field>
           </div>
         </div>
@@ -711,15 +696,28 @@ function VenueEditor(props: any) {
       <AdminBlock title="Описание и контакты">
         <div className="space-y-3">
           <Field label="Короткое описание">
-            <input value={editingVenue.shortDescription} onChange={(event) => setEditingVenue({ ...editingVenue, shortDescription: event.target.value })} className="admin-input" />
+            <input value={editingVenue.shortDescription} onChange={(event) => setEditingVenue({ ...editingVenue, shortDescription: event.target.value })} className="admin-input" placeholder="Коротко: чем место отличается и кому подойдет" />
           </Field>
           <Field label="Полное описание">
-            <textarea value={editingVenue.fullDescription} onChange={(event) => setEditingVenue({ ...editingVenue, fullDescription: event.target.value })} rows={4} className="admin-input" />
+            <textarea value={editingVenue.fullDescription} onChange={(event) => setEditingVenue({ ...editingVenue, fullDescription: event.target.value })} rows={4} className="admin-input" placeholder="Атмосфера, посадка, напитки, музыка, важные детали для гостя" />
           </Field>
           <div className="grid gap-2 sm:grid-cols-3">
             {(["phone", "telegram", "instagram", "website"] as const).map((key) => (
               <Field key={key} label={key}>
-                <input value={editingVenue.contacts[key] || ""} onChange={(event) => setEditingVenue({ ...editingVenue, contacts: { ...editingVenue.contacts, [key]: event.target.value } })} className="admin-input" />
+                <input
+                  value={editingVenue.contacts[key] || ""}
+                  onChange={(event) => setEditingVenue({ ...editingVenue, contacts: { ...editingVenue.contacts, [key]: event.target.value } })}
+                  className="admin-input"
+                  placeholder={
+                    key === "phone"
+                      ? "+7 (999) 123-45-67"
+                      : key === "telegram"
+                      ? "bar_username без @"
+                      : key === "instagram"
+                      ? "instagram_username"
+                      : "https://example.com"
+                  }
+                />
               </Field>
             ))}
           </div>
@@ -790,7 +788,7 @@ function VenueEditor(props: any) {
               <ColorField label="Свечение" value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
             </div>
             <Field label="Вайб дня">
-              <input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} className="admin-input" />
+              <input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} className="admin-input" placeholder="Например: Сегодня винил и тихий свет до поздней ночи" />
             </Field>
             <TopItemsEditor editingVenue={editingVenue} setEditingVenue={setEditingVenue} input={topItemInput} setInput={setTopItemInput} addItem={addTopItem} />
             <ImageUploadBox
@@ -803,10 +801,10 @@ function VenueEditor(props: any) {
             />
             <div className="grid gap-2 sm:grid-cols-2">
               <Field label="CTA ссылка">
-                <input value={editingVenue.premiumConfig.ctaUrl || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaUrl: event.target.value } })} className="admin-input" />
+                <input value={editingVenue.premiumConfig.ctaUrl || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaUrl: event.target.value } })} className="admin-input" placeholder="https://t.me/..." />
               </Field>
               <Field label="CTA текст">
-                <input value={editingVenue.premiumConfig.ctaText || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaText: event.target.value } })} className="admin-input" />
+                <input value={editingVenue.premiumConfig.ctaText || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaText: event.target.value } })} className="admin-input" placeholder="Например: Забронировать стол" />
               </Field>
             </div>
           </div>
@@ -838,17 +836,17 @@ function EventEditor({ editingVenue, events, newEvent, setNewEvent, pendingEvent
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         <Field label="Название события">
-          <input value={newEvent.title} onChange={(event) => setNewEvent({ ...newEvent, title: event.target.value })} className="admin-input" />
+          <input value={newEvent.title} onChange={(event) => setNewEvent({ ...newEvent, title: event.target.value })} className="admin-input" placeholder="Например: Vinyl Night / гостевой сет" />
         </Field>
         <Field label="Время">
-          <input value={newEvent.time} onChange={(event) => setNewEvent({ ...newEvent, time: event.target.value })} className="admin-input" />
+          <input value={newEvent.time} onChange={(event) => setNewEvent({ ...newEvent, time: event.target.value })} className="admin-input" placeholder="21:00" />
         </Field>
         <Field label="Дата">
           <input type="date" value={newEvent.date} onChange={(event) => setNewEvent({ ...newEvent, date: event.target.value })} className="admin-input" />
         </Field>
       </div>
       <Field label="Описание">
-        <textarea value={newEvent.description} onChange={(event) => setNewEvent({ ...newEvent, description: event.target.value })} rows={3} className="admin-input" />
+        <textarea value={newEvent.description} onChange={(event) => setNewEvent({ ...newEvent, description: event.target.value })} rows={3} className="admin-input" placeholder="Коротко: что будет, кто играет, почему стоит прийти" />
       </Field>
       {uploadError && <div className="mb-2 rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-rose-200">{uploadError}</div>}
       <ImageUploadBox pending={pendingEventCover} existingUrl={newEvent.coverImage} onSelect={(file) => selectPendingFile(file, setPendingEventCover)} onUpload={uploadPendingEventCover} onClear={() => setPendingEventCover(null)} label="Обложка события" />

@@ -219,6 +219,26 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
             </p>
           </div>
 
+          {adminMobileShowMap && (
+            <div className="absolute left-4 right-4 bottom-4 z-20 rounded-xl border border-neutral-800 bg-neutral-950/95 p-3 shadow-2xl xl:hidden">
+              <div className="text-xs font-semibold text-neutral-100">
+                {pendingCoords ? "Точка выбрана" : "Нажмите по карте, чтобы выбрать точку"}
+              </div>
+              {pendingCoords && (
+                <div className="mt-1 font-mono text-[10px] text-neutral-500">
+                  {pendingCoords.lat.toFixed(6)}, {pendingCoords.lng.toFixed(6)}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setAdminMobileShowMap(false)}
+                className="mt-3 w-full rounded-lg border border-neutral-800 bg-white px-3 py-2 text-xs font-semibold text-black"
+              >
+                Вернуться к форме
+              </button>
+            </div>
+          )}
+
           <MapContainer
             venues={venues}
             selectedVenue={selectedVenue}
