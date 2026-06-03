@@ -15,7 +15,6 @@ import {
   Globe,
   Plus,
   Calendar,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -72,11 +71,9 @@ export default function VenueCard({
 
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
-  const primaryColor = customColors?.primary || "#131923";
   const accentColor = customColors?.accent || "#d2a56b";
   const glowColor = customColors?.glowColor || accentColor;
   const compactHeight = "calc(286px + env(safe-area-inset-bottom, 0px))";
-  const expandedHeight = "min(84dvh, calc(100dvh - 5rem - env(safe-area-inset-top, 0px)))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
   const galleryImages = venue.gallery.filter(Boolean);
   const lightboxImages = isPremiumActive && premium.heroImage ? [premium.heroImage, ...galleryImages] : galleryImages;
@@ -163,27 +160,28 @@ export default function VenueCard({
 
   return (
     <motion.div
-      drag="y"
+      drag={isExpanded ? false : "y"}
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={{ top: 0.05, bottom: 0.6 }}
       onDragEnd={handleDragEnd}
-      initial={{ y: "100%", opacity: 0.96 }}
+      initial={isExpanded ? { x: "100%", opacity: 1 } : { y: "100%", opacity: 0.96 }}
       animate={{ 
+        x: 0,
         y: 0,
         opacity: 1,
-        height: isExpanded 
-          ? expandedHeight
-          : compactHeight
+        height: isExpanded ? "100dvh" : compactHeight
       }}
-      exit={{ y: "100%", opacity: 0.96 }}
+      exit={isExpanded ? { x: "100%", opacity: 1 } : { y: "100%", opacity: 0.96 }}
       transition={panelTransition}
-      className={`absolute bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden ${
+      className={`absolute text-neutral-200 z-30 shadow-2xl backdrop-blur-2xl overflow-hidden ${
+        isExpanded
+          ? "inset-0 h-full w-full border-0"
+          : "bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border"
+      } ${
         isPremiumActive ? "venue-card-premium" : ""
       }`}
       style={{
-        background: isPremiumActive
-          ? `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 72%, var(--app-panel)) 0%, var(--app-panel) 42%, var(--app-bg) 100%)`
-          : "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
+        background: "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
         borderColor: isPremiumActive ? `color-mix(in srgb, ${accentColor} 38%, var(--app-border))` : "var(--app-border)",
         boxShadow: isPremiumActive
           ? `0 24px 60px rgba(0,0,0,0.62), 0 0 28px color-mix(in srgb, ${glowColor} 20%, transparent)`
@@ -193,13 +191,14 @@ export default function VenueCard({
       }}
       id={`venue-card-${venue.id}`}
     >
-      {/* Native Drag Handle Trigger Area */}
-      <div
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex flex-col items-center pt-3 pb-2 cursor-pointer select-none active:bg-neutral-900/10"
-      >
-        <div className="w-12 h-1 bg-neutral-800 rounded-full hover:bg-neutral-600 transition duration-200" />
-      </div>
+      {!isExpanded && (
+        <div
+          onClick={() => setIsExpanded(true)}
+          className="w-full flex flex-col items-center pt-3 pb-2 cursor-pointer select-none active:bg-neutral-900/10"
+        >
+          <div className="w-12 h-1 bg-neutral-800 rounded-full hover:bg-neutral-600 transition duration-200" />
+        </div>
+      )}
 
       {/* Main Contents Wrapper */}
       <div 
@@ -292,7 +291,7 @@ export default function VenueCard({
                   title="Подробнее"
                   aria-label="Подробнее"
                 >
-                  <ChevronUp className="w-5 h-5" />
+                  <ChevronLeft className="w-5 h-5" />
                 </button>
               </div>
             </div>
