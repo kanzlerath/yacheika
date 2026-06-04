@@ -62,15 +62,17 @@ interface AdminPanelProps {
 type AdminSection = "dashboard" | "venues" | "add" | "users" | "events";
 
 const CATEGORIES = [
-  "бар",
-  "паб",
-  "рюмочная",
-  "клуб",
-  "ресторан",
-  "коктейльный бар",
-  "винный бар",
-  "крафтовый бар",
-  "кальянная",
+  "Бар",
+  "Паб",
+  "Рюмочная",
+  "Коктейльный бар",
+  "Винный бар",
+  "Крафтовый бар",
+  "Гастробар",
+  "Кальянная",
+  "Караоке",
+  "Клуб",
+  "Ресторан",
 ];
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
@@ -125,6 +127,7 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
   longitude: coords?.lng || 82.9204,
   workingHours: "",
   workingHoursSchedule: createEmptySchedule(),
+  logoUrl: "",
   contacts: {
     phone: "",
     telegram: "",
@@ -141,9 +144,11 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
       primary: "#131923",
       accent: "#c7a469",
       glowColor: "#c7a469",
+      tagColor: "#c7a469",
     },
     heroImage: "",
     moodBlock: "",
+    moodEmoji: "✨",
     topItems: [],
     featuredDrinks: [],
     ctaUrl: "",
@@ -161,6 +166,7 @@ const normalizeVenueForEdit = (venue: Venue) => ({
     vk: venue.contacts?.vk || "",
     website: venue.contacts?.website || "",
   },
+  logoUrl: venue.logoUrl || "",
   gallery: venue.gallery || [],
   tags: venue.tags || [],
   premiumConfig: {
@@ -169,9 +175,11 @@ const normalizeVenueForEdit = (venue: Venue) => ({
       primary: "#131923",
       accent: "#c7a469",
       glowColor: "#c7a469",
+      tagColor: "#c7a469",
     },
     heroImage: venue.premiumConfig?.heroImage || "",
     moodBlock: venue.premiumConfig?.moodBlock || "",
+    moodEmoji: venue.premiumConfig?.moodEmoji || "✨",
     topItems: venue.premiumConfig?.topItems || venue.premiumConfig?.featuredDrinks || [],
     featuredDrinks: venue.premiumConfig?.featuredDrinks || venue.premiumConfig?.topItems || [],
     ctaUrl: venue.premiumConfig?.ctaUrl || "",
@@ -202,7 +210,7 @@ export default function AdminPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadingTarget, setUploadingTarget] = useState<"gallery" | "hero" | "event" | null>(null);
+  const [uploadingTarget, setUploadingTarget] = useState<"gallery" | "hero" | "event" | "logo" | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
@@ -295,7 +303,7 @@ export default function AdminPanel({
     return data.url as string;
   };
 
-  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "hero" | "event") => {
+  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "hero" | "event" | "logo") => {
     const list = Array.from(files || []);
     if (!list.length) return;
     setUploadError(null);
@@ -321,6 +329,8 @@ export default function AdminPanel({
           ...prev,
           premiumConfig: { ...prev.premiumConfig, heroImage: urls[0] },
         }));
+      } else if (target === "logo") {
+        setEditingVenue((prev: any) => ({ ...prev, logoUrl: urls[0] }));
       } else {
         setNewEvent((prev) => ({ ...prev, coverImage: urls[0] }));
       }
@@ -622,6 +632,15 @@ function VenueEditor(props: any) {
         </div>
       </AdminBlock>
 
+      <AdminBlock title="Логотип заведения">
+        <ImageUploadBox
+          existingUrl={editingVenue.logoUrl}
+          uploading={uploadingTarget === "logo"}
+          onSelect={(files) => uploadSelectedImages(files, "logo")}
+          label="Загрузить логотип"
+        />
+      </AdminBlock>
+
       <AdminBlock title="Адрес и координаты">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Адрес">
@@ -797,10 +816,16 @@ function VenueEditor(props: any) {
             <div className="grid gap-2 sm:grid-cols-2">
               <ColorField label="Акцент" hint="CTA, контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
               <ColorField label="Свечение" hint="Мягкая подсветка premium-карточки." value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
+              <ColorField label="Цвет тегов" hint="Фон и контур тегов в premium-карточке." value={editingVenue.premiumConfig.customColors.tagColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, tagColor: value } } })} />
             </div>
-            <Field label="Вайб дня">
-              <input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} className="admin-input" placeholder="Например: Сегодня винил и тихий свет до поздней ночи" />
-            </Field>
+            <div className="grid gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
+              <Field label="Emoji">
+                <input value={editingVenue.premiumConfig.moodEmoji || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodEmoji: event.target.value } })} className="admin-input" placeholder="✨" maxLength={4} />
+              </Field>
+              <Field label="Вайб дня">
+                <input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} className="admin-input" placeholder="Например: Сегодня винил и тихий свет до поздней ночи" />
+              </Field>
+            </div>
             <TopItemsEditor editingVenue={editingVenue} setEditingVenue={setEditingVenue} input={topItemInput} setInput={setTopItemInput} addItem={addTopItem} />
             <ImageUploadBox
               existingUrl={editingVenue.premiumConfig.heroImage}

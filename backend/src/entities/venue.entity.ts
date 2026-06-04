@@ -46,6 +46,9 @@ export class VenueEntity {
     note?: string;
   };
 
+  @Column({ type: 'text', nullable: true })
+  logoUrl?: string;
+
   @Column({ type: 'jsonb' })
   contacts: {
     phone?: string;
@@ -72,9 +75,11 @@ export class VenueEntity {
       primary: string;
       accent: string;
       glowColor: string;
+      tagColor?: string;
     };
     heroImage?: string;
     moodBlock?: string;
+    moodEmoji?: string;
     featuredDrinks?: string[];
     topItems?: string[];
     ctaUrl?: string;

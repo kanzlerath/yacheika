@@ -78,6 +78,16 @@ body {
   font-family: var(--font-sans);
 }
 
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 :root {
   --app-bg: #05070a;
   --app-bg-elevated: #0d1117;
@@ -483,6 +493,56 @@ body {
   border-radius: 12px;
   background: color-mix(in srgb, var(--app-panel-soft) 52%, transparent);
   animation: recommended-pulse 2.8s var(--app-ease) infinite;
+}
+
+.premium-mood-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--venue-glow, var(--app-accent)) 42%, var(--app-border));
+  background: color-mix(in srgb, var(--app-panel) 82%, transparent);
+}
+
+.premium-mood-panel::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--mood-angle, 0deg),
+    transparent,
+    color-mix(in srgb, var(--venue-glow, var(--app-accent)) 72%, transparent),
+    transparent 34%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: mood-glow-orbit 8s linear infinite;
+}
+
+.premium-mood-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.premium-tag-pill {
+  color: color-mix(in srgb, var(--venue-tag, var(--app-accent)) 82%, var(--app-text)) !important;
+  background: color-mix(in srgb, var(--venue-tag, var(--app-accent)) 13%, var(--app-bg)) !important;
+  border: 1px solid color-mix(in srgb, var(--venue-tag, var(--app-accent)) 54%, var(--app-border)) !important;
+}
+
+@property --mood-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes mood-glow-orbit {
+  to {
+    --mood-angle: 360deg;
+  }
 }
 
 @keyframes recommended-pulse {

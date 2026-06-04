@@ -40,9 +40,11 @@ export interface PremiumConfig {
     primary: string;
     accent: string;
     glowColor: string;
+    tagColor?: string;
   };
   heroImage?: string;
   moodBlock?: string; // Current mood or event overlay (e.g. "сегодня техно")
+  moodEmoji?: string;
   featuredDrinks?: string[];
   topItems?: string[];
   ctaUrl?: string;
@@ -61,6 +63,7 @@ export interface Venue {
   longitude: number;
   workingHours: string;
   workingHoursSchedule?: WorkingHoursSchedule;
+  logoUrl?: string;
   contacts: {
     phone?: string;
     telegram?: string;

@@ -39,19 +39,17 @@ interface DiscoveryPanelProps {
 }
 
 const UNIFIED_PILLS = [
-  { id: "all", label: "Все бары", type: "all" },
-  { id: "коктейльный бар", label: "Коктейли", type: "category" },
-  { id: "крафтовый бар", label: "Крафт", type: "category" },
-  { id: "винный бар", label: "Вино", type: "category" },
-  { id: "паб", label: "Пабы", type: "category" },
-  { id: "рюмочная", label: "Рюмочные", type: "category" },
-  { id: "свидание", label: "Свидание", type: "tag" },
-  { id: "летник", label: "Летник", type: "tag" },
-  { id: "шумно", label: "Шумно", type: "tag" },
-  { id: "тихо", label: "Тихо", type: "tag" },
-  { id: "DJ", label: "DJ & Винил", type: "tag" },
-  { id: "openNow", label: "Открыто", type: "openNow" },
-  { id: "hasEventToday", label: "События", type: "hasEventToday" },
+  { id: "Бар", label: "Бар", type: "category" },
+  { id: "Паб", label: "Паб", type: "category" },
+  { id: "Рюмочная", label: "Рюмочная", type: "category" },
+  { id: "Коктейльный бар", label: "Коктейльный бар", type: "category" },
+  { id: "Винный бар", label: "Винный бар", type: "category" },
+  { id: "Крафтовый бар", label: "Крафтовый бар", type: "category" },
+  { id: "Гастробар", label: "Гастробар", type: "category" },
+  { id: "Кальянная", label: "Кальянная", type: "category" },
+  { id: "Караоке", label: "Караоке", type: "category" },
+  { id: "Клуб", label: "Клуб", type: "category" },
+  { id: "Ресторан", label: "Ресторан", type: "category" },
 ];
 
 const formatVenuesFound = (count: number) => {
@@ -93,32 +91,14 @@ export default function DiscoveryPanel({
 
     if (pill.type === "category") {
       nextFilters.category = pill.id;
-    } else if (pill.type === "tag") {
-      nextFilters.tag = pill.id;
-    } else if (pill.type === "openNow") {
-      nextFilters.openNow = true;
-    } else if (pill.type === "hasEventToday") {
-      nextFilters.hasEventToday = true;
     }
 
     setFilters(nextFilters);
   };
 
   const isPillActive = (pill: typeof UNIFIED_PILLS[0]) => {
-    if (pill.type === "all") {
-      return !filters.category && !filters.tag && !filters.openNow && !filters.hasEventToday;
-    }
     if (pill.type === "category") {
       return filters.category === pill.id;
-    }
-    if (pill.type === "tag") {
-      return filters.tag === pill.id;
-    }
-    if (pill.type === "openNow") {
-      return filters.openNow;
-    }
-    if (pill.type === "hasEventToday") {
-      return filters.hasEventToday;
     }
     return false;
   };
@@ -254,7 +234,7 @@ export default function DiscoveryPanel({
                       {/* Micro clean photo without aggressive sizes */}
                       <div className="h-[52px] w-[52px] rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
                         <img
-                          src={venue.gallery[0] || "/logo.png"}
+                          src={venue.logoUrl || venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
                           className="w-full h-full object-cover filter brightness-[0.85] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"

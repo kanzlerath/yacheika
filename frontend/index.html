@@ -28,7 +28,7 @@
         align-items: center;
         justify-content: center;
         z-index: 9999;
-        transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        transition: opacity 0.5s cubic-bezier(0.25, 1, 0.5, 1);
         pointer-events: all;
       }
       .preloader-overlay.fade-out {
@@ -52,17 +52,17 @@
       }
       .preloader-group {
         transform-origin: 50px 50px;
-        animation: preloaderGroupRotate 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        animation: preloaderGroupRotate 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
       }
       .preloader-circle-left {
         fill: url(#leftHalfGrad);
         transform-origin: 50px 50px;
-        animation: preloaderLeftHalfShift 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        animation: preloaderLeftHalfShift 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
       }
       .preloader-circle-right {
         fill: url(#rightHalfGrad);
         transform-origin: 50px 50px;
-        animation: preloaderRightHalfShift 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        animation: preloaderRightHalfShift 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
       }
       .preloader-text {
         font-family: 'Gilroy', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -74,7 +74,7 @@
         text-transform: lowercase;
         opacity: 0;
         transform: translateY(12px);
-        animation: preloaderTextReveal 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        animation: preloaderTextReveal 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         text-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
       }
 
@@ -170,9 +170,9 @@
           const preloader = document.getElementById('pwa-preloader');
           if (preloader) {
             preloader.classList.add('fade-out');
-            setTimeout(() => preloader.remove(), 800);
+            setTimeout(() => preloader.remove(), 500);
           }
-        }, 3600);
+        }, 2400);
       });
     </script>
 

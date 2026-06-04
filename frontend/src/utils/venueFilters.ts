@@ -148,7 +148,7 @@ export const filterVenuesForDiscovery = (
   return venues.filter((venue) => {
     if (venue.status !== "published" && !adminMode) return false;
     if (collectionVenueIds && !collectionVenueIds.includes(venue.id)) return false;
-    if (filters.category && venue.category !== filters.category) return false;
+    if (filters.category && venue.category.toLowerCase() !== filters.category.toLowerCase()) return false;
     if (filters.tag && !venue.tags.includes(filters.tag)) return false;
     if (filters.openNow && !isVenueOpenNow(venue.workingHours, now)) return false;
     if (filters.hasEventToday && !hasEventOnDate(venue.id, events, dateKey)) return false;
