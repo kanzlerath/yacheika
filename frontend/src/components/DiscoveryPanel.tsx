@@ -54,6 +54,20 @@ const UNIFIED_PILLS = [
   { id: "hasEventToday", label: "События", type: "hasEventToday" },
 ];
 
+const formatVenuesFound = (count: number) => {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const word = lastTwo >= 11 && lastTwo <= 14
+    ? "заведений"
+    : last === 1
+      ? "заведение"
+      : last >= 2 && last <= 4
+        ? "заведения"
+        : "заведений";
+  const verb = last === 1 && lastTwo !== 11 ? "найдено" : "найдены";
+  return `${count} ${word} ${verb}`;
+};
+
 export default function DiscoveryPanel({
   venues,
   onSelectVenue,
@@ -166,7 +180,7 @@ export default function DiscoveryPanel({
           <div className="flex-1 min-w-0">
             <div
               className={`flex flex-wrap gap-1.5 overflow-hidden py-0.5 transition-[max-height] duration-300 ease-out ${
-                isFiltersExpanded ? "max-h-32" : "max-h-[32px]"
+                isFiltersExpanded ? "max-h-44 pb-1" : "max-h-[36px]"
               }`}
             >
                 {UNIFIED_PILLS.map((pill) => {
@@ -206,7 +220,7 @@ export default function DiscoveryPanel({
         <div className="space-y-3 pt-1">
           <div className="flex items-center justify-between px-0.5">
             <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">
-              {filteredVenues.length} заведений найдены
+              {formatVenuesFound(filteredVenues.length)}
             </div>
             {(filters.category || filters.tag || filters.openNow || filters.hasEventToday || filters.search) && (
               <button
@@ -233,12 +247,12 @@ export default function DiscoveryPanel({
                   <button
                     key={venue.id}
                     onClick={() => onSelectVenue(venue)}
-                    className="discovery-list-row w-full text-left py-2.5 px-2 flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
+                    className="discovery-list-row w-full text-left py-3 px-2 flex items-center justify-between gap-3.5 transition duration-150 group cursor-pointer"
                   >
-                    <div className="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)] items-center gap-3">
+                    <div className="grid min-w-0 flex-1 grid-cols-[52px_minmax(0,1fr)] items-center gap-3.5">
                       
                       {/* Micro clean photo without aggressive sizes */}
-                      <div className="w-11 h-11 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
+                      <div className="h-[52px] w-[52px] rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
                         <img
                           src={venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
@@ -253,12 +267,12 @@ export default function DiscoveryPanel({
                       
                       {/* Name and secondary meta */}
                       <div className="min-w-0 space-y-0.5 overflow-hidden">
-                        <h4 className="text-xs sm:text-[13px] font-semibold text-zinc-250 group-hover:text-white truncate">
+                        <h4 className="text-sm font-semibold text-zinc-250 group-hover:text-white truncate">
                           {venue.name}
                         </h4>
                         
-                        <div className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-1.5 text-[10px] text-zinc-500">
-                          <span className="font-mono text-[9px] uppercase tracking-wider text-zinc-450">
+                        <div className="grid min-w-0 grid-cols-[auto_auto_minmax(0,1fr)] items-baseline gap-1.5 text-[11px] text-zinc-500">
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-450">
                             {venue.category}
                           </span>
                           <span>•</span>
@@ -268,11 +282,11 @@ export default function DiscoveryPanel({
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="text-xs font-semibold text-zinc-200 flex items-center justify-end gap-1">
-                        <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+                      <div className="text-sm font-semibold text-zinc-200 flex items-center justify-end gap-1">
+                        <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
                         <span>{venue.likesCount}</span>
                       </div>
-                      <div className="text-[9px] font-mono text-zinc-550">{ratio}</div>
+                      <div className="text-[10px] font-mono text-zinc-550">{ratio}</div>
                     </div>
                   </button>
                 );
