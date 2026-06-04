@@ -58,14 +58,16 @@ const EMPTY_VENUE_COLLECTION: VenueFeatureCollection = {
 };
 
 const getMapStyleObject = (styleName: MapStyle) => {
+  const tileSet = styleName === "light" ? "light_nolabels" : "dark_nolabels";
+
   return {
     version: 8,
     sources: {
-      "osm-raster": {
+      "cartodb-raster": {
         type: "raster",
-        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tiles: [`https://basemaps.cartocdn.com/${tileSet}/{z}/{x}/{y}@2x.png`],
         tileSize: 256,
-        attribution: "&copy; OpenStreetMap contributors",
+        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
         maxzoom: 19,
       },
     },
@@ -73,23 +75,12 @@ const getMapStyleObject = (styleName: MapStyle) => {
       {
         id: "osm-raster-layer",
         type: "raster",
-        source: "osm-raster",
+        source: "cartodb-raster",
         minzoom: 0,
         maxzoom: 20,
-        paint:
-          styleName === "light"
-            ? {
-                "raster-opacity": 0.96,
-                "raster-saturation": -0.12,
-                "raster-contrast": 0.05,
-              }
-            : {
-                "raster-opacity": 0.9,
-                "raster-brightness-min": 0,
-                "raster-brightness-max": 0.34,
-                "raster-saturation": -0.85,
-                "raster-contrast": 0.25,
-              },
+        paint: {
+          "raster-opacity": styleName === "light" ? 0.98 : 0.96,
+        },
       },
     ],
   };
