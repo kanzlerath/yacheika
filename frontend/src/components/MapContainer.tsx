@@ -58,9 +58,41 @@ const EMPTY_VENUE_COLLECTION: VenueFeatureCollection = {
 };
 
 const getMapStyleObject = (styleName: MapStyle) => {
-  return styleName === "light"
-    ? "https://tiles.openfreemap.org/styles/liberty"
-    : "https://tiles.openfreemap.org/styles/dark";
+  return {
+    version: 8,
+    sources: {
+      "osm-raster": {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "&copy; OpenStreetMap contributors",
+        maxzoom: 19,
+      },
+    },
+    layers: [
+      {
+        id: "osm-raster-layer",
+        type: "raster",
+        source: "osm-raster",
+        minzoom: 0,
+        maxzoom: 20,
+        paint:
+          styleName === "light"
+            ? {
+                "raster-opacity": 0.96,
+                "raster-saturation": -0.12,
+                "raster-contrast": 0.05,
+              }
+            : {
+                "raster-opacity": 0.9,
+                "raster-brightness-min": 0,
+                "raster-brightness-max": 0.34,
+                "raster-saturation": -0.85,
+                "raster-contrast": 0.25,
+              },
+      },
+    ],
+  };
 };
 
 const getFilteredVenues = (
