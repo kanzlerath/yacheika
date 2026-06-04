@@ -114,9 +114,26 @@ const isPoiLayer = (layer: any) => {
   );
 };
 
+const sanitizeLayer = (layer: any) => {
+  const paint = layer.paint
+    ? Object.fromEntries(Object.entries(layer.paint).filter(([key]) => !key.endsWith("-pattern")))
+    : layer.paint;
+  const layout = layer.layout
+    ? Object.fromEntries(Object.entries(layer.layout).filter(([key]) => !key.endsWith("-pattern")))
+    : layer.layout;
+
+  return {
+    ...layer,
+    ...(paint ? { paint } : {}),
+    ...(layout ? { layout } : {}),
+  };
+};
+
 const stripPoiLayers = (style: any) => ({
   ...style,
-  layers: Array.isArray(style.layers) ? style.layers.filter((layer: any) => !isPoiLayer(layer)) : [],
+  layers: Array.isArray(style.layers)
+    ? style.layers.filter((layer: any) => !isPoiLayer(layer)).map(sanitizeLayer)
+    : [],
 });
 
 const loadFilteredVectorStyle = async (styleName: MapStyle) => {
@@ -234,7 +251,7 @@ const ensureVenueLayers = (map: maplibregl.Map) => {
       filter: ["has", "point_count"],
       layout: {
         "text-field": ["get", "point_count_abbreviated"],
-        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+        "text-font": ["Noto Sans Regular"],
         "text-size": 11,
       },
       paint: {
@@ -322,7 +339,7 @@ const ensureVenueLayers = (map: maplibregl.Map) => {
       minzoom: 14,
       layout: {
         "text-field": ["get", "name"],
-        "text-font": ["Open Sans Semibold", "Arial Unicode MS Bold"],
+        "text-font": ["Noto Sans Regular"],
         "text-size": 11,
         "text-offset": [0, 1.35],
         "text-anchor": "top",
@@ -417,6 +434,15 @@ export default function MapContainer({
     selectedSource?.setData(venueSourceDataRef.current.selected);
   };
 
+  const addTransparentImage = (map: maplibregl.Map, imageId: string) => {
+    if (map.hasImage(imageId)) return;
+    map.addImage(imageId, {
+      width: 1,
+      height: 1,
+      data: new Uint8Array([0, 0, 0, 0]),
+    });
+  };
+
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -432,6 +458,11 @@ export default function MapContainer({
     });
 
     mapRef.current = map;
+    const missingImageHandler = (event: any) => {
+      addTransparentImage(map, event.id);
+    };
+    map.on("styleimagemissing", missingImageHandler);
+
     map.on("load", () => {
       ensureVenueLayers(map);
     });
@@ -457,6 +488,7 @@ export default function MapContainer({
 
     return () => {
       cancelled = true;
+      map.off("styleimagemissing", missingImageHandler);
       resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
