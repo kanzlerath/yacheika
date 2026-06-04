@@ -57,8 +57,13 @@ const EMPTY_VENUE_COLLECTION: VenueFeatureCollection = {
   features: [],
 };
 
-const getMapStyleObject = (styleName: MapStyle) => {
-  const tileSet = styleName === "light" ? "light_nolabels" : "dark_nolabels";
+const getVectorStyleUrl = (styleName: MapStyle) =>
+  styleName === "light"
+    ? "https://tiles.openfreemap.org/styles/liberty"
+    : "https://tiles.openfreemap.org/styles/dark";
+
+const getRasterFallbackStyle = (styleName: MapStyle) => {
+  const tileSet = styleName === "light" ? "light_all" : "dark_all";
 
   return {
     version: 8,
@@ -84,6 +89,41 @@ const getMapStyleObject = (styleName: MapStyle) => {
       },
     ],
   };
+};
+
+const isPoiLayer = (layer: any) => {
+  const id = String(layer.id || "").toLowerCase();
+  const sourceLayer = String(layer["source-layer"] || "").toLowerCase();
+  const metadataClass = String(layer.metadata?.["mapbox:group"] || layer.metadata?.class || "").toLowerCase();
+  const textField = JSON.stringify(layer.layout?.["text-field"] || "").toLowerCase();
+
+  if (sourceLayer === "poi" || sourceLayer === "pois") return true;
+  if (id.includes("poi") || id.includes("amenity") || id.includes("shop") || id.includes("business")) return true;
+  if (metadataClass.includes("poi") || metadataClass.includes("amenity") || metadataClass.includes("shop")) return true;
+
+  // Keep road/place/park labels, but remove common venue/business icon label layers.
+  return layer.type === "symbol" && /\b(name|name:|brand|operator)\b/.test(textField) && (
+    id.includes("food") ||
+    id.includes("drink") ||
+    id.includes("restaurant") ||
+    id.includes("cafe") ||
+    id.includes("bar") ||
+    id.includes("bank") ||
+    id.includes("hotel") ||
+    id.includes("store")
+  );
+};
+
+const stripPoiLayers = (style: any) => ({
+  ...style,
+  layers: Array.isArray(style.layers) ? style.layers.filter((layer: any) => !isPoiLayer(layer)) : [],
+});
+
+const loadFilteredVectorStyle = async (styleName: MapStyle) => {
+  const response = await fetch(getVectorStyleUrl(styleName), { cache: "force-cache" });
+  if (!response.ok) throw new Error(`Map style failed: ${response.status}`);
+  const style = await response.json();
+  return stripPoiLayers(style);
 };
 
 const getFilteredVenues = (
@@ -364,6 +404,18 @@ export default function MapContainer({
   const pendingMarkerRef = useRef<maplibregl.Marker | null>(null);
   const prevUserCoordsRef = useRef<string | null>(null);
   const prevMapStyleRef = useRef(mapStyle);
+  const venueSourceDataRef = useRef({
+    venues: EMPTY_VENUE_COLLECTION,
+    selected: EMPTY_VENUE_COLLECTION,
+  });
+
+  const syncVenueSources = (map: maplibregl.Map) => {
+    ensureVenueLayers(map);
+    const venuesSource = map.getSource(VENUES_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    const selectedSource = map.getSource(SELECTED_VENUE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
+    venuesSource?.setData(venueSourceDataRef.current.venues);
+    selectedSource?.setData(venueSourceDataRef.current.selected);
+  };
 
   // Initialize Map
   useEffect(() => {
@@ -371,7 +423,7 @@ export default function MapContainer({
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: getMapStyleObject(mapStyle) as any,
+      style: getRasterFallbackStyle(mapStyle) as any,
       center: NSK_CENTER,
       zoom: 13,
       minZoom: 10,
@@ -384,6 +436,19 @@ export default function MapContainer({
       ensureVenueLayers(map);
     });
 
+    let cancelled = false;
+    loadFilteredVectorStyle(mapStyle)
+      .then((style) => {
+        if (cancelled || !mapRef.current) return;
+        mapRef.current.setStyle(style as any);
+        mapRef.current.once("styledata", () => {
+          if (mapRef.current) syncVenueSources(mapRef.current);
+        });
+      })
+      .catch((error) => {
+        console.warn("Vector map style unavailable, using raster fallback:", error);
+      });
+
     // Resize observer to handle dynamic size changes of the container
     const resizeObserver = new ResizeObserver(() => {
       map.resize();
@@ -391,6 +456,7 @@ export default function MapContainer({
     resizeObserver.observe(mapContainerRef.current);
 
     return () => {
+      cancelled = true;
       resizeObserver.disconnect();
       map.remove();
       mapRef.current = null;
@@ -401,11 +467,29 @@ export default function MapContainer({
   useEffect(() => {
     if (!mapRef.current) return;
     if (prevMapStyleRef.current === mapStyle) return;
-    mapRef.current.setStyle(getMapStyleObject(mapStyle) as any);
-    mapRef.current.once("styledata", () => {
-      if (mapRef.current) ensureVenueLayers(mapRef.current);
+    let cancelled = false;
+    const map = mapRef.current;
+    map.setStyle(getRasterFallbackStyle(mapStyle) as any);
+    map.once("styledata", () => {
+      if (mapRef.current) syncVenueSources(mapRef.current);
     });
+
+    loadFilteredVectorStyle(mapStyle)
+      .then((style) => {
+        if (cancelled || !mapRef.current) return;
+        mapRef.current.setStyle(style as any);
+        mapRef.current.once("styledata", () => {
+          if (mapRef.current) syncVenueSources(mapRef.current);
+        });
+      })
+      .catch((error) => {
+        console.warn("Vector map style unavailable, using raster fallback:", error);
+      });
+
     prevMapStyleRef.current = mapStyle;
+    return () => {
+      cancelled = true;
+    };
   }, [mapStyle]);
 
   // Update user GPS location marker and center
@@ -601,13 +685,13 @@ export default function MapContainer({
 
     const filtered = getFilteredVenues(venues, filters, adminMode);
     venueByIdRef.current = new Map(filtered.map((venue) => [venue.id, venue]));
+    venueSourceDataRef.current = {
+      venues: toVenueFeatureCollection(filtered, selectedVenue),
+      selected: toSelectedVenueFeatureCollection(selectedVenue),
+    };
 
     const updateSource = () => {
-      ensureVenueLayers(map);
-      const venuesSource = map.getSource(VENUES_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      const selectedSource = map.getSource(SELECTED_VENUE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
-      venuesSource?.setData(toVenueFeatureCollection(filtered, selectedVenue));
-      selectedSource?.setData(toSelectedVenueFeatureCollection(selectedVenue));
+      syncVenueSources(map);
     };
 
     if (map.isStyleLoaded()) {
