@@ -39,6 +39,7 @@ interface DiscoveryPanelProps {
 }
 
 const UNIFIED_PILLS = [
+  { id: "all", label: "Все", type: "all" },
   { id: "Бар", label: "Бар", type: "category" },
   { id: "Паб", label: "Паб", type: "category" },
   { id: "Рюмочная", label: "Рюмочная", type: "category" },
@@ -99,6 +100,9 @@ export default function DiscoveryPanel({
   const isPillActive = (pill: typeof UNIFIED_PILLS[0]) => {
     if (pill.type === "category") {
       return filters.category === pill.id;
+    }
+    if (pill.type === "all") {
+      return !filters.category && !filters.tag && !filters.openNow && !filters.hasEventToday;
     }
     return false;
   };

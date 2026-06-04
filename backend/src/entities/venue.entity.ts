@@ -76,6 +76,7 @@ export class VenueEntity {
       accent: string;
       glowColor: string;
       tagColor?: string;
+      ctaColor?: string;
     };
     heroImage?: string;
     moodBlock?: string;

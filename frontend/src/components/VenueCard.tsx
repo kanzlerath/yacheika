@@ -76,6 +76,7 @@ export default function VenueCard({
   const accentColor = customColors?.accent || "#d2a56b";
   const glowColor = customColors?.glowColor || accentColor;
   const tagColor = customColors?.tagColor || accentColor;
+  const ctaColor = customColors?.ctaColor || accentColor;
   const moodEmoji = premium.moodEmoji || "✨";
   const compactHeight = "calc(226px + env(safe-area-inset-bottom, 0px))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
@@ -87,6 +88,8 @@ export default function VenueCard({
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
   const likesRatio = totalFeedback > 0 ? Math.round((venue.likesCount / totalFeedback) * 100) : null;
+  const todayKey = new Date().toISOString().split("T")[0];
+  const upcomingEvents = vEvents.filter((event) => event.date >= todayKey);
   const tabOrder = ["info", "vibes", "events"] as const;
   const activeTabIndex = tabOrder.indexOf(activeTab);
   const setVenueTab = (tab: "info" | "events" | "vibes") => {
@@ -120,14 +123,14 @@ export default function VenueCard({
   const handleEventsTabClick = () => {
     setVenueTab("events");
 
-    if (vEvents.length > 0) {
+    if (upcomingEvents.length > 0) {
       logAnalyticsEvent({
         eventType: "open_event",
         venueId: venue.id,
         metadata: {
           action: "open_events_tab",
-          eventCount: vEvents.length,
-          eventIds: vEvents.map((event) => event.id),
+          eventCount: upcomingEvents.length,
+          eventIds: upcomingEvents.map((event) => event.id),
         },
         authToken,
       });
@@ -193,6 +196,7 @@ export default function VenueCard({
         ["--venue-accent" as any]: accentColor,
         ["--venue-glow" as any]: glowColor,
         ["--venue-tag" as any]: tagColor,
+        ["--venue-cta" as any]: ctaColor,
       }}
       id={`venue-card-${venue.id}`}
     >
@@ -321,11 +325,12 @@ export default function VenueCard({
                 ["--venue-accent" as any]: accentColor,
                 ["--venue-glow" as any]: glowColor,
                 ["--venue-tag" as any]: tagColor,
+                ["--venue-cta" as any]: ctaColor,
               }}
             >
               {/* Simplified airy title and header bar */}
               <div className="flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-start gap-3.5">
+                <div className="flex min-w-0 items-center gap-3.5">
                   <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-neutral-800/70 bg-neutral-950">
                     <img
                       src={logoImage}
@@ -408,7 +413,7 @@ export default function VenueCard({
                   onClick={() => onReact(venue.id, "like")}
                   className={`app-text-button ${
                     hasLiked
-                      ? "app-text-button-active"
+                      ? "app-text-button-like-active"
                       : ""
                   }`}
                 >
@@ -419,7 +424,7 @@ export default function VenueCard({
                   onClick={() => onReact(venue.id, "not_my_place")}
                   className={`app-text-button ${
                     hasNotMyPlace
-                      ? "app-text-button-muted-active"
+                      ? "app-text-button-dislike-active"
                       : ""
                   }`}
                 >
@@ -469,7 +474,7 @@ export default function VenueCard({
                   }`}
                 >
                   События
-                  {vEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
+                  {upcomingEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
                   {activeTab === "events" && (
                     <motion.div
                       layoutId="activeTabSurface"
@@ -487,7 +492,7 @@ export default function VenueCard({
                   animate={{ x: `${-activeTabIndex * 100}%` }}
                   transition={{ duration: 0.3, ease: appEase }}
                 >
-                    <div className="min-w-full space-y-6 text-[15px]">
+                    <div className="w-full shrink-0 overflow-hidden space-y-6 text-[15px]">
                       {/* Gorgeous airy Typography */}
                       <p className="leading-relaxed text-neutral-300 font-sans whitespace-pre-line">
                         {venue.fullDescription || venue.shortDescription}
@@ -509,7 +514,7 @@ export default function VenueCard({
 
                       {/* Atmosphere Horizontal Scroll Gallery */}
                       <div className="space-y-3 pt-2">
-                        <div className="flex gap-4 overflow-x-auto pb-2 -mx-5 px-5 scrollbar-none snap-x">
+                        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none snap-x">
                           {galleryImages.map((photoUrl, index) => (
                             <button
                               key={photoUrl}
@@ -546,8 +551,8 @@ export default function VenueCard({
                           
                           <div className="space-y-2.5 text-sm">
                             {topItems.map((drink, i) => (
-                              <div key={i} className="flex items-start gap-3 leading-relaxed">
-                                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-amber-505 shrink-0" />
+                              <div key={i} className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-2.5 leading-relaxed">
+                                <span className="font-mono text-xs text-neutral-500">{i + 1}.</span>
                                 <span className="font-semibold text-neutral-300">{drink}</span>
                               </div>
                             ))}
@@ -656,7 +661,7 @@ export default function VenueCard({
                       </div>
                     </div>
 
-                    <div className="min-w-full space-y-4">
+                    <div className="w-full shrink-0 overflow-hidden space-y-4">
                       <p className="text-sm text-[#8e8e93] leading-relaxed pt-1">
                         Оценки гостей помогают понять настроение места. Нажмите на тег, чтобы поддержать его.
                       </p>
@@ -667,10 +672,21 @@ export default function VenueCard({
                             Рейтинг тегов пуст. Станьте первым!
                           </div>
                         ) : (
-                          <div className="space-y-3 pt-1">
-                            {Object.entries(venue.vibeRatings)
-                              .sort((a, b) => b[1] - a[1])
-                              .map(([tag, votes]) => {
+                          <div className="space-y-5 pt-1">
+                            {[...VIBE_GROUPS, { title: "Другое", tags: Object.keys(venue.vibeRatings || {}).filter((tag) => !VIBE_GROUPS.some((group) => group.tags.includes(tag))) }]
+                              .map((group) => ({
+                                ...group,
+                                entries: group.tags
+                                  .filter((tag) => venue.vibeRatings?.[tag])
+                                  .map((tag) => [tag, venue.vibeRatings[tag]] as [string, number])
+                                  .sort((a, b) => b[1] - a[1]),
+                              }))
+                              .filter((group) => group.entries.length > 0)
+                              .map((group) => (
+                                <div key={group.title} className="space-y-2">
+                                  <div className="text-[11px] font-mono uppercase tracking-widest text-neutral-500">{group.title}</div>
+                                  <div className="space-y-2">
+                                    {group.entries.map(([tag, votes]) => {
                                 const userLikedThisVibe = likedVibeTags.includes(tag);
                                 const totalVotes = Object.values(venue.vibeRatings).reduce((sum, v) => sum + v, 0);
                                 const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
@@ -710,7 +726,10 @@ export default function VenueCard({
                                     </div>
                                   </button>
                                 );
-                              })}
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
                           </div>
                         )}
                       </div>
@@ -765,14 +784,14 @@ export default function VenueCard({
                       </div>
                     </div>
 
-                    <div className="min-w-full space-y-3.5">
-                      {vEvents.length === 0 ? (
+                    <div className="w-full shrink-0 overflow-hidden space-y-3.5">
+                      {upcomingEvents.length === 0 ? (
                         <div className="text-center py-10 text-sm text-neutral-500 border border-dashed border-neutral-900 rounded-2xl">
                           На сегодня событий в регламенте нет. Загляните позже!
                         </div>
                       ) : (
                         <div className="space-y-4 pt-1">
-                          {vEvents.map((ev) => (
+                          {upcomingEvents.map((ev) => (
                             <button
                               key={ev.id}
                               onClick={() => handleEventOpen(ev)}
@@ -790,7 +809,7 @@ export default function VenueCard({
                                 </div>
                               )}
                               <div className="space-y-2 text-left">
-                                <div className="flex flex-wrap items-center gap-1 text-xs font-mono text-violet-400 uppercase tracking-widest">
+                                <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono text-violet-400 uppercase tracking-widest leading-none">
                                   <Calendar className="w-3.5 h-3.5 shrink-0" />
                                   <span>
                                     {ev.date === new Date().toISOString().split("T")[0]

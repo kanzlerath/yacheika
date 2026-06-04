@@ -41,6 +41,7 @@ export interface PremiumConfig {
     accent: string;
     glowColor: string;
     tagColor?: string;
+    ctaColor?: string;
   };
   heroImage?: string;
   moodBlock?: string; // Current mood or event overlay (e.g. "сегодня техно")
@@ -154,4 +155,17 @@ export interface AdminDashboard {
 
 export interface AdminTelegramUser extends TelegramUser {
   reactionsCount: number;
+}
+
+export interface VenueSuggestion {
+  id: string;
+  name: string;
+  address: string;
+  comment?: string;
+  contact?: string;
+  userId?: string;
+  userName?: string;
+  status: 'new' | 'reviewed' | 'rejected' | 'converted';
+  createdAt: string;
+  updatedAt: string;
 }
