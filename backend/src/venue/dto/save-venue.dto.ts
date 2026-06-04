@@ -46,6 +46,10 @@ class PremiumColorsDto {
   @IsOptional()
   @IsString()
   tagColor?: string;
+
+  @IsOptional()
+  @IsString()
+  ctaColor?: string;
 }
 
 class PremiumConfigDto {

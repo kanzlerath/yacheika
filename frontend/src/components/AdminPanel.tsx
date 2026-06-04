@@ -31,6 +31,7 @@ import {
   AnalyticsEvent,
   Venue,
   VenueEvent,
+  VenueSuggestion,
   WeekdayKey,
   WorkingHoursSchedule,
 } from "../types";
@@ -48,6 +49,7 @@ interface AdminPanelProps {
   analytics: AnalyticsEvent[];
   dashboard: AdminDashboard | null;
   users: AdminTelegramUser[];
+  suggestions: VenueSuggestion[];
   selectedVenue: Venue | null;
   onSelectVenue: (venue: Venue) => void;
   onSaveVenue: (venue: any) => Promise<void> | void;
@@ -59,7 +61,7 @@ interface AdminPanelProps {
   onToggleMobileMap?: (show: boolean) => void;
 }
 
-type AdminSection = "dashboard" | "venues" | "add" | "users" | "events";
+type AdminSection = "dashboard" | "venues" | "add" | "users" | "events" | "suggestions";
 
 const CATEGORIES = [
   "Бар",
@@ -145,6 +147,7 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
       accent: "#c7a469",
       glowColor: "#c7a469",
       tagColor: "#c7a469",
+      ctaColor: "#c7a469",
     },
     heroImage: "",
     moodBlock: "",
@@ -171,11 +174,13 @@ const normalizeVenueForEdit = (venue: Venue) => ({
   tags: venue.tags || [],
   premiumConfig: {
     premiumActive: venue.premiumConfig?.premiumActive || false,
-    customColors: venue.premiumConfig?.customColors || {
+    customColors: {
       primary: "#131923",
       accent: "#c7a469",
       glowColor: "#c7a469",
       tagColor: "#c7a469",
+      ctaColor: "#c7a469",
+      ...(venue.premiumConfig?.customColors || {}),
     },
     heroImage: venue.premiumConfig?.heroImage || "",
     moodBlock: venue.premiumConfig?.moodBlock || "",
@@ -193,6 +198,7 @@ export default function AdminPanel({
   analytics,
   dashboard,
   users,
+  suggestions,
   selectedVenue,
   onSelectVenue,
   onSaveVenue,
@@ -414,6 +420,7 @@ export default function AdminPanel({
             ["venues", List, "Заведения"],
             ["add", Plus, "Добавить заведение"],
             ["users", Users, "Пользователи"],
+            ["suggestions", MapPin, "Заявки"],
             ["events", Calendar, "События"],
           ].map(([id, Icon, label]) => (
             <button
@@ -434,6 +441,8 @@ export default function AdminPanel({
           )}
 
           {section === "users" && <UsersView users={users} />}
+
+          {section === "suggestions" && <SuggestionsView suggestions={suggestions} />}
 
           {section === "events" && (
             <EventsOverview events={events} venues={venues} onSelectVenue={loadVenue} />
@@ -814,9 +823,10 @@ function VenueEditor(props: any) {
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <ColorField label="Акцент" hint="CTA, контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
+              <ColorField label="Акцент" hint="Контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
               <ColorField label="Свечение" hint="Мягкая подсветка premium-карточки." value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
               <ColorField label="Цвет тегов" hint="Фон и контур тегов в premium-карточке." value={editingVenue.premiumConfig.customColors.tagColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, tagColor: value } } })} />
+              <ColorField label="CTA" hint="Главная premium-кнопка в карточке." value={editingVenue.premiumConfig.customColors.ctaColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, ctaColor: value } } })} />
             </div>
             <div className="grid gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
               <Field label="Emoji">
@@ -916,6 +926,46 @@ function UsersView({ users }: { users: AdminTelegramUser[] }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[] }) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="font-display text-lg font-semibold text-neutral-100">Заявки на заведения</h2>
+        <p className="text-xs text-neutral-500">Предложения от гостей и авторизованных пользователей.</p>
+      </div>
+      {suggestions.length === 0 ? (
+        <EmptyLine>Заявок пока нет.</EmptyLine>
+      ) : (
+        <div className="grid gap-2">
+          {suggestions.map((suggestion) => (
+            <div key={suggestion.id} className="venue-soft-panel p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate font-semibold text-neutral-100">{suggestion.name}</div>
+                  <div className="mt-1 text-xs text-neutral-400">{suggestion.address}</div>
+                </div>
+                <div className="rounded-full border border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-wider text-neutral-500">
+                  {suggestion.status}
+                </div>
+              </div>
+              {(suggestion.comment || suggestion.contact) && (
+                <div className="mt-3 space-y-1 border-t border-neutral-900 pt-3 text-xs text-neutral-400">
+                  {suggestion.comment && <div>{suggestion.comment}</div>}
+                  {suggestion.contact && <div className="font-mono text-neutral-500">Контакт: {suggestion.contact}</div>}
+                </div>
+              )}
+              <div className="mt-3 flex flex-wrap justify-between gap-2 text-[10px] text-neutral-600">
+                <span>{suggestion.userName || "гость"}</span>
+                <span>{new Date(suggestion.createdAt).toLocaleString("ru-RU")}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

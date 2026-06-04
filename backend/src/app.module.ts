@@ -9,6 +9,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminDataModule } from './admin/admin-data.module';
+import { VenueSuggestionModule } from './venue-suggestion/venue-suggestion.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AdminDataModule } from './admin/admin-data.module';
     CollectionModule,
     AnalyticsModule,
     StorageModule,
+    VenueSuggestionModule,
   ],
 })
 export class AppModule {}

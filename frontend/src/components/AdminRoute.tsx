@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Map, ShieldCheck } from "lucide-react";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
-import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueEvent } from "../types";
+import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueEvent, VenueSuggestion } from "../types";
 
 interface AdminUser {
   id: string;
@@ -23,6 +23,7 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const [analytics, setAnalytics] = useState<AnalyticsEvent[]>([]);
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [users, setUsers] = useState<AdminTelegramUser[]>([]);
+  const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [adminMobileShowMap, setAdminMobileShowMap] = useState(false);
@@ -35,30 +36,33 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   });
 
   const fetchAdminData = async () => {
-    const [vRes, eRes, aRes, dRes, uRes] = await Promise.all([
+    const [vRes, eRes, aRes, dRes, uRes, sRes] = await Promise.all([
       fetch("/api/venues"),
       fetch("/api/events"),
       fetch("/api/analytics"),
       fetch("/api/admin/dashboard"),
       fetch("/api/admin/users"),
+      fetch("/api/admin/venue-suggestions"),
     ]);
 
-    if ([vRes, eRes, aRes, dRes, uRes].some((res) => !res.ok)) {
+    if ([vRes, eRes, aRes, dRes, uRes, sRes].some((res) => !res.ok)) {
       throw new Error("Admin data loading failed");
     }
 
-    const [vData, eData, aData, dData, uData] = await Promise.all([
+    const [vData, eData, aData, dData, uData, sData] = await Promise.all([
       vRes.json(),
       eRes.json(),
       aRes.json(),
       dRes.json(),
       uRes.json(),
+      sRes.json(),
     ]);
     setVenues(vData);
     setEvents(eData);
     setAnalytics(aData);
     setDashboard(dData);
     setUsers(uData);
+    setSuggestions(sData);
   };
 
   useEffect(() => {
@@ -104,6 +108,7 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
     setAnalytics([]);
     setDashboard(null);
     setUsers([]);
+    setSuggestions([]);
   };
 
   const refreshAdminData = () => {
@@ -192,6 +197,7 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
             analytics={analytics}
             dashboard={dashboard}
             users={users}
+            suggestions={suggestions}
             selectedVenue={selectedVenue}
             onSelectVenue={setSelectedVenue}
             onSaveVenue={handleSaveVenue}

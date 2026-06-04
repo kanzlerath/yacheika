@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
@@ -11,6 +12,7 @@ import {
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
+import { getAuthHeaders } from "../utils/telegramAuth";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -34,6 +36,44 @@ export default function SettingsModal({
   onChangeNearbySort,
 }: SettingsModalProps) {
   const currentUser = auth?.user ?? null;
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
+  const [suggestionForm, setSuggestionForm] = useState({
+    name: "",
+    address: "",
+    comment: "",
+    contact: "",
+  });
+  const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [suggestionError, setSuggestionError] = useState<string | null>(null);
+
+  const submitSuggestion = async () => {
+    setSuggestionError(null);
+    if (!suggestionForm.name.trim() || !suggestionForm.address.trim()) {
+      setSuggestionError("Укажите название и адрес.");
+      return;
+    }
+
+    setSuggestionStatus("sending");
+    try {
+      const res = await fetch(auth ? "/api/users/me/venue-suggestions" : "/api/venue-suggestions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(auth ? getAuthHeaders(auth.token) : {}),
+        },
+        body: JSON.stringify(suggestionForm),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || "Не удалось отправить заявку.");
+      }
+      setSuggestionStatus("sent");
+      setSuggestionForm({ name: "", address: "", comment: "", contact: "" });
+    } catch (error) {
+      setSuggestionStatus("error");
+      setSuggestionError(error instanceof Error ? error.message : "Не удалось отправить заявку.");
+    }
+  };
 
   return (
     <AnimatePresence mode="wait">
@@ -102,10 +142,6 @@ export default function SettingsModal({
                         @{currentUser?.username}
                       </div>
                     </div>
-
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-rose-950/20 text-rose-400 border border-rose-900/20 font-mono shrink-0">
-                      User
-                    </span>
                   </div>
 
                   {/* Actions for authenticated */}
@@ -138,6 +174,68 @@ export default function SettingsModal({
                   </div>
                 </motion.div>
               )}
+            </motion.div>
+
+            <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
+              <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                Новое место
+              </h4>
+              <motion.div className="settings-card rounded-2xl border p-4 space-y-3" variants={revealItem}>
+                <button
+                  type="button"
+                  onClick={() => setSuggestionOpen((value) => !value)}
+                  className="settings-secondary-button w-full rounded-xl border px-4 py-2.5 text-xs font-semibold"
+                >
+                  Предложить заведение
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {suggestionOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0, y: -6 }}
+                      animate={{ opacity: 1, height: "auto", y: 0 }}
+                      exit={{ opacity: 0, height: 0, y: -6 }}
+                      transition={{ duration: 0.22, ease: appEase }}
+                      className="space-y-2 overflow-hidden"
+                    >
+                      <input
+                        value={suggestionForm.name}
+                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, name: event.target.value }))}
+                        className="settings-form-input"
+                        placeholder="Название: например, Весна"
+                      />
+                      <input
+                        value={suggestionForm.address}
+                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, address: event.target.value }))}
+                        className="settings-form-input"
+                        placeholder="Адрес: ул. Ленина, 34"
+                      />
+                      <textarea
+                        value={suggestionForm.comment}
+                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, comment: event.target.value }))}
+                        className="settings-form-input min-h-20 resize-none"
+                        placeholder="Комментарий: что это за место, почему стоит добавить"
+                      />
+                      <input
+                        value={suggestionForm.contact}
+                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, contact: event.target.value }))}
+                        className="settings-form-input"
+                        placeholder="Контакт, если нужен ответ"
+                      />
+                      {suggestionError && <div className="text-[11px] text-rose-300">{suggestionError}</div>}
+                      {suggestionStatus === "sent" && <div className="text-[11px] text-emerald-300">Заявка отправлена.</div>}
+                      <button
+                        type="button"
+                        onClick={submitSuggestion}
+                        disabled={suggestionStatus === "sending"}
+                        className="app-text-button w-full"
+                      >
+                        {suggestionStatus === "sending" ? "Отправляем..." : "Отправить"}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
             </motion.div>
 
             {/* Map Styles Settings */}
