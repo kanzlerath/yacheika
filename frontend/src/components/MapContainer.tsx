@@ -155,7 +155,7 @@ const getFilteredVenues = (
 ) => {
   return venues.filter((venue) => {
     if (venue.status !== "published" && !adminMode) return false;
-    if (filters.category && venue.category !== filters.category) return false;
+    if (filters.category && venue.category.toLowerCase() !== filters.category.toLowerCase()) return false;
     if (filters.tag && !venue.tags.includes(filters.tag)) return false;
     if (filters.search) {
       const query = filters.search.toLowerCase();

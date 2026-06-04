@@ -42,6 +42,10 @@ class PremiumColorsDto {
 
   @IsString()
   glowColor: string;
+
+  @IsOptional()
+  @IsString()
+  tagColor?: string;
 }
 
 class PremiumConfigDto {
@@ -64,6 +68,10 @@ class PremiumConfigDto {
   @IsOptional()
   @IsString()
   moodBlock?: string;
+
+  @IsOptional()
+  @IsString()
+  moodEmoji?: string;
 
   @IsOptional()
   @IsArray()
@@ -122,6 +130,10 @@ export class SaveVenueDto {
   @IsOptional()
   @IsObject()
   workingHoursSchedule?: Record<string, Array<{ from: string; to: string }> | string | undefined>;
+
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
 
   @ValidateNested()
   @Type(() => VenueContactsDto)
