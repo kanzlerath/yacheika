@@ -57,6 +57,11 @@ const EMPTY_VENUE_COLLECTION: VenueFeatureCollection = {
   features: [],
 };
 
+const getVenueMarkerAccent = (venue: Venue) =>
+  venue.premiumConfig?.premiumActive
+    ? venue.premiumConfig?.customColors?.accent || "#d2a56b"
+    : "#71717a";
+
 const getVectorStyleUrl = (styleName: MapStyle) =>
   styleName === "light"
     ? "https://tiles.openfreemap.org/styles/liberty"
@@ -180,7 +185,7 @@ const toVenueFeatureCollection = (
         id: venue.id,
         name: venue.name,
         category: venue.category,
-        accent: venue.premiumConfig?.customColors?.accent || "#71717a",
+        accent: getVenueMarkerAccent(venue),
         selected: false,
       },
     })),
@@ -200,7 +205,7 @@ const toSelectedVenueFeatureCollection = (venue: Venue | null): VenueFeatureColl
             id: venue.id,
             name: venue.name,
             category: venue.category,
-            accent: venue.premiumConfig?.customColors?.accent || "#d2a56b",
+            accent: getVenueMarkerAccent(venue),
             selected: true,
           },
         },

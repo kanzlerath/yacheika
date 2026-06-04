@@ -273,7 +273,7 @@ export default function VenueCard({
               {/* Status details line */}
               <div className="flex items-center gap-4 text-[11px] text-neutral-400 font-mono border-t border-neutral-900/70 pt-2.5">
                 <div className="flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500/20" />
+                  <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
                   <span className="text-neutral-200 font-semibold">
                     {likesRatio === null ? "оценок пока нет" : `${likesRatio}% одобрения`}
                   </span>
@@ -321,7 +321,7 @@ export default function VenueCard({
               className="fixed inset-0 z-[80] overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl"
               style={{
                 paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
-                background: "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
+                background: "var(--app-bg)",
                 ["--venue-accent" as any]: accentColor,
                 ["--venue-glow" as any]: glowColor,
               }}
@@ -545,18 +545,18 @@ export default function VenueCard({
                       )}
 
                       {/* Clean classy contact coordinates */}
-                      <div className="grid sm:grid-cols-2 gap-6 border-t border-neutral-900 pt-5 text-xs font-mono venue-info-grid">
+                      <div className="grid sm:grid-cols-2 gap-6 border-t border-neutral-900 pt-5 text-[13px] font-mono venue-info-grid">
                         <div className="space-y-4">
                           <div className="venue-info-row">
                             <Clock className="w-4 h-4 text-neutral-500 shrink-0" />
-                            <div>
+                            <div className="venue-info-content">
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">ВРЕМЯ РАБОТЫ</div>
                               {schedule ? (
-                                <div className="space-y-1 font-sans text-xs text-neutral-200">
+                                <div className="space-y-1 font-sans text-neutral-200">
                                   {WEEKDAYS.map((day) => {
                                     const intervals = schedule[day.key] || [];
                                     return (
-                                      <div key={day.key} className="flex justify-between gap-3">
+                                      <div key={day.key} className="venue-schedule-row">
                                         <span className="text-neutral-500">{day.short}</span>
                                         <span>{intervals.length ? intervals.map((slot) => `${slot.from}-${slot.to}`).join(", ") : "выходной"}</span>
                                       </div>
@@ -565,36 +565,36 @@ export default function VenueCard({
                                   {schedule.note && <div className="pt-1 text-[11px] text-neutral-500">{schedule.note}</div>}
                                 </div>
                               ) : (
-                                <span className="text-neutral-200 font-sans text-xs">{venue.workingHours}</span>
+                                <span className="text-neutral-200 font-sans">{venue.workingHours}</span>
                               )}
                             </div>
                           </div>
                           
                           <div className="venue-info-row">
                             <Phone className="w-4 h-4 text-neutral-500 shrink-0" />
-                            <div>
+                            <div className="venue-info-content">
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">КОНТАКТЫ</div>
                               {venue.contacts.phone ? (
                                 <a
                                   href={`tel:${venue.contacts.phone}`}
-                                  className="text-neutral-200 hover:text-white underline decoration-white/20 transition font-sans text-xs"
+                                  className="text-neutral-200 hover:text-white underline decoration-white/20 transition font-sans"
                                   onClick={() => handleSocialClick("phone", venue.contacts.phone)}
                                 >
                                   {venue.contacts.phone}
                                 </a>
                               ) : (
-                                <span className="text-neutral-500 font-sans text-xs">Только онлайн-заказ</span>
+                                <span className="text-neutral-500 font-sans">Только онлайн-заказ</span>
                               )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="space-y-4 text-xs font-mono">
+                        <div className="space-y-4 text-[13px] font-mono">
                           <div className="venue-info-row">
                             <MapPin className="w-4 h-4 text-neutral-500 shrink-0" />
-                            <div>
+                            <div className="venue-info-content">
                               <div className="text-[9px] text-[#8e8e93] uppercase tracking-wider mb-0.5">АДРЕС</div>
-                              <span className="text-neutral-200 font-sans text-xs">{venue.address}</span>
+                              <span className="text-neutral-200 font-sans">{venue.address}</span>
                             </div>
                           </div>
 

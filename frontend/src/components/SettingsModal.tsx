@@ -6,9 +6,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
-  Compass,
   User,
-  Sliders,
 } from "lucide-react";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
@@ -61,8 +59,7 @@ export default function SettingsModal({
           >
             {/* Header */}
             <div className="settings-divider flex items-center justify-between pb-3 border-b">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-rose-500" />
+              <div className="flex items-center">
                 <h3 className="font-display text-base font-bold uppercase tracking-wider">
                   Настройки и Профиль
                 </h3>
@@ -178,8 +175,7 @@ export default function SettingsModal({
 
               <motion.div className="settings-card flex items-center justify-between p-4 rounded-2xl border" variants={revealItem}>
                 <div className="space-y-0.5 pr-2">
-                  <div className="settings-strong text-xs font-semibold flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-rose-500" />
+                  <div className="settings-strong text-xs font-semibold">
                     <span>Сортировка по близости (GPS)</span>
                   </div>
                   <div className="text-[10px] leading-relaxed">

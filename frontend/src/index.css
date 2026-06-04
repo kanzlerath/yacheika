@@ -262,11 +262,8 @@ body {
   color: inherit;
 }
 
-[data-theme] #discovery-panel .text-rose-500,
 [data-theme] #discovery-panel .text-amber-500,
-[data-theme] [id^="venue-card-"] .text-rose-500,
 [data-theme] [id^="venue-card-"] .text-amber-500,
-[data-theme] .text-rose-500,
 [data-theme] .text-amber-500 {
   color: var(--app-accent) !important;
 }
@@ -274,11 +271,6 @@ body {
 [data-theme] .text-violet-400,
 [data-theme] .bg-violet-500 {
   color: var(--app-focus) !important;
-}
-
-[data-theme] #discovery-panel .fill-rose-500,
-[data-theme] [id^="venue-card-"] .fill-rose-500 {
-  fill: var(--app-accent) !important;
 }
 
 [data-theme] [id^="venue-card-"] {
@@ -508,6 +500,19 @@ body {
   grid-template-columns: 16px minmax(0, 1fr);
   align-items: start;
   gap: 12px;
+}
+
+.venue-info-content {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.venue-schedule-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  justify-content: start;
+  text-align: left;
 }
 
 .venue-info-row > svg {
