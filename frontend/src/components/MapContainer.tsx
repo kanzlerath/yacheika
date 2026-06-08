@@ -426,6 +426,7 @@ export default function MapContainer({
   const pendingMarkerRef = useRef<maplibregl.Marker | null>(null);
   const prevUserCoordsRef = useRef<string | null>(null);
   const prevMapStyleRef = useRef(mapStyle);
+  const styleRequestIdRef = useRef(0);
   const venueSourceDataRef = useRef({
     venues: EMPTY_VENUE_COLLECTION,
     selected: EMPTY_VENUE_COLLECTION,
@@ -446,6 +447,62 @@ export default function MapContainer({
       height: 1,
       data: new Uint8Array([0, 0, 0, 0]),
     });
+  };
+
+  const setRasterFallbackStyle = (map: maplibregl.Map, styleName: MapStyle) => {
+    map.setStyle(getRasterFallbackStyle(styleName) as any);
+    map.once("styledata", () => {
+      if (mapRef.current === map) syncVenueSources(map);
+    });
+  };
+
+  const setVectorStyleWithFallback = (map: maplibregl.Map, styleName: MapStyle) => {
+    const requestId = ++styleRequestIdRef.current;
+
+    loadFilteredVectorStyle(styleName)
+      .then((style) => {
+        if (requestId !== styleRequestIdRef.current || !mapRef.current) return;
+
+        map.setStyle(style as any);
+        map.once("styledata", () => {
+          if (requestId === styleRequestIdRef.current && mapRef.current === map) {
+            syncVenueSources(map);
+          }
+        });
+
+        let fallbackApplied = false;
+        const revertToFallback = (reason: string, error?: unknown) => {
+          if (fallbackApplied || requestId !== styleRequestIdRef.current || mapRef.current !== map) return;
+          fallbackApplied = true;
+          if (error) {
+            console.warn(reason, error);
+          } else {
+            console.warn(reason);
+          }
+          setRasterFallbackStyle(map, styleName);
+        };
+
+        const watchdog = window.setTimeout(() => {
+          if (map.isStyleLoaded() && map.areTilesLoaded()) return;
+          revertToFallback("Vector map tiles did not settle in time, reverting to raster fallback.");
+        }, 5500);
+
+        const vectorErrorHandler = (event: any) => {
+          window.clearTimeout(watchdog);
+          revertToFallback("Vector map resource failed, reverting to raster fallback:", event?.error || event);
+        };
+
+        map.once("error", vectorErrorHandler);
+        map.once("idle", () => {
+          window.clearTimeout(watchdog);
+          map.off("error", vectorErrorHandler);
+        });
+      })
+      .catch((error) => {
+        if (requestId !== styleRequestIdRef.current || mapRef.current !== map) return;
+        console.warn("Vector map style unavailable, using raster fallback:", error);
+        setRasterFallbackStyle(map, styleName);
+      });
   };
 
   // Initialize Map
@@ -472,18 +529,7 @@ export default function MapContainer({
       ensureVenueLayers(map);
     });
 
-    let cancelled = false;
-    loadFilteredVectorStyle(mapStyle)
-      .then((style) => {
-        if (cancelled || !mapRef.current) return;
-        mapRef.current.setStyle(style as any);
-        mapRef.current.once("styledata", () => {
-          if (mapRef.current) syncVenueSources(mapRef.current);
-        });
-      })
-      .catch((error) => {
-        console.warn("Vector map style unavailable, using raster fallback:", error);
-      });
+    setVectorStyleWithFallback(map, mapStyle);
 
     // Resize observer to handle dynamic size changes of the container
     const resizeObserver = new ResizeObserver(() => {
@@ -492,7 +538,7 @@ export default function MapContainer({
     resizeObserver.observe(mapContainerRef.current);
 
     return () => {
-      cancelled = true;
+      styleRequestIdRef.current += 1;
       map.off("styleimagemissing", missingImageHandler);
       resizeObserver.disconnect();
       map.remove();
@@ -504,28 +550,13 @@ export default function MapContainer({
   useEffect(() => {
     if (!mapRef.current) return;
     if (prevMapStyleRef.current === mapStyle) return;
-    let cancelled = false;
     const map = mapRef.current;
-    map.setStyle(getRasterFallbackStyle(mapStyle) as any);
-    map.once("styledata", () => {
-      if (mapRef.current) syncVenueSources(mapRef.current);
-    });
-
-    loadFilteredVectorStyle(mapStyle)
-      .then((style) => {
-        if (cancelled || !mapRef.current) return;
-        mapRef.current.setStyle(style as any);
-        mapRef.current.once("styledata", () => {
-          if (mapRef.current) syncVenueSources(mapRef.current);
-        });
-      })
-      .catch((error) => {
-        console.warn("Vector map style unavailable, using raster fallback:", error);
-      });
+    setRasterFallbackStyle(map, mapStyle);
+    setVectorStyleWithFallback(map, mapStyle);
 
     prevMapStyleRef.current = mapStyle;
     return () => {
-      cancelled = true;
+      styleRequestIdRef.current += 1;
     };
   }, [mapStyle]);
 
