@@ -66,6 +66,7 @@ type AdminSection = "dashboard" | "venues" | "add" | "users" | "events" | "sugge
 const CATEGORIES = [
   "Бар",
   "Паб",
+  "Кафе",
   "Рюмочная",
   "Коктейльный бар",
   "Винный бар",
@@ -121,7 +122,7 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
   id: "",
   name: "",
   slug: "",
-  category: "бар",
+  category: "Бар",
   shortDescription: "",
   fullDescription: "",
   address: "",
@@ -647,6 +648,7 @@ function VenueEditor(props: any) {
           uploading={uploadingTarget === "logo"}
           onSelect={(files) => uploadSelectedImages(files, "logo")}
           label="Загрузить логотип"
+          fit="contain"
         />
       </AdminBlock>
 
@@ -1019,14 +1021,14 @@ function TopItemsEditor({ editingVenue, setEditingVenue, input, setInput, addIte
   );
 }
 
-function ImageUploadBox({ existingUrl, onSelect, label, multiple = false, uploading = false }: any) {
+function ImageUploadBox({ existingUrl, onSelect, label, multiple = false, uploading = false, fit = "cover" }: any) {
   const preview = existingUrl;
   return (
     <div className="mt-3 rounded-xl border border-neutral-900 p-3">
       <div className="mb-2 flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-neutral-500">
         <Image className="h-3.5 w-3.5" /> {label}
       </div>
-      {preview && <img src={preview} alt="" className="mb-3 h-36 w-full rounded-lg object-cover" />}
+      {preview && <img src={preview} alt="" className={`mb-3 h-36 w-full rounded-lg ${fit === "contain" ? "object-contain bg-neutral-950 p-3" : "object-cover"}`} />}
       <div className="flex flex-wrap gap-2">
         <label className="settings-secondary-button rounded-lg border px-3 py-2 text-xs font-semibold">
           {uploading ? "Загрузка..." : multiple ? "Выбрать файлы" : "Выбрать файл"}

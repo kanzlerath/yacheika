@@ -230,7 +230,7 @@ export default function VenueCard({
                     <img
                       src={logoImage}
                       alt={venue.name}
-                      className="w-full h-full object-cover filter brightness-[0.95]"
+                      className="w-full h-full object-contain p-2 filter brightness-[0.95]"
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       onError={(event) => {
@@ -335,7 +335,7 @@ export default function VenueCard({
                     <img
                       src={logoImage}
                       alt={venue.name}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain p-2"
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       onError={(event) => {
