@@ -42,6 +42,7 @@ const UNIFIED_PILLS = [
   { id: "all", label: "Все", type: "all" },
   { id: "Бар", label: "Бар", type: "category" },
   { id: "Паб", label: "Паб", type: "category" },
+  { id: "Кафе", label: "Кафе", type: "category" },
   { id: "Рюмочная", label: "Рюмочная", type: "category" },
   { id: "Коктейльный бар", label: "Коктейльный бар", type: "category" },
   { id: "Винный бар", label: "Винный бар", type: "category" },
@@ -240,7 +241,7 @@ export default function DiscoveryPanel({
                         <img
                           src={venue.logoUrl || venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
-                          className="w-full h-full object-cover filter brightness-[0.85] transition duration-250 group-hover:scale-105"
+                          className="w-full h-full object-contain p-1.5 filter brightness-[0.95] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
                           loading="lazy"
                           onError={(event) => {
