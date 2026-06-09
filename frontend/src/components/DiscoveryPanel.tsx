@@ -237,11 +237,11 @@ export default function DiscoveryPanel({
                     <div className="grid min-w-0 flex-1 grid-cols-[52px_minmax(0,1fr)] items-center gap-3.5">
                       
                       {/* Micro clean photo without aggressive sizes */}
-                      <div className="h-[52px] w-[52px] rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative">
+                      <div className="h-[52px] w-[52px] rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative flex items-center justify-center">
                         <img
                           src={venue.logoUrl || venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
-                          className="w-full h-full object-contain p-1.5 filter brightness-[0.95] transition duration-250 group-hover:scale-105"
+                          className="block max-h-[42px] max-w-[42px] object-contain object-center filter brightness-[0.95] transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
                           loading="lazy"
                           onError={(event) => {
@@ -266,10 +266,10 @@ export default function DiscoveryPanel({
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-semibold text-zinc-200 flex items-center justify-end gap-1">
-                        <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-                        <span>{venue.likesCount}</span>
+	                    <div className="text-right shrink-0">
+	                      <div className="text-sm font-semibold text-zinc-200 flex items-center justify-end gap-1 leading-none">
+	                        <Heart className="block w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+	                        <span className="leading-none">{venue.likesCount}</span>
                       </div>
                       <div className="text-[10px] font-mono text-zinc-550">{ratio}</div>
                     </div>
