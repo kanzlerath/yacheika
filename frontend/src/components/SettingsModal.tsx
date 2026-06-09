@@ -13,6 +13,7 @@ import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
 import { getAuthHeaders } from "../utils/telegramAuth";
+import { LEGAL_LINKS } from "../legalDocuments";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -45,6 +46,18 @@ export default function SettingsModal({
   });
   const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
+  const [legalConsentAccepted, setLegalConsentAccepted] = useState(() => {
+    return localStorage.getItem("scope.legalConsentAccepted") === "true";
+  });
+
+  const updateLegalConsent = (value: boolean) => {
+    setLegalConsentAccepted(value);
+    if (value) {
+      localStorage.setItem("scope.legalConsentAccepted", "true");
+    } else {
+      localStorage.removeItem("scope.legalConsentAccepted");
+    }
+  };
 
   const submitSuggestion = async () => {
     setSuggestionError(null);
@@ -155,6 +168,9 @@ export default function SettingsModal({
                     >
                       <span>Выйти из аккаунта</span>
                     </button>
+                    <a href="/delete-account" className="text-center text-[11px] font-semibold text-neutral-500 transition hover:text-neutral-200">
+                      Удалить аккаунт
+                    </a>
                   </div>
                 </motion.div>
               ) : (
@@ -170,10 +186,43 @@ export default function SettingsModal({
                   </div>
 
                   <div className="settings-divider pt-2 border-t flex justify-center">
-                    <TelegramLoginWidget />
+                    <div className="w-full space-y-3">
+                      <label className="flex items-start gap-2 text-left text-[11px] leading-relaxed text-neutral-500">
+                        <input
+                          type="checkbox"
+                          checked={legalConsentAccepted}
+                          onChange={(event) => updateLegalConsent(event.target.checked)}
+                          className="mt-0.5 shrink-0"
+                        />
+                        <span>
+                          Продолжая авторизацию, я принимаю{" "}
+                          <a href="/terms" className="underline decoration-neutral-700 hover:text-neutral-200">Пользовательское соглашение</a>{" "}
+                          и даю{" "}
+                          <a href="/consent" className="underline decoration-neutral-700 hover:text-neutral-200">согласие на обработку персональных данных</a>{" "}
+                          в соответствии с{" "}
+                          <a href="/privacy" className="underline decoration-neutral-700 hover:text-neutral-200">Политикой обработки персональных данных</a>.
+                        </span>
+                      </label>
+                      <TelegramLoginWidget disabled={!legalConsentAccepted} />
+                    </div>
                   </div>
                 </motion.div>
               )}
+            </motion.div>
+
+            <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
+              <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                Документы
+              </h4>
+              <motion.div className="settings-card rounded-2xl border p-4" variants={revealItem}>
+                <div className="grid gap-2 text-[11px] font-semibold">
+                  {LEGAL_LINKS.map((link) => (
+                    <a key={link.href} href={link.href} className="text-neutral-500 transition hover:text-neutral-200">
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </motion.div>
             </motion.div>
 
             <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">

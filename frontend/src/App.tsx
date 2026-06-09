@@ -8,12 +8,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { Grid } from "lucide-react";
 import AdminRoute from "./components/AdminRoute";
 import AuthPromptModal from "./components/AuthPromptModal";
+import CookieBanner from "./components/CookieBanner";
 import DiscoveryPanel from "./components/DiscoveryPanel";
+import LegalPage from "./components/LegalPage";
 import MapContainer from "./components/MapContainer";
 import SettingsModal from "./components/SettingsModal";
 import VenueCard from "./components/VenueCard";
 import { Collection, MapStyle, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
+import { getLegalDocumentByPath } from "./legalDocuments";
 import { appEase, softTransition } from "./utils/motionPresets";
 import {
   clearTelegramAuth,
@@ -38,6 +41,20 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 export default function App() {
+  const legalDocument = getLegalDocumentByPath(window.location.pathname);
+  if (legalDocument) {
+    return (
+      <>
+        <LegalPage document={legalDocument} />
+        <CookieBanner />
+      </>
+    );
+  }
+
+  return <ScopeApp />;
+}
+
+function ScopeApp() {
   const [auth, setAuth] = useState<TelegramAuthSession | null>(() => readStoredTelegramAuth());
   const [venues, setVenues] = useState<Venue[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -453,6 +470,8 @@ export default function App() {
         onClose={() => setShowAuthPromptModal(false)}
         actionText={authPromptActionText}
       />
+
+      <CookieBanner />
     </div>
   );
 }
