@@ -31,8 +31,6 @@ export default function SettingsModal({
   onClose,
   auth,
   onLogout,
-  mapStyle,
-  onChangeMapStyle,
   nearbySort,
   onChangeNearbySort,
 }: SettingsModalProps) {
@@ -212,21 +210,6 @@ export default function SettingsModal({
 
             <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
               <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                Документы
-              </h4>
-              <motion.div className="settings-card rounded-2xl border p-4" variants={revealItem}>
-                <div className="grid gap-2 text-[11px] font-semibold">
-                  {LEGAL_LINKS.map((link) => (
-                    <a key={link.href} href={link.href} className="text-neutral-500 transition hover:text-neutral-200">
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-
-            <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
-              <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
                 Новое место
               </h4>
               <motion.div className="settings-card rounded-2xl border p-4 space-y-3" variants={revealItem}>
@@ -287,33 +270,6 @@ export default function SettingsModal({
               </motion.div>
             </motion.div>
 
-            {/* Map Styles Settings */}
-            <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
-              <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                Стиль карты
-              </h4>
-
-              <div className="grid grid-cols-2 gap-2">
-                {(["dark", "light"] as const).map((style) => {
-                  const isActive = mapStyle === style;
-                  const label = style === "dark" ? "Тёмная" : "Светлая";
-                  return (
-                    <button
-                      key={style}
-                      onClick={() => onChangeMapStyle(style)}
-                      className={`py-2 px-3 rounded-xl border text-xs font-semibold font-display transition cursor-pointer text-center ${
-                        isActive
-                          ? "theme-button-active shadow"
-                          : "theme-button hover:text-white"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-
             {/* GPS Proximity Sort Settings */}
             <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
               <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
@@ -345,6 +301,21 @@ export default function SettingsModal({
                     }`}
                   />
                 </button>
+              </motion.div>
+            </motion.div>
+
+            <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
+              <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                Документы
+              </h4>
+              <motion.div className="settings-card rounded-2xl border p-4" variants={revealItem}>
+                <div className="grid gap-2 text-[11px] font-semibold">
+                  {LEGAL_LINKS.map((link) => (
+                    <a key={link.href} href={link.href} className="text-neutral-500 transition hover:text-neutral-200">
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
               </motion.div>
             </motion.div>
           </motion.div>

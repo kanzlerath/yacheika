@@ -47,7 +47,7 @@
         opacity: 0;
         pointer-events: none;
       }
-      .admin-route .preloader-overlay {
+      .skip-preloader .preloader-overlay {
         display: none;
       }
       .preloader-logo-container {
@@ -142,8 +142,8 @@
   <body class="text-zinc-300 antialiased">
     <noscript><div><img src="https://mc.yandex.ru/watch/109734721" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <script>
-      if (window.location.pathname === '/admin') {
-        document.documentElement.classList.add('admin-route');
+      if (window.location.pathname !== '/') {
+        document.documentElement.classList.add('skip-preloader');
       }
     </script>
     <!-- PWA App Animated Preloader -->
@@ -175,7 +175,7 @@
     <!-- Automatic preloader dismissal -->
     <script>
       window.addEventListener('load', () => {
-        if (window.location.pathname === '/admin') {
+        if (window.location.pathname !== '/') {
           document.getElementById('pwa-preloader')?.remove();
           return;
         }
