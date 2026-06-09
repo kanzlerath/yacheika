@@ -265,7 +265,7 @@ function AdminLoginForm({
   error: string | null;
   onSubmit: (email: string, password: string) => Promise<void>;
 }) {
-  const [email, setEmail] = useState("luzhkoff00@gmail.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
