@@ -60,9 +60,14 @@ export class VenueService {
     search?: string;
     userLat?: number;
     userLng?: number;
+    includeNonPublished?: boolean;
   }) {
     const qb = this.venueRepository.createQueryBuilder('venue')
       .leftJoinAndSelect('venue.reactions', 'reaction');
+
+    if (!filters.includeNonPublished) {
+      qb.andWhere('venue.status = :status', { status: 'published' });
+    }
 
     if (filters.category) {
       qb.andWhere('venue.category = :category', { category: filters.category });
@@ -96,9 +101,9 @@ export class VenueService {
     return venues.map((v) => this.mapVenueMetrics(v));
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, options: { includeNonPublished?: boolean } = {}) {
     const venue = await this.venueRepository.findOne({
-      where: { id },
+      where: options.includeNonPublished ? { id } : { id, status: 'published' },
       relations: ['reactions', 'events'],
     });
 
@@ -164,12 +169,12 @@ export class VenueService {
     }
 
     const saved = await this.venueRepository.save(venue);
-    // Reload with relations to return mapped response
-    return this.findOne(saved.id);
+    // Reload with relations to return mapped response for admin saves, including drafts.
+    return this.findOne(saved.id, { includeNonPublished: true });
   }
 
   async delete(id: string) {
-    const venue = await this.findOne(id);
+    const venue = await this.findOne(id, { includeNonPublished: true });
     await this.venueRepository.delete(id);
     return { success: true };
   }

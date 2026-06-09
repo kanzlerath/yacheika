@@ -12,7 +12,6 @@ import {
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
-import { getAuthHeaders } from "../utils/telegramAuth";
 import { LEGAL_LINKS } from "../legalDocuments";
 
 interface SettingsModalProps {
@@ -70,7 +69,6 @@ export default function SettingsModal({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(auth ? getAuthHeaders(auth.token) : {}),
         },
         body: JSON.stringify(suggestionForm),
       });

@@ -6,23 +6,22 @@ interface LogAnalyticsEventInput {
   eventType: AnalyticsEventType;
   venueId?: string;
   metadata?: Record<string, unknown>;
-  authToken?: string;
+  enabled?: boolean;
 }
 
 export const logAnalyticsEvent = async ({
   eventType,
   venueId,
   metadata,
-  authToken,
+  enabled = true,
 }: LogAnalyticsEventInput) => {
-  if (!authToken) return;
+  if (!enabled) return;
 
   try {
     await fetch("/api/analytics", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
         eventType,

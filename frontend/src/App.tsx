@@ -20,7 +20,6 @@ import { getLegalDocumentByPath } from "./legalDocuments";
 import { appEase, softTransition } from "./utils/motionPresets";
 import {
   clearTelegramAuth,
-  getAuthHeaders,
   readStoredTelegramAuth,
   refreshTelegramSession,
   storeTelegramAuth,
@@ -82,7 +81,6 @@ function ScopeApp() {
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
   const currentUser = auth?.user ?? null;
-  const authToken = auth?.token;
 
   const handleMapStyleChange = (style: MapStyle) => {
     setMapStyle(style);
@@ -103,12 +101,11 @@ function ScopeApp() {
 
   const fetchAllData = async (session = auth) => {
     try {
-      const authHeaders = session ? getAuthHeaders(session.token) : {};
       const [vRes, cRes, eRes, rRes] = await Promise.all([
         fetch("/api/venues"),
         fetch("/api/collections"),
         fetch("/api/events"),
-        session ? fetch("/api/users/me/reactions", { headers: authHeaders }) : Promise.resolve(null),
+        session ? fetch("/api/users/me/reactions") : Promise.resolve(null),
       ]);
 
       if ([vRes, cRes, eRes].some((res) => !res.ok) || (rRes && !rRes.ok)) {
@@ -201,7 +198,7 @@ function ScopeApp() {
       return;
     }
 
-    refreshTelegramSession(storedAuth.token)
+    refreshTelegramSession()
       .then((freshAuth) => {
         storeTelegramAuth(freshAuth);
         setAuth(freshAuth);
@@ -211,14 +208,14 @@ function ScopeApp() {
 
   useEffect(() => {
     fetchAllData(auth);
-  }, [auth?.token]);
+  }, [auth?.user?.id]);
 
   const handleReactVenue = async (
     venueId: string,
     type: "like" | "not_my_place" | "vibe_tag",
     vibeTag?: string,
   ) => {
-    if (!authToken) {
+    if (!auth) {
       setAuthPromptActionText(
         type === "like"
           ? "чтобы рекомендовать заведения"
@@ -275,7 +272,6 @@ function ScopeApp() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getAuthHeaders(authToken),
         },
         body: JSON.stringify({ type, vibeTag }),
       });
@@ -293,7 +289,7 @@ function ScopeApp() {
             reactionType: type,
             vibeTag,
           },
-          authToken,
+          enabled: Boolean(auth),
         });
       } else {
         throw new Error("Reaction request failed");
@@ -314,7 +310,7 @@ function ScopeApp() {
       eventType: "open_venue",
       venueId: venue.id,
       metadata: { action: "view_card", name: venue.name },
-      authToken,
+      enabled: Boolean(auth),
     });
   };
 
@@ -443,7 +439,7 @@ function ScopeApp() {
               <VenueCard
                 key={selectedVenue.id}
                 venue={selectedVenue}
-                authToken={authToken}
+                analyticsEnabled={Boolean(auth)}
                 userReactions={userReactions}
                 vEvents={events.filter((e) => e.venueId === selectedVenue.id)}
                 onReact={handleReactVenue}

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Res, BadRequestException, Headers, Req } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, BadRequestException, Req } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { AuthService } from './auth.service';
@@ -101,16 +101,12 @@ export class AuthController {
   }
 
   @Get('me')
-  async getMe(@Headers('authorization') authHeader?: string, @Req() req?: Request) {
+  async getMe(@Req() req?: Request) {
     const cookies = parseCookieHeader(req?.headers.cookie);
-    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
-    const token = bearerToken || cookies[AUTH_COOKIE_NAME];
+    const token = cookies[AUTH_COOKIE_NAME];
     const session = this.authService.verifySessionToken(token);
     const resolvedSession = await this.authService.resolveSessionUser(session);
-    return {
-      token,
-      ...resolvedSession,
-    };
+    return resolvedSession;
   }
 
   @Post('logout')
