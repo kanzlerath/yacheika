@@ -791,14 +791,6 @@ export default function MapContainer({
         </button>
       </div>
 
-      {/* Dynamic zoom controller feedback or instructions */}
-      <div 
-        className="absolute bg-neutral-950/80 border border-neutral-900 px-2.5 py-1.5 rounded-md text-[10px] text-neutral-400 font-mono pointer-events-none z-10 hidden sm:block"
-        style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", left: "1.5rem" }}
-      >
-        NSK NAVIGATOR: 55.03° N, 82.92° E
-      </div>
-
       {adminMode && (
         <div className="absolute top-4 left-4 right-16 bg-rose-950/90 border border-rose-800 text-rose-200 px-3 py-2 rounded-lg text-xs z-10 flex items-center gap-2 backdrop-blur-md">
           <span className="w-2 h-2 rounded-full bg-rose-500"></span>
