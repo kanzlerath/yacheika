@@ -14,7 +14,7 @@ export class EventController {
 
   @Post()
   @UseGuards(AdminGuard)
-  async saveEvent(@Body() eventData: any) {
+  async saveEvent(@Body() eventData: SaveEventDto) {
     return this.eventService.createOrUpdate(eventData);
   }
 

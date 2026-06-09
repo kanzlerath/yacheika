@@ -14,7 +14,6 @@ export interface TelegramUser {
 }
 
 export interface TelegramAuthSession {
-  token: string;
   expiresAt: string;
   user: TelegramUser;
 }

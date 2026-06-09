@@ -26,7 +26,7 @@ import { WEEKDAYS, formatTodaySchedule, normalizeSchedule } from "../utils/venue
 interface VenueCardProps {
   key?: string | number;
   venue: Venue;
-  authToken?: string;
+  analyticsEnabled?: boolean;
   userReactions: Reaction[];
   vEvents: VenueEvent[];
   onReact: (id: string, type: "like" | "not_my_place" | "vibe_tag", vibeTag?: string) => void;
@@ -49,7 +49,7 @@ const VIBE_GROUPS = [
 
 export default function VenueCard({
   venue,
-  authToken,
+  analyticsEnabled = false,
   userReactions,
   vEvents,
   onReact,
@@ -104,7 +104,7 @@ export default function VenueCard({
       eventType: "open_route",
       venueId: venue.id,
       metadata: { address: venue.address },
-      authToken,
+      enabled: analyticsEnabled,
     });
 
     const mapUrl = `https://yandex.ru/maps/?text=Новосибирск, ${encodeURIComponent(venue.address)} ${encodeURIComponent(venue.name)}`;
@@ -116,7 +116,7 @@ export default function VenueCard({
       eventType: platform === "phone" ? "click_phone" : "click_social",
       venueId: venue.id,
       metadata: { platform, label },
-      authToken,
+      enabled: analyticsEnabled,
     });
   };
 
@@ -132,7 +132,7 @@ export default function VenueCard({
           eventCount: upcomingEvents.length,
           eventIds: upcomingEvents.map((event) => event.id),
         },
-        authToken,
+        enabled: analyticsEnabled,
       });
     }
   };
@@ -148,7 +148,7 @@ export default function VenueCard({
         date: event.date,
         time: event.time,
       },
-      authToken,
+      enabled: analyticsEnabled,
     });
   };
 
