@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,14 @@ export default function AuthPromptModal({
   onClose,
   actionText = "чтобы ставить отметки заведениям и делиться вайбом",
 }: AuthPromptModalProps) {
+  const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setLegalConsentAccepted(false);
+    }
+  }, [isOpen]);
+
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
@@ -40,7 +49,7 @@ export default function AuthPromptModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={panelTransition}
-            className="auth-prompt-surface relative w-full max-w-sm rounded-2xl border border-neutral-850 bg-neutral-950 p-6 shadow-2xl z-10 text-center space-y-6 overflow-hidden"
+            className="auth-prompt-surface relative z-10 flex w-full max-w-sm flex-col gap-6 overflow-hidden rounded-2xl border border-neutral-850 bg-neutral-950 p-6 text-center shadow-2xl"
           >
             {/* Close Button */}
             <Button
@@ -55,12 +64,12 @@ export default function AuthPromptModal({
             </Button>
 
             {/* Icon & Heading */}
-            <motion.div className="flex flex-col items-center space-y-3 pt-2" variants={revealList} initial="hidden" animate="show">
+            <motion.div className="flex flex-col items-center gap-3 pt-2" variants={revealList} initial="hidden" animate="show">
               <motion.div className="p-3.5 rounded-2xl bg-rose-950/20 border border-rose-900/30 text-rose-500" variants={revealItem}>
                 <ShieldAlert className="w-6 h-6" />
               </motion.div>
               
-              <motion.div className="space-y-1" variants={revealItem}>
+              <motion.div className="flex flex-col gap-1" variants={revealItem}>
                 <h3 className="font-display text-lg font-bold text-white leading-snug">
                   Войдите удобным способом
                 </h3>
@@ -77,7 +86,23 @@ export default function AuthPromptModal({
               animate={{ opacity: 1, y: 0 }}
               transition={{ ...panelTransition, delay: 0.06 }}
             >
-              <TelegramLoginWidget />
+              <label className="flex items-start gap-2 text-left text-[11px] leading-relaxed text-neutral-500">
+                <input
+                  type="checkbox"
+                  checked={legalConsentAccepted}
+                  onChange={(event) => setLegalConsentAccepted(event.target.checked)}
+                  className="mt-0.5 shrink-0"
+                />
+                <span>
+                  Продолжая авторизацию, я принимаю{" "}
+                  <a href="/terms" className="underline decoration-neutral-700 hover:text-neutral-200">Пользовательское соглашение</a>{" "}
+                  и даю{" "}
+                  <a href="/consent" className="underline decoration-neutral-700 hover:text-neutral-200">согласие на обработку персональных данных</a>{" "}
+                  в соответствии с{" "}
+                  <a href="/privacy" className="underline decoration-neutral-700 hover:text-neutral-200">Политикой обработки персональных данных</a>.
+                </span>
+              </label>
+              <TelegramLoginWidget disabled={!legalConsentAccepted} />
               <span className="text-[10px] text-neutral-500 font-mono">
                 Безопасный вход. Telegram и Яндекс ID проверяются сервером.
               </span>
