@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { Map, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
 import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueEvent, VenueSuggestion } from "../types";
@@ -178,12 +181,14 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
           </div>
           <div className="text-[11px] text-neutral-500 truncate">{admin.email} · {admin.role}</div>
         </div>
-        <button
+        <Button
+          type="button"
+          variant="outline"
           onClick={handleLogout}
           className="app-text-button"
         >
           Выйти
-        </button>
+        </Button>
       </header>
 
       <main className="w-full flex-1 h-0 min-h-0 flex flex-col xl:grid xl:grid-cols-12 relative overflow-hidden bg-[#070709]">
@@ -231,13 +236,14 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
                   {pendingCoords.lat.toFixed(6)}, {pendingCoords.lng.toFixed(6)}
                 </div>
               )}
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setAdminMobileShowMap(false)}
                 className="mt-3 w-full rounded-lg border border-neutral-800 bg-white px-3 py-2 text-xs font-semibold text-black"
               >
                 Вернуться к форме
-              </button>
+              </Button>
             </div>
           )}
 
@@ -271,8 +277,9 @@ function AdminLoginForm({
 
   return (
     <div className="min-h-screen bg-[#070707] flex items-center justify-center px-4">
+      <Card className="w-full max-w-sm border border-neutral-850 bg-[#0d0d0f] p-6 shadow-2xl">
       <form
-        className="w-full max-w-sm border border-neutral-850 bg-[#0d0d0f] p-6 shadow-2xl"
+        className="contents"
         onSubmit={async (event) => {
           event.preventDefault();
           setIsSubmitting(true);
@@ -290,7 +297,7 @@ function AdminLoginForm({
 
         <label className="block space-y-2 mb-4">
           <span className="text-xs font-semibold text-neutral-400">Почта</span>
-          <input
+          <Input
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             type="email"
@@ -301,7 +308,7 @@ function AdminLoginForm({
 
         <label className="block space-y-2 mb-4">
           <span className="text-xs font-semibold text-neutral-400">Пароль</span>
-          <input
+          <Input
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             type="password"
@@ -312,14 +319,16 @@ function AdminLoginForm({
 
         {error && <div className="mb-4 text-xs text-rose-400">{error}</div>}
 
-        <button
+        <Button
           type="submit"
+          variant="outline"
           disabled={isSubmitting}
           className="w-full rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "Проверка..." : "Войти"}
-        </button>
+        </Button>
       </form>
+      </Card>
     </div>
   );
 }

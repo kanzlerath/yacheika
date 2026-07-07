@@ -9,6 +9,10 @@ import {
   X,
   User,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
@@ -113,12 +117,16 @@ export default function SettingsModal({
                   Настройки и Профиль
                 </h3>
               </div>
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
                 onClick={onClose}
-                className="settings-icon-button p-1.5 rounded-full border transition cursor-pointer"
+                className="settings-icon-button rounded-full"
+                aria-label="Закрыть настройки"
               >
                 <X className="w-3.5 h-3.5" />
-              </button>
+              </Button>
             </div>
 
             {/* Profile Section */}
@@ -155,15 +163,17 @@ export default function SettingsModal({
 
                   {/* Actions for authenticated */}
                   <div className="settings-divider flex flex-col gap-2 pt-2 border-t">
-                    <button
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => {
                         onLogout();
                         onClose();
                       }}
-                      className="settings-secondary-button w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer"
+                      className="settings-secondary-button w-full rounded-xl text-xs font-semibold"
                     >
                       <span>Выйти из аккаунта</span>
-                    </button>
+                    </Button>
                     <a href="/delete-account" className="text-center text-[11px] font-semibold text-neutral-500 transition hover:text-neutral-200">
                       Удалить аккаунт
                     </a>
@@ -211,13 +221,14 @@ export default function SettingsModal({
                 Новое место
               </h4>
               <motion.div className="settings-card rounded-2xl border p-4 space-y-3" variants={revealItem}>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={() => setSuggestionOpen((value) => !value)}
-                  className="settings-secondary-button w-full rounded-xl border px-4 py-2.5 text-xs font-semibold"
+                  className="settings-secondary-button w-full rounded-xl text-xs font-semibold"
                 >
                   Предложить заведение
-                </button>
+                </Button>
 
                 <AnimatePresence initial={false}>
                   {suggestionOpen && (
@@ -228,25 +239,25 @@ export default function SettingsModal({
                       transition={{ duration: 0.22, ease: appEase }}
                       className="space-y-2 overflow-hidden"
                     >
-                      <input
+                      <Input
                         value={suggestionForm.name}
                         onChange={(event) => setSuggestionForm((prev) => ({ ...prev, name: event.target.value }))}
                         className="settings-form-input"
                         placeholder="Название: например, Весна"
                       />
-                      <input
+                      <Input
                         value={suggestionForm.address}
                         onChange={(event) => setSuggestionForm((prev) => ({ ...prev, address: event.target.value }))}
                         className="settings-form-input"
                         placeholder="Адрес: ул. Ленина, 34"
                       />
-                      <textarea
+                      <Textarea
                         value={suggestionForm.comment}
                         onChange={(event) => setSuggestionForm((prev) => ({ ...prev, comment: event.target.value }))}
                         className="settings-form-input min-h-20 resize-none"
                         placeholder="Комментарий: что это за место, почему стоит добавить"
                       />
-                      <input
+                      <Input
                         value={suggestionForm.contact}
                         onChange={(event) => setSuggestionForm((prev) => ({ ...prev, contact: event.target.value }))}
                         className="settings-form-input"
@@ -254,14 +265,15 @@ export default function SettingsModal({
                       />
                       {suggestionError && <div className="text-[11px] text-rose-300">{suggestionError}</div>}
                       {suggestionStatus === "sent" && <div className="text-[11px] text-emerald-300">Заявка отправлена.</div>}
-                      <button
+                      <Button
                         type="button"
+                        variant="outline"
                         onClick={submitSuggestion}
                         disabled={suggestionStatus === "sending"}
                         className="app-text-button w-full"
                       >
                         {suggestionStatus === "sending" ? "Отправляем..." : "Отправить"}
-                      </button>
+                      </Button>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -284,21 +296,12 @@ export default function SettingsModal({
                   </div>
                 </div>
 
-                {/* Custom Toggle Switch */}
-                <button
-                  onClick={() => onChangeNearbySort(!nearbySort)}
-                  className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0 cursor-pointer ${
-                    nearbySort ? "settings-toggle-on" : "settings-toggle-off"
-                  }`}
-                >
-                  <motion.div
-                    layout
-                    transition={{ duration: 0.18, ease: appEase }}
-                    className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
-                      nearbySort ? "translate-x-5" : "translate-x-0"
-                    }`}
-                  />
-                </button>
+                <Switch
+                  checked={nearbySort}
+                  onCheckedChange={onChangeNearbySort}
+                  className={nearbySort ? "settings-toggle-on" : "settings-toggle-off"}
+                  aria-label="Сортировка по близости"
+                />
               </motion.div>
             </motion.div>
 

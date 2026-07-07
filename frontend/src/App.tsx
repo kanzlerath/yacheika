@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Grid } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import AdminRoute from "./components/AdminRoute";
 import AuthPromptModal from "./components/AuthPromptModal";
 import CookieBanner from "./components/CookieBanner";
@@ -345,7 +346,9 @@ function ScopeApp() {
 
         <div className="flex items-center gap-2.5 pointer-events-auto">
           {auth ? (
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowSettingsModal(true)}
               className="app-control-button flex items-center gap-2 border rounded-xl px-3 py-1.5 transition text-xs font-display select-none cursor-pointer"
             >
@@ -363,14 +366,16 @@ function ScopeApp() {
               )}
               <span className="hidden sm:inline font-medium">@{currentUser?.username}</span>
               <span className="sm:hidden font-medium">{currentUser?.firstName}</span>
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowSettingsModal(true)}
               className="app-control-button flex items-center border rounded-xl px-3.5 py-1.5 transition text-xs font-display font-semibold cursor-pointer select-none"
             >
               <span>Войти / Настройки</span>
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -418,7 +423,10 @@ function ScopeApp() {
                 exit={{ opacity: 0, y: 8, scale: 0.96 }}
                 transition={softTransition}
               >
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-lg"
                   onClick={() => setMobileView("list")}
                   className="flex items-center justify-center w-12 h-12 border rounded-full shadow-xl backdrop-blur-md cursor-pointer transition duration-150"
                   style={{
@@ -429,7 +437,7 @@ function ScopeApp() {
                   aria-label="Открыть подборки"
                 >
                   <Grid className="w-5 h-5" style={{ color: "var(--app-accent)" }} />
-                </button>
+                </Button>
               </motion.div>
             )}
           </AnimatePresence>

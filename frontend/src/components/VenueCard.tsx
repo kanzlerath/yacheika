@@ -18,6 +18,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
 import { appEase, panelTransition, softTransition } from "../utils/motionPresets";
@@ -258,16 +261,19 @@ export default function VenueCard({
                 </div>
 
                 {/* Close Button / Simple Native Circle */}
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (onClose) onClose();
                   }}
-                  className="venue-close-button flex items-center justify-center text-2xl leading-none transition shrink-0"
+                  className="venue-close-button shrink-0 text-2xl leading-none"
                   aria-label="Закрыть карточку"
                 >
                   ×
-                </button>
+                </Button>
               </div>
 
               {/* Status details line */}
@@ -287,21 +293,26 @@ export default function VenueCard({
 
               {/* Airy & Native Primary Buttons strip */}
               <div className="flex gap-2.5 pt-1.5">
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={handleRouteClick}
                   className="app-text-button flex-1"
                 >
                   Проложить маршрут
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-lg"
                   onClick={() => setIsExpanded(true)}
                   className="app-icon-button w-12"
                   title="Подробнее"
                   aria-label="Подробнее"
                 >
                   <ChevronLeft className="w-5 h-5" />
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -354,13 +365,16 @@ export default function VenueCard({
                   </div>
                 </div>
 
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-lg"
                   onClick={() => setIsExpanded(false)}
-                  className="venue-close-button flex items-center justify-center text-2xl leading-none transition"
+                  className="venue-close-button text-2xl leading-none"
                   aria-label="Свернуть карточку"
                 >
                   ×
-                </button>
+                </Button>
               </div>
 
               {isPremiumActive && premium.heroImage && (
@@ -409,7 +423,9 @@ export default function VenueCard({
 
               {/* Classy primary voting buttons */}
               <div className="grid grid-cols-2 gap-3" id="reactions-controls-expanded">
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => onReact(venue.id, "like")}
                   className={`app-text-button ${
                     hasLiked
@@ -418,9 +434,11 @@ export default function VenueCard({
                   }`}
                 >
                   <span>Рекомендую ({venue.likesCount})</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => onReact(venue.id, "not_my_place")}
                   className={`app-text-button ${
                     hasNotMyPlace
@@ -429,12 +447,14 @@ export default function VenueCard({
                   }`}
                 >
                   <span>Не моё место ({venue.notMyPlaceCount})</span>
-                </button>
+                </Button>
               </div>
 
               {/* Modern Segmented Tab Controls */}
-              <div className="venue-tabs text-sm">
-                <button
+              <Tabs value={activeTab} onValueChange={(value) => setVenueTab(value as "info" | "events" | "vibes")}>
+                <TabsList className="venue-tabs grid w-full grid-cols-3 text-sm">
+                <TabsTrigger
+                  value="info"
                   onClick={() => setVenueTab("info")}
                   className={`venue-tab font-display transition cursor-pointer ${
                     activeTab === "info" ? "venue-tab-active" : ""
@@ -448,17 +468,18 @@ export default function VenueCard({
                       className="absolute inset-0 rounded-[10px] -z-10"
                     />
                   )}
-                </button>
-                <button
+                </TabsTrigger>
+                <TabsTrigger
+                  value="vibes"
                   onClick={() => setVenueTab("vibes")}
                   className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "vibes" ? "venue-tab-active" : ""
                   }`}
                 >
                   Атмосфера
-                  <span className="text-[10px] w-4.5 h-4.5 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-400 font-mono">
+                  <Badge variant="secondary" className="h-4.5 min-w-4.5 rounded-full px-1 text-[10px] font-mono">
                     {Object.keys(venue.vibeRatings || {}).length}
-                  </span>
+                  </Badge>
                   {activeTab === "vibes" && (
                     <motion.div
                       layoutId="activeTabSurface"
@@ -466,8 +487,9 @@ export default function VenueCard({
                       className="absolute inset-0 rounded-[10px] -z-10"
                     />
                   )}
-                </button>
-                <button
+                </TabsTrigger>
+                <TabsTrigger
+                  value="events"
                   onClick={handleEventsTabClick}
                   className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     activeTab === "events" ? "venue-tab-active" : ""
@@ -482,8 +504,9 @@ export default function VenueCard({
                       className="absolute inset-0 rounded-[10px] -z-10"
                     />
                   )}
-                </button>
-              </div>
+                </TabsTrigger>
+                </TabsList>
+              </Tabs>
 
               {/* Tab Workspace Panel */}
               <div className="overflow-hidden pb-6">
@@ -501,14 +524,15 @@ export default function VenueCard({
                       {/* Clean minimalist borderless tag pill layout */}
                       <div className="flex flex-wrap gap-2 pt-1 border-t border-neutral-900/40">
                         {venue.tags.map((tag) => (
-                          <span
+                          <Badge
                             key={tag}
+                            variant="outline"
                             className={`px-3.5 py-1.5 text-xs font-mono rounded-lg select-none ${
                               isPremiumActive ? "premium-tag-pill" : "bg-neutral-900/60 text-neutral-400 border border-neutral-900"
                             }`}
                           >
                             {tag}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
 
@@ -614,12 +638,14 @@ export default function VenueCard({
                             </div>
                           </div>
 
-                          <button
+                          <Button
+                            type="button"
+                            variant="outline"
                             onClick={handleRouteClick}
                             className="app-text-button w-full"
                           >
                             Найти на Яндекс Картах
-                          </button>
+                          </Button>
                         </div>
                       </div>
 
@@ -711,7 +737,7 @@ export default function VenueCard({
                                         {tag}
                                       </span>
                                       <span className="font-mono text-xs text-[#8e8e93] group-hover:text-neutral-300 transition">
-                                        {votes} {votes === 1 ? "голос" : votes < 5 ? "года" : "голосов"}
+                                        {votes} {votes === 1 ? "голос" : votes > 1 && votes < 5 ? "голоса" : "голосов"}
                                       </span>
                                     </div>
                                     
@@ -735,14 +761,16 @@ export default function VenueCard({
                       </div>
 
                       <div className="pt-3">
-                        <button
+                        <Button
+                          type="button"
+                          variant="outline"
                           onClick={() => setShowVibeCreator(!showVibeCreator)}
                           className="app-icon-button w-full min-h-11"
                           aria-label="Выразить свою атмосферу"
                           title="Выразить свою атмосферу"
                         >
                           <Plus className="w-5 h-5" />
-                        </button>
+                        </Button>
 
                         <AnimatePresence>
                           {showVibeCreator && (
@@ -760,19 +788,22 @@ export default function VenueCard({
                                 {group.tags.map((vibe) => {
                                   const isVoted = likedVibeTags.includes(vibe);
                                   return (
-                                    <button
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="xs"
                                       key={vibe}
                                       onClick={() => {
                                         onReact(venue.id, "vibe_tag", vibe);
                                       }}
-                                      className={`text-xs px-3.5 py-1.5 rounded-full border font-display transition duration-200 cursor-pointer ${
+                                      className={`h-7 text-xs px-3.5 py-1.5 rounded-full border font-display transition duration-200 cursor-pointer ${
                                         isVoted
                                           ? "bg-rose-950/20 text-rose-400 border-rose-900"
                                           : "bg-neutral-900 text-neutral-400 border-neutral-800/70 hover:border-neutral-700"
                                       }`}
                                     >
                                       {vibe}
-                                    </button>
+                                    </Button>
                                   );
                                 })}
                                   </div>

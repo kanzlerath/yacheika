@@ -12,6 +12,9 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Venue, Collection, VenueEvent } from "../types";
 import { filterVenuesForDiscovery } from "../utils/venueFilters";
 
@@ -98,6 +101,8 @@ export default function DiscoveryPanel({
     setFilters(nextFilters);
   };
 
+  const activePillValue = filters.category || "all";
+
   const isPillActive = (pill: typeof UNIFIED_PILLS[0]) => {
     if (pill.type === "category") {
       return filters.category === pill.id;
@@ -132,30 +137,37 @@ export default function DiscoveryPanel({
         {/* Sleek, simplified Search bar */}
         <div className="flex items-center gap-2">
           {setMobileView && (
-            <button
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-lg"
               onClick={() => setMobileView("map")}
-              className="discovery-icon-button md:hidden flex items-center justify-center border w-9 h-9 rounded-xl transition duration-150 cursor-pointer select-none shrink-0"
+              className="discovery-icon-button md:hidden shrink-0"
               title="Назад к карте"
             >
               <ArrowLeft className="w-4 h-4" />
-            </button>
+            </Button>
           )}
           <div className="relative flex-1">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
+            <Input
               type="text"
               placeholder="Найти..."
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              className="discovery-search-input w-full text-xs pl-9 pr-8 py-2.5 rounded-xl border outline-none transition duration-150"
+              className="discovery-search-input h-10 text-xs pl-9 pr-8 rounded-xl"
             />
             {filters.search && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
                 onClick={() => setFilters((prev) => ({ ...prev, search: "" }))}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                aria-label="Очистить поиск"
               >
                 <X className="w-3 h-3" />
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -163,36 +175,47 @@ export default function DiscoveryPanel({
         {/* Collapsible filter tags row with chevron toggle */}
         <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <div
-              className={`flex flex-wrap gap-1.5 overflow-hidden py-0.5 transition-[max-height] duration-300 ease-out ${
+            <ToggleGroup
+              type="single"
+              value={activePillValue}
+              onValueChange={(value) => {
+                const pill = UNIFIED_PILLS.find((item) => item.id === (value || "all"));
+                if (pill) handlePillClick(pill);
+              }}
+              className={`flex w-full flex-wrap items-start justify-start gap-1.5 overflow-hidden py-0.5 transition-[max-height] duration-300 ease-out ${
                 isFiltersExpanded ? "max-h-44 pb-1" : "max-h-[36px]"
               }`}
+              spacing={0}
             >
                 {UNIFIED_PILLS.map((pill) => {
                   const active = isPillActive(pill);
                   return (
-                    <button
+                    <ToggleGroupItem
                       key={pill.id}
-                      onClick={() => handlePillClick(pill)}
-                      className={`text-[11px] px-3.5 py-1.5 rounded-lg font-medium transition select-none cursor-pointer duration-150 ${
+                      value={pill.id}
+                      aria-label={pill.label}
+                      className={`h-7 text-[11px] px-3.5 py-1.5 rounded-lg font-medium transition select-none cursor-pointer duration-150 ${
                         active
                           ? "discovery-pill-active font-semibold shadow"
                           : "discovery-pill border"
                       }`}
                     >
                       {pill.label}
-                    </button>
+                    </ToggleGroupItem>
                   );
                 })}
-              </div>
+              </ToggleGroup>
           </div>
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="icon-lg"
             onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-            className="discovery-icon-button flex items-center justify-center w-8 h-8 rounded-lg border transition shrink-0 cursor-pointer"
+            className="discovery-icon-button shrink-0"
             title={isFiltersExpanded ? "Свернуть фильтры" : "Все фильтры"}
           >
             {isFiltersExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -208,12 +231,15 @@ export default function DiscoveryPanel({
               {formatVenuesFound(filteredVenues.length)}
             </div>
             {(filters.category || filters.tag || filters.openNow || filters.hasEventToday || filters.search) && (
-              <button
+              <Button
+                type="button"
+                variant="link"
+                size="xs"
                 onClick={clearAllFilters}
-                className="text-[10px] text-rose-400 hover:text-rose-300 underline font-mono select-none cursor-pointer"
+                className="h-auto px-0 text-[10px] text-rose-400 hover:text-rose-300 font-mono"
               >
                 Сбросить
-              </button>
+              </Button>
             )}
           </div>
 

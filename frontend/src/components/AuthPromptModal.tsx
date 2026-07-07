@@ -5,6 +5,7 @@
 
 import { motion, AnimatePresence } from "motion/react";
 import { ShieldAlert, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
 
@@ -42,12 +43,16 @@ export default function AuthPromptModal({
             className="auth-prompt-surface relative w-full max-w-sm rounded-2xl border border-neutral-850 bg-neutral-950 p-6 shadow-2xl z-10 text-center space-y-6 overflow-hidden"
           >
             {/* Close Button */}
-            <button
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
               onClick={onClose}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-neutral-400 hover:text-white transition"
+              className="absolute top-4 right-4 rounded-full bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-neutral-400 hover:text-white"
+              aria-label="Закрыть"
             >
               <X className="w-3.5 h-3.5" />
-            </button>
+            </Button>
 
             {/* Icon & Heading */}
             <motion.div className="flex flex-col items-center space-y-3 pt-2" variants={revealList} initial="hidden" animate="show">
@@ -79,12 +84,14 @@ export default function AuthPromptModal({
             </motion.div>
 
             {/* Cancel Button */}
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={onClose}
               className="w-full py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 text-xs font-semibold text-neutral-300 hover:text-white transition cursor-pointer"
             >
               Продолжить просмотр гостем
-            </button>
+            </Button>
           </motion.div>
         </div>
       )}
