@@ -29,7 +29,7 @@ export class AnalyticsController {
     return this.analyticsService.logEvent({
       eventType,
       venueId,
-      userId: request.telegramSession.telegramId,
+      userId: request.telegramSession.userId,
       metadata,
     });
   }

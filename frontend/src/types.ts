@@ -5,11 +5,14 @@
 
 export interface TelegramUser {
   id: string;
-  telegramId: string;
+  provider?: 'telegram' | 'yandex';
+  providerUserId?: string;
+  telegramId?: string | null;
   username: string;
   firstName: string;
   lastName?: string;
   avatarUrl?: string;
+  email?: string;
   createdAt: string;
 }
 

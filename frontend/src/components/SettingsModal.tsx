@@ -132,7 +132,7 @@ export default function SettingsModal({
             {/* Profile Section */}
             <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
               <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                Аккаунт Telegram
+                Аккаунт
               </h4>
 
               {auth ? (
@@ -187,7 +187,7 @@ export default function SettingsModal({
                       <User className="w-4.5 h-4.5" />
                     </div>
                     <p className="text-xs leading-normal px-2">
-                      Вы просматриваете карту как гость. Войдите через Telegram, чтобы ставить лайки заведениям, сохранять подборки и оценивать атмосферу.
+                  Вы просматриваете карту как гость. Войдите через Telegram или Яндекс ID, чтобы ставить лайки заведениям, сохранять подборки и оценивать атмосферу.
                     </p>
                   </div>
 

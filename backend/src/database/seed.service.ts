@@ -50,6 +50,8 @@ export class SeedService implements OnApplicationBootstrap {
     const mockUsers = [
       {
         id: 'tg-dmitry',
+        provider: 'telegram' as const,
+        providerUserId: '12345678',
         telegramId: '12345678',
         username: 'nsk_bar_hunter',
         firstName: 'Дмитрий',
@@ -58,6 +60,8 @@ export class SeedService implements OnApplicationBootstrap {
       },
       {
         id: 'tg-dasha',
+        provider: 'telegram' as const,
+        providerUserId: '87654321',
         telegramId: '87654321',
         username: 'dasha_vibe',
         firstName: 'Дарья',
@@ -66,6 +70,8 @@ export class SeedService implements OnApplicationBootstrap {
       },
       {
         id: 'tg-mikhail',
+        provider: 'telegram' as const,
+        providerUserId: '99887766',
         telegramId: '99887766',
         username: 'mikhail_tech',
         firstName: 'Михаил',
@@ -87,6 +93,8 @@ export class SeedService implements OnApplicationBootstrap {
     for (let i = 0; i < 2000; i++) {
       dummyUsers.push({
         id: `tg-dummy-${i}`,
+        provider: 'telegram' as const,
+        providerUserId: `dummy-${i}`,
         telegramId: `dummy-${i}`,
         username: `dummy_user_${i}`,
         firstName: `Dummy_${i}`,

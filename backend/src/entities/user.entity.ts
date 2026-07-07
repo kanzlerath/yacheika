@@ -1,13 +1,20 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryColumn, Column, CreateDateColumn, OneToMany, Index } from 'typeorm';
 import { ReactionEntity } from './reaction.entity';
 
 @Entity('users')
+@Index(['provider', 'providerUserId'], { unique: true, where: '"providerUserId" IS NOT NULL' })
 export class UserEntity {
   @PrimaryColumn({ type: 'varchar' })
   id: string;
 
-  @Column({ unique: true })
-  telegramId: string;
+  @Column({ default: 'telegram' })
+  provider: 'telegram' | 'yandex';
+
+  @Column({ nullable: true })
+  providerUserId: string | null;
+
+  @Column({ unique: true, nullable: true })
+  telegramId: string | null;
 
   @Column({ unique: true })
   username: string;
@@ -20,6 +27,9 @@ export class UserEntity {
 
   @Column({ nullable: true })
   avatarUrl: string;
+
+  @Column({ nullable: true })
+  email: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
