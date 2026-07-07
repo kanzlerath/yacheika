@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
-import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueEvent, VenueSuggestion } from "../types";
+import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueAudit, VenueEvent, VenueSuggestion } from "../types";
 
 interface AdminUser {
   id: string;
@@ -28,6 +28,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const [users, setUsers] = useState<AdminTelegramUser[]>([]);
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
+  const [selectedVenueAudit, setSelectedVenueAudit] = useState<VenueAudit | null>(null);
+  const [selectedVenueAuditLoading, setSelectedVenueAuditLoading] = useState(false);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [adminMobileShowMap, setAdminMobileShowMap] = useState(false);
   const [filters] = useState({
@@ -107,6 +109,7 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
     await fetch("/api/admin/logout", { method: "POST" }).catch(() => undefined);
     setAdmin(null);
     setSelectedVenue(null);
+    setSelectedVenueAudit(null);
     setPendingCoords(null);
     setAnalytics([]);
     setDashboard(null);
@@ -117,6 +120,36 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const refreshAdminData = () => {
     fetchAdminData().catch((error) => console.error("Failed to refresh admin data:", error));
   };
+
+  useEffect(() => {
+    if (!admin || !selectedVenue?.id) {
+      setSelectedVenueAudit(null);
+      setSelectedVenueAuditLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSelectedVenueAuditLoading(true);
+    fetch(`/api/admin/venues/${selectedVenue.id}/audit`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Venue audit loading failed");
+        return res.json();
+      })
+      .then((data: VenueAudit) => {
+        if (!cancelled) setSelectedVenueAudit(data);
+      })
+      .catch((error) => {
+        console.error("Failed to load venue audit:", error);
+        if (!cancelled) setSelectedVenueAudit(null);
+      })
+      .finally(() => {
+        if (!cancelled) setSelectedVenueAuditLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [admin, events.length, selectedVenue?.id, selectedVenue?.updatedAt]);
 
   const handleSaveVenue = async (venueForm: any) => {
     const res = await fetch("/api/venues", {
@@ -203,6 +236,8 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
             dashboard={dashboard}
             users={users}
             suggestions={suggestions}
+            selectedVenueAudit={selectedVenueAudit}
+            selectedVenueAuditLoading={selectedVenueAuditLoading}
             selectedVenue={selectedVenue}
             onSelectVenue={setSelectedVenue}
             onSaveVenue={handleSaveVenue}

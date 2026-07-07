@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { AdminGuard } from '../auth/admin.guard';
 import { AdminDataService } from './admin-data.service';
 
@@ -15,5 +15,10 @@ export class AdminDataController {
   @Get('users')
   async getUsers() {
     return this.adminDataService.getUsers();
+  }
+
+  @Get('venues/:id/audit')
+  async getVenueAudit(@Param('id') id: string) {
+    return this.adminDataService.getVenueAudit(id);
   }
 }
