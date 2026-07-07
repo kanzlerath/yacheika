@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   X,
@@ -47,18 +47,17 @@ export default function SettingsModal({
   });
   const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
-  const [legalConsentAccepted, setLegalConsentAccepted] = useState(() => {
-    return localStorage.getItem("scope.legalConsentAccepted") === "true";
-  });
+  const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
 
   const updateLegalConsent = (value: boolean) => {
     setLegalConsentAccepted(value);
-    if (value) {
-      localStorage.setItem("scope.legalConsentAccepted", "true");
-    } else {
-      localStorage.removeItem("scope.legalConsentAccepted");
-    }
   };
+
+  useEffect(() => {
+    if (isOpen && !auth) {
+      setLegalConsentAccepted(false);
+    }
+  }, [auth, isOpen]);
 
   const submitSuggestion = async () => {
     setSuggestionError(null);
@@ -181,10 +180,10 @@ export default function SettingsModal({
                 </motion.div>
               ) : (
                 /* Unauthenticated Guest message & Telegram widget */
-                <motion.div className="settings-card p-4 rounded-2xl border text-center space-y-4" variants={revealItem}>
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="settings-avatar w-8 h-8 rounded-full flex items-center justify-center border">
-                      <User className="w-4.5 h-4.5" />
+                <motion.div className="settings-card flex flex-col gap-4 rounded-2xl border p-4 text-center" variants={revealItem}>
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="settings-avatar flex size-8 items-center justify-center rounded-full border">
+                      <User className="size-4.5" />
                     </div>
                     <p className="text-xs leading-normal px-2">
                   Вы просматриваете карту как гость. Войдите через Telegram или Яндекс ID, чтобы ставить лайки заведениям, сохранять подборки и оценивать атмосферу.
@@ -192,7 +191,7 @@ export default function SettingsModal({
                   </div>
 
                   <div className="settings-divider pt-2 border-t flex justify-center">
-                    <div className="w-full space-y-3">
+                    <div className="flex w-full flex-col gap-3">
                       <label className="flex items-start gap-2 text-left text-[11px] leading-relaxed text-neutral-500">
                         <input
                           type="checkbox"
