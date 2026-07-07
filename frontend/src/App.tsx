@@ -175,7 +175,7 @@ function ScopeApp() {
     const authError = urlParams.get("auth_error");
 
     if (authError) {
-      alert("Ошибка авторизации через Telegram");
+      alert("Ошибка авторизации");
       window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
       handleLogout();
       fetchAllData(null);

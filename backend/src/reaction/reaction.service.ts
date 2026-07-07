@@ -40,8 +40,10 @@ export class ReactionService {
     if (!user) {
       user = this.userRepository.create({
         id: userId,
-        telegramId: userId.replace('tg-', ''),
-        username: userId.replace('tg-', '') + '_sim',
+        provider: userId.startsWith('ya-') ? 'yandex' : 'telegram',
+        providerUserId: userId.replace(/^tg-/, '').replace(/^ya-/, ''),
+        telegramId: userId.startsWith('tg-') ? userId.replace('tg-', '') : null,
+        username: userId.replace(/^tg-/, '').replace(/^ya-/, '') + '_sim',
         firstName: 'Tester_' + userId.substring(3),
       });
       await this.userRepository.save(user);

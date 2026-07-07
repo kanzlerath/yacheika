@@ -40,10 +40,13 @@ export class AdminDataService {
     return users.map((user) => ({
       id: user.id,
       telegramId: user.telegramId,
+      provider: user.provider,
+      providerUserId: user.providerUserId,
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
       avatarUrl: user.avatarUrl,
+      email: user.email,
       createdAt: user.createdAt,
       reactionsCount: reactionCountByUser.get(user.id) || 0,
     }));

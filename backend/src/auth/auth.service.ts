@@ -10,9 +10,13 @@ import { createHmac, createPublicKey, timingSafeEqual, verify } from 'crypto';
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 
-export interface TelegramSession {
+export type AuthProvider = 'telegram' | 'yandex';
+
+export interface AuthSession {
   userId: string;
-  telegramId: string;
+  provider: AuthProvider;
+  providerUserId: string;
+  telegramId?: string;
   username?: string;
   exp: number;
 }
@@ -95,6 +99,18 @@ export class AuthService {
     return process.env.TELEGRAM_REDIRECT_URI || '';
   }
 
+  private get yandexClientId() {
+    return process.env.YANDEX_CLIENT_ID || '';
+  }
+
+  private get yandexClientSecret() {
+    return process.env.YANDEX_CLIENT_SECRET || '';
+  }
+
+  private get yandexRedirectUri() {
+    return process.env.YANDEX_REDIRECT_URI || '';
+  }
+
   private get sessionSecret() {
     return process.env.AUTH_SESSION_SECRET || process.env.TELEGRAM_BOT_TOKEN;
   }
@@ -111,7 +127,13 @@ export class AuthService {
     }
   }
 
-  private createSessionToken(session: TelegramSession) {
+  assertYandexConfigured() {
+    if (!this.yandexClientId || !this.yandexClientSecret || !this.yandexRedirectUri) {
+      throw new ServiceUnavailableException('Yandex ID OAuth is not configured');
+    }
+  }
+
+  private createSessionToken(session: AuthSession) {
     this.assertSessionConfigured();
     const payload = toBase64Url(JSON.stringify(session));
     const signature = toBase64Url(
@@ -120,7 +142,7 @@ export class AuthService {
     return `${payload}.${signature}`;
   }
 
-  verifySessionToken(token?: string): TelegramSession {
+  verifySessionToken(token?: string): AuthSession {
     this.assertSessionConfigured();
     if (!token) throw new UnauthorizedException('Missing auth token');
 
@@ -135,11 +157,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid auth token');
     }
 
-    const session = JSON.parse(fromBase64Url(payload)) as TelegramSession;
+    const session = JSON.parse(fromBase64Url(payload)) as AuthSession;
     const now = Math.floor(Date.now() / 1000);
 
-    if (!session.userId || !session.telegramId || !session.exp || session.exp <= now) {
+    if (!session.userId || !session.exp || session.exp <= now) {
       throw new UnauthorizedException('Auth token expired');
+    }
+
+    if (!session.provider || !session.providerUserId) {
+      if (!session.telegramId) throw new UnauthorizedException('Auth token expired');
+      session.provider = 'telegram';
+      session.providerUserId = session.telegramId;
     }
 
     return session;
@@ -248,10 +276,18 @@ export class AuthService {
       const nameParts = fullName.split(' ');
       const firstName = nameParts[0] || 'User';
       const lastName = nameParts.slice(1).join(' ') || null;
-      const existingUser = await this.userRepository.findOne({ where: { telegramId } });
+      const existingUser = await this.userRepository.findOne({
+        where: [
+          { provider: 'telegram', providerUserId: telegramId },
+          { telegramId },
+        ],
+      });
       const systemId = `tg-${telegramId}`;
       const user = existingUser
         ? this.userRepository.merge(existingUser, {
+            provider: 'telegram',
+            providerUserId: telegramId,
+            telegramId,
             username,
             firstName,
             lastName,
@@ -259,6 +295,8 @@ export class AuthService {
           })
         : this.userRepository.create({
             id: systemId,
+            provider: 'telegram',
+            providerUserId: telegramId,
             telegramId,
             username,
             firstName,
@@ -269,7 +307,9 @@ export class AuthService {
       const now = Math.floor(Date.now() / 1000);
       const token = this.createSessionToken({
         userId: savedUser.id,
-        telegramId: savedUser.telegramId,
+        provider: 'telegram',
+        providerUserId: telegramId,
+        telegramId,
         username: savedUser.username,
         exp: now + this.sessionTtlSeconds,
       });
@@ -285,7 +325,111 @@ export class AuthService {
     }
   }
 
-  async resolveSessionUser(session: TelegramSession) {
+  async authenticateYandexOAuth(code: string, codeVerifier: string) {
+    this.assertYandexConfigured();
+
+    const urlParams = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      code_verifier: codeVerifier,
+    });
+    const basicAuth = Buffer.from(`${this.yandexClientId}:${this.yandexClientSecret}`).toString(
+      'base64',
+    );
+
+    try {
+      const tokenResponse = await firstValueFrom(
+        this.httpService.post('https://oauth.yandex.ru/token', urlParams.toString(), {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Authorization: `Basic ${basicAuth}`,
+          },
+        }),
+      );
+
+      const accessToken = tokenResponse.data?.access_token;
+      if (!accessToken) throw new UnauthorizedException('No access_token received from Yandex');
+
+      const userInfoResponse = await firstValueFrom(
+        this.httpService.get('https://login.yandex.ru/info?format=json', {
+          headers: {
+            Authorization: `OAuth ${accessToken}`,
+          },
+        }),
+      );
+
+      const profile = userInfoResponse.data as {
+        id?: string;
+        client_id?: string;
+        login?: string;
+        first_name?: string;
+        last_name?: string;
+        display_name?: string;
+        real_name?: string;
+        default_email?: string;
+        is_avatar_empty?: boolean;
+        default_avatar_id?: string;
+      };
+
+      const yandexId = String(profile.id || '').trim();
+      if (!yandexId || String(profile.client_id) !== String(this.yandexClientId)) {
+        throw new UnauthorizedException('Yandex user info claims are invalid');
+      }
+
+      const username = `yandex_${profile.login || yandexId}`;
+      const firstName = profile.first_name || profile.display_name || profile.login || 'Yandex';
+      const lastName = profile.last_name || null;
+      const avatarUrl =
+        profile.default_avatar_id && !profile.is_avatar_empty
+          ? `https://avatars.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200`
+          : null;
+
+      const existingUser = await this.userRepository.findOne({
+        where: { provider: 'yandex', providerUserId: yandexId },
+      });
+      const systemId = `ya-${yandexId}`;
+      const user = existingUser
+        ? this.userRepository.merge(existingUser, {
+            username,
+            firstName,
+            lastName,
+            avatarUrl,
+            email: profile.default_email || null,
+          })
+        : this.userRepository.create({
+            id: systemId,
+            provider: 'yandex',
+            providerUserId: yandexId,
+            telegramId: null,
+            username,
+            firstName,
+            lastName,
+            avatarUrl,
+            email: profile.default_email || null,
+          });
+
+      const savedUser = await this.userRepository.save(user);
+      const now = Math.floor(Date.now() / 1000);
+      const token = this.createSessionToken({
+        userId: savedUser.id,
+        provider: 'yandex',
+        providerUserId: yandexId,
+        username: savedUser.username,
+        exp: now + this.sessionTtlSeconds,
+      });
+
+      return {
+        token,
+        expiresAt: new Date((now + this.sessionTtlSeconds) * 1000).toISOString(),
+        user: savedUser,
+      };
+    } catch (error) {
+      console.error('Yandex Auth Error:', error?.response?.data || error.message);
+      throw new UnauthorizedException('Yandex OAuth auth payload is invalid or expired');
+    }
+  }
+
+  async resolveSessionUser(session: AuthSession) {
     const user = await this.userRepository.findOne({ where: { id: session.userId } });
     if (!user) throw new UnauthorizedException('Session user does not exist');
 

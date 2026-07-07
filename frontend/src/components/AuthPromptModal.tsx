@@ -62,7 +62,7 @@ export default function AuthPromptModal({
               
               <motion.div className="space-y-1" variants={revealItem}>
                 <h3 className="font-display text-lg font-bold text-white leading-snug">
-                  Войдите через Telegram
+                  Войдите удобным способом
                 </h3>
                 <p className="text-xs text-neutral-400 leading-relaxed px-2">
                   Авторизация необходима, {actionText}.
@@ -79,7 +79,7 @@ export default function AuthPromptModal({
             >
               <TelegramLoginWidget />
               <span className="text-[10px] text-neutral-500 font-mono">
-                Безопасный вход. Данные профиля проверяются сервером.
+                Безопасный вход. Telegram и Яндекс ID проверяются сервером.
               </span>
             </motion.div>
 

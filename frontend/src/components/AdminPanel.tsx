@@ -971,7 +971,9 @@ function UsersView({ users }: { users: AdminTelegramUser[] }) {
           <div key={user.id} className="venue-soft-panel flex items-center justify-between gap-3 p-3">
             <div className="min-w-0">
               <div className="truncate font-semibold text-neutral-100">{user.firstName} {user.lastName || ""}</div>
-              <div className="truncate text-[10px] text-neutral-500">@{user.username || "без username"} · {user.telegramId}</div>
+              <div className="truncate text-[10px] text-neutral-500">
+                @{user.username || "без username"} · {user.provider || "telegram"} · {user.providerUserId || user.telegramId}
+              </div>
             </div>
             <div className="text-right text-[10px] text-neutral-500">
               <div>{user.reactionsCount} реакций</div>
