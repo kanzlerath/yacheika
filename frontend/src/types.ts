@@ -159,6 +159,67 @@ export interface AdminTelegramUser extends TelegramUser {
   reactionsCount: number;
 }
 
+export interface VenueAudit {
+  venueId: string;
+  generatedAt: string;
+  totals: {
+    views: number;
+    routes: number;
+    phoneClicks: number;
+    socialClicks: number;
+    eventOpens: number;
+    actions: number;
+    likes: number;
+    notMyPlace: number;
+    vibeTags: number;
+    uniqueUsers: number;
+    conversionRate: number;
+  };
+  periods: {
+    last7d: VenueAuditPeriod;
+    last30d: VenueAuditPeriod;
+  };
+  daily: Array<{
+    date: string;
+    views: number;
+    routes: number;
+    phoneClicks: number;
+    socialClicks: number;
+    eventOpens: number;
+    likes: number;
+    notMyPlace: number;
+    vibeTags: number;
+  }>;
+  reactions: {
+    likes: number;
+    notMyPlace: number;
+    vibeTotal: number;
+    vibeTags: Array<{ tag: string; count: number }>;
+  };
+  recentAnalytics: AnalyticsEvent[];
+  recentReactions: Reaction[];
+  upcomingEvents: VenueEvent[];
+  quality: {
+    score: number;
+    checks: Array<{
+      id: string;
+      label: string;
+      ok: boolean;
+      severity: 'critical' | 'warning' | 'info';
+      detail: string;
+    }>;
+  };
+}
+
+export interface VenueAuditPeriod {
+  views: number;
+  routes: number;
+  phoneClicks: number;
+  socialClicks: number;
+  eventOpens: number;
+  actions: number;
+}
+
 export interface VenueSuggestion {
   id: string;
   name: string;
