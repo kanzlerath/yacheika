@@ -14,7 +14,7 @@ export function AdminBlock({ title, children }: { title: string; children: React
   return (
     <Card size="sm" className="admin-panel-minimal flex flex-col gap-3 p-4">
       <CardHeader className="px-0 pt-0">
-        <CardTitle className="font-display text-sm font-semibold text-neutral-100">{title}</CardTitle>
+        <CardTitle className="font-display text-sm font-semibold text-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent className="px-0 pb-0">
         {children}
