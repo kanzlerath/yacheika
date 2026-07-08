@@ -28,7 +28,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Empty, EmptyDescription } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -59,6 +58,11 @@ import {
   normalizeSchedule,
   slugifyVenueName,
 } from "../utils/venueAdmin";
+import { AdminBlock, EmptyLine } from "./admin/AdminShared";
+import { DashboardView } from "./admin/DashboardView";
+import { EventsOverview } from "./admin/EventsOverview";
+import { SuggestionsView } from "./admin/SuggestionsView";
+import { UsersView } from "./admin/UsersView";
 import { VenueAuditView } from "./admin/VenueAuditView";
 
 interface AdminPanelProps {
@@ -665,60 +669,6 @@ function VenueWorkspace({
   );
 }
 
-function DashboardView({ dashboard, analytics, venues }: { dashboard: AdminDashboard | null; analytics: AnalyticsEvent[]; venues: Venue[] }) {
-  const totals = dashboard?.totals;
-  return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="font-display text-lg font-semibold text-neutral-100">Дашборд</h2>
-        <p className="text-xs text-neutral-500">Сводка по аудитории, заведениям и действиям пользователей.</p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Пользователи" value={totals?.users ?? 0} note={`+${totals?.newUsers7d ?? 0} за 7 дней`} />
-        <Metric label="Заведения" value={totals?.venues ?? venues.length} note={`${totals?.publishedVenues ?? 0} опубликовано`} />
-        <Metric label="Действия за 24ч" value={totals?.analytics24h ?? 0} note={`${totals?.analytics7d ?? 0} за 7 дней`} />
-        <Metric label="Реакции" value={totals?.reactions ?? 0} note={`${totals?.events ?? 0} событий`} />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <AdminBlock title="Топ заведений за неделю">
-          {(dashboard?.topVenues || []).length === 0 ? (
-            <EmptyLine>Пока нет событий аналитики.</EmptyLine>
-          ) : (
-            <div className="space-y-2">
-              {dashboard?.topVenues.map((venue) => (
-                <div key={venue.venueId} className="venue-soft-panel flex items-center justify-between p-3">
-                  <div className="font-semibold text-neutral-100">{venue.name}</div>
-                  <div className="text-[10px] text-neutral-500">Открытия {venue.opens} · Маршруты {venue.routes} · Всего {venue.total}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </AdminBlock>
-
-        <AdminBlock title="Что проверить">
-          {(dashboard?.incompleteVenues || []).length === 0 ? (
-            <EmptyLine>Критичных пропусков не видно.</EmptyLine>
-          ) : (
-            <div className="space-y-2">
-              {dashboard?.incompleteVenues.map((venue) => (
-                <div key={venue.id} className="venue-soft-panel p-3">
-                  <div className="font-semibold text-neutral-100">{venue.name}</div>
-                  <div className="mt-1 text-[10px] text-neutral-500">{venue.issues.join(", ")}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </AdminBlock>
-      </div>
-
-      <AdminBlock title="Последние действия">
-        <ActivityFeed analytics={analytics} venues={venues} />
-      </AdminBlock>
-    </div>
-  );
-}
-
 function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Venue[]; selectedVenue: Venue | null; onSelectVenue: (venue: Venue) => void }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
@@ -1170,88 +1120,6 @@ function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploadError,
   );
 }
 
-function UsersView({ users }: { users: AdminTelegramUser[] }) {
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-semibold text-neutral-100">Пользователи</h2>
-      <div className="grid gap-2">
-        {users.map((user) => (
-          <div key={user.id} className="venue-soft-panel flex items-center justify-between gap-3 p-3">
-            <div className="min-w-0">
-              <div className="truncate font-semibold text-neutral-100">{user.firstName} {user.lastName || ""}</div>
-              <div className="truncate text-[10px] text-neutral-500">
-                @{user.username || "без username"} · {user.provider || "telegram"} · {user.providerUserId || user.telegramId}
-              </div>
-            </div>
-            <div className="text-right text-[10px] text-neutral-500">
-              <div>{user.reactionsCount} реакций</div>
-              <div>{new Date(user.createdAt).toLocaleDateString()}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[] }) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="font-display text-lg font-semibold text-neutral-100">Заявки на заведения</h2>
-        <p className="text-xs text-neutral-500">Предложения от гостей и авторизованных пользователей.</p>
-      </div>
-      {suggestions.length === 0 ? (
-        <EmptyLine>Заявок пока нет.</EmptyLine>
-      ) : (
-        <div className="grid gap-2">
-          {suggestions.map((suggestion) => (
-            <div key={suggestion.id} className="venue-soft-panel p-3">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="truncate font-semibold text-neutral-100">{suggestion.name}</div>
-                  <div className="mt-1 text-xs text-neutral-400">{suggestion.address}</div>
-                </div>
-                <Badge variant="outline" className="rounded-full border border-neutral-800 px-2 py-1 text-[10px] uppercase tracking-wider text-neutral-500">
-                  {suggestion.status}
-                </Badge>
-              </div>
-              {(suggestion.comment || suggestion.contact) && (
-                <div className="mt-3 space-y-1 border-t border-neutral-900 pt-3 text-xs text-neutral-400">
-                  {suggestion.comment && <div>{suggestion.comment}</div>}
-                  {suggestion.contact && <div className="font-mono text-neutral-500">Контакт: {suggestion.contact}</div>}
-                </div>
-              )}
-              <div className="mt-3 flex flex-wrap justify-between gap-2 text-[10px] text-neutral-600">
-                <span>{suggestion.userName || "гость"}</span>
-                <span>{new Date(suggestion.createdAt).toLocaleString("ru-RU")}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function EventsOverview({ events, venues, onSelectVenue }: { events: VenueEvent[]; venues: Venue[]; onSelectVenue: (venue: Venue) => void }) {
-  const venueById = new Map(venues.map((venue) => [venue.id, venue]));
-  return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg font-semibold text-neutral-100">События</h2>
-      {events.map((event) => {
-        const venue = venueById.get(event.venueId);
-        return (
-          <Button key={event.id} type="button" variant="ghost" onClick={() => venue && onSelectVenue(venue)} className="venue-soft-panel h-auto w-full justify-start p-3 text-left">
-            <div className="font-semibold text-neutral-100">{event.title}</div>
-            <div className="mt-1 text-[10px] text-neutral-500">{venue?.name || event.venueId} · {event.date} · {event.time}</div>
-          </Button>
-        );
-      })}
-    </div>
-  );
-}
-
 function TopItemsEditor({ editingVenue, setEditingVenue, input, setInput, addItem }: any) {
   const items = editingVenue.premiumConfig.topItems || [];
   return (
@@ -1335,43 +1203,6 @@ function AuditMiniMetric({ label, value, loading }: { label: string; value: numb
   );
 }
 
-function Metric({ label, value, note }: { label: string; value: number; note: string }) {
-  return (
-    <Card size="sm" className="venue-soft-panel p-4">
-      <div className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-neutral-100">{value}</div>
-      <div className="mt-1 text-[10px] text-neutral-500">{note}</div>
-    </Card>
-  );
-}
-
-function ActivityFeed({ analytics, venues }: { analytics: AnalyticsEvent[]; venues: Venue[] }) {
-  return (
-    <div className="max-h-72 space-y-2 overflow-y-auto">
-      {analytics.length === 0 ? <EmptyLine>Пока нет действий.</EmptyLine> : analytics.slice(0, 20).map((event) => (
-        <div key={event.id} className="flex items-center justify-between border-b border-neutral-900 pb-2 text-[11px]">
-          <span className="text-neutral-300">{event.eventType}</span>
-          <span className="text-neutral-500">{venues.find((venue) => venue.id === event.venueId)?.name || event.venueId || "global"}</span>
-          <span className="text-neutral-600">{new Date(event.timestamp).toLocaleTimeString()}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AdminBlock({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card size="sm" className="admin-panel-minimal space-y-3 p-4">
-      <CardHeader className="px-0 pt-0">
-        <CardTitle className="font-display text-sm font-semibold text-neutral-100">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="px-0 pb-0">
-        {children}
-      </CardContent>
-    </Card>
-  );
-}
-
 function Field({ label, children }: { key?: React.Key; label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1">
@@ -1391,13 +1222,5 @@ function ColorField({ label, hint, value, onChange }: { label: string; hint?: st
       </div>
       {hint && <div className="mt-1 text-[10px] leading-relaxed text-neutral-500">{hint}</div>}
     </Field>
-  );
-}
-
-function EmptyLine({ children }: { children: React.ReactNode }) {
-  return (
-    <Empty className="rounded-lg border border-dashed border-neutral-900 p-4 text-center text-xs text-neutral-500">
-      <EmptyDescription>{children}</EmptyDescription>
-    </Empty>
   );
 }
