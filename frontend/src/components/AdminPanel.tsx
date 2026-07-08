@@ -12,24 +12,16 @@ import {
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  Activity,
-  BarChart3,
   Calendar,
   Check,
-  Eye,
   GripVertical,
   Image,
   LayoutDashboard,
   List,
   MapPin,
-  MousePointerClick,
-  PhoneCall,
   Plus,
-  Route,
   Save,
-  ThumbsUp,
   Trash2,
-  TriangleAlert,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -67,6 +59,7 @@ import {
   normalizeSchedule,
   slugifyVenueName,
 } from "../utils/venueAdmin";
+import { VenueAuditView } from "./admin/VenueAuditView";
 
 interface AdminPanelProps {
   venues: Venue[];
@@ -672,126 +665,6 @@ function VenueWorkspace({
   );
 }
 
-function VenueAuditView({ audit, loading, venue }: { audit: VenueAudit | null; loading: boolean; venue: Venue }) {
-  if (!venue.id) {
-    return <AdminBlock title="Аудит карточки"><EmptyLine>Сначала сохраните заведение, потом появится аудит.</EmptyLine></AdminBlock>;
-  }
-
-  if (loading) {
-    return <AdminBlock title="Аудит карточки"><EmptyLine>Загружаю аудит карточки...</EmptyLine></AdminBlock>;
-  }
-
-  if (!audit) {
-    return <AdminBlock title="Аудит карточки"><EmptyLine>Не удалось загрузить аудит. Попробуйте открыть карточку заново.</EmptyLine></AdminBlock>;
-  }
-
-  const latestDaily = audit.daily.slice(-14);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <AuditMetric icon={Eye} label="Просмотры" value={audit.totals.views} note={`${audit.periods.last7d.views} за 7 дней`} />
-        <AuditMetric icon={MousePointerClick} label="Действия" value={audit.totals.actions} note={`${formatPercent(audit.totals.conversionRate)} конверсия`} />
-        <AuditMetric icon={ThumbsUp} label="Реакции" value={audit.totals.likes + audit.totals.notMyPlace + audit.totals.vibeTags} note={`${audit.totals.likes} лайков`} />
-        <AuditMetric icon={Users} label="Пользователи" value={audit.totals.uniqueUsers} note="уникальные авторизованные" />
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <AdminBlock title="Воронка действий">
-          <div className="grid gap-2 sm:grid-cols-4">
-            <FunnelItem icon={Eye} label="Открыли" value={audit.totals.views} />
-            <FunnelItem icon={Route} label="Маршрут" value={audit.totals.routes} />
-            <FunnelItem icon={PhoneCall} label="Телефон" value={audit.totals.phoneClicks} />
-            <FunnelItem icon={BarChart3} label="Соцсети/ивенты" value={audit.totals.socialClicks + audit.totals.eventOpens} />
-          </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            <PeriodBox title="7 дней" period={audit.periods.last7d} />
-            <PeriodBox title="30 дней" period={audit.periods.last30d} />
-          </div>
-        </AdminBlock>
-
-        <AdminBlock title={`Качество карточки: ${audit.quality.score}%`}>
-          <div className="flex flex-col gap-2">
-            {audit.quality.checks.map((check) => (
-              <div key={check.id} className="rounded-lg border border-neutral-900 bg-neutral-950/40 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    {check.ok ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <TriangleAlert className="h-3.5 w-3.5 text-amber-300" />}
-                    <div className="truncate text-xs font-semibold text-neutral-200">{check.label}</div>
-                  </div>
-                  <Badge variant="outline" className="border-neutral-800 text-[10px] text-neutral-500">
-                    {check.ok ? "ok" : check.severity}
-                  </Badge>
-                </div>
-                <div className="mt-1 pl-5 text-[10px] leading-relaxed text-neutral-500">{check.detail}</div>
-              </div>
-            ))}
-          </div>
-        </AdminBlock>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <AdminBlock title="Динамика за 14 дней">
-          {latestDaily.length === 0 ? (
-            <EmptyLine>Пока нет дневной динамики.</EmptyLine>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {latestDaily.map((day) => {
-                const max = Math.max(1, ...latestDaily.map((item) => item.views + item.routes + item.phoneClicks + item.socialClicks + item.eventOpens));
-                const total = day.views + day.routes + day.phoneClicks + day.socialClicks + day.eventOpens;
-                return (
-                  <div key={day.date} className="grid grid-cols-[80px_minmax(0,1fr)_44px] items-center gap-2 text-[11px]">
-                    <span className="font-mono text-neutral-500">{day.date.slice(5)}</span>
-                    <div className="h-2 overflow-hidden rounded-full bg-neutral-900">
-                      <div className="h-full rounded-full bg-rose-500" style={{ width: `${Math.max(4, (total / max) * 100)}%` }} />
-                    </div>
-                    <span className="text-right text-neutral-400">{total}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </AdminBlock>
-
-        <AdminBlock title="Vibe реакции">
-          {audit.reactions.vibeTags.length === 0 ? (
-            <EmptyLine>Vibe-тегов пока нет.</EmptyLine>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {audit.reactions.vibeTags.slice(0, 10).map((item) => (
-                <div key={item.tag} className="flex items-center justify-between gap-3 rounded-lg border border-neutral-900 bg-neutral-950/40 px-3 py-2">
-                  <span className="truncate text-xs font-semibold text-neutral-200">{item.tag}</span>
-                  <Badge variant="outline" className="border-neutral-800 text-neutral-400">{item.count}</Badge>
-                </div>
-              ))}
-            </div>
-          )}
-        </AdminBlock>
-      </div>
-
-      <AdminBlock title="Последние действия по карточке">
-        <div className="max-h-80 overflow-y-auto">
-          {audit.recentAnalytics.length === 0 ? (
-            <EmptyLine>Действий пока нет.</EmptyLine>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {audit.recentAnalytics.map((event) => (
-                <div key={event.id} className="grid gap-1 rounded-lg border border-neutral-900 bg-neutral-950/40 p-3 sm:grid-cols-[160px_minmax(0,1fr)_150px] sm:items-center">
-                  <div className="text-xs font-semibold text-neutral-200">{formatEventType(event.eventType)}</div>
-                  <div className="min-w-0 truncate font-mono text-[10px] text-neutral-500">
-                    {event.userId || "anonymous"} {event.metadata ? `· ${JSON.stringify(event.metadata)}` : ""}
-                  </div>
-                  <div className="text-[10px] text-neutral-600 sm:text-right">{new Date(event.timestamp).toLocaleString("ru-RU")}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </AdminBlock>
-    </div>
-  );
-}
-
 function DashboardView({ dashboard, analytics, venues }: { dashboard: AdminDashboard | null; analytics: AnalyticsEvent[]; venues: Venue[] }) {
   const totals = dashboard?.totals;
   return (
@@ -847,30 +720,136 @@ function DashboardView({ dashboard, analytics, venues }: { dashboard: AdminDashb
 }
 
 function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Venue[]; selectedVenue: Venue | null; onSelectVenue: (venue: Venue) => void }) {
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [auditFilter, setAuditFilter] = useState("all");
+  const categories = useMemo(() => Array.from(new Set(venues.map((venue) => venue.category))).sort(), [venues]);
+  const filteredVenues = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    return venues.filter((venue) => {
+      const matchesQuery = !normalizedQuery || [
+        venue.name,
+        venue.address,
+        venue.category,
+        venue.status,
+        venue.shortDescription,
+        ...(venue.tags || []),
+      ].some((value) => value?.toLowerCase().includes(normalizedQuery));
+      const matchesStatus = status === "all" || venue.status === status;
+      const matchesCategory = category === "all" || venue.category === category;
+      const matchesAudit = auditFilter === "all" || (auditFilter === "issues" && venueHasAuditIssues(venue));
+      return matchesQuery && matchesStatus && matchesCategory && matchesAudit;
+    });
+  }, [auditFilter, category, query, status, venues]);
+
+  const issueCount = venues.filter(venueHasAuditIssues).length;
+
   return (
-    <div className="space-y-3">
-      <h2 className="font-display text-sm font-semibold text-neutral-100">Заведения</h2>
-      <div className="max-h-[72vh] space-y-1.5 overflow-y-auto pr-1">
-        {venues.map((venue) => (
-          <Button
-            type="button"
-            key={venue.id}
-            variant="ghost"
-            onClick={() => onSelectVenue(venue)}
-            className={`admin-list-item h-auto w-full justify-start rounded-lg border p-2 text-left ${selectedVenue?.id === venue.id ? "admin-list-item-active" : ""}`}
-          >
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold">{venue.name}</div>
-              <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-500">
-                <span>{venue.category}</span>
-                <span>{venue.status}</span>
-              </div>
-            </div>
-          </Button>
-        ))}
+    <div className="flex min-w-0 flex-col gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-sm font-semibold text-neutral-100">Заведения</h2>
+          <p className="text-[10px] text-neutral-500">{filteredVenues.length} из {venues.length} · {issueCount} требуют проверки</p>
+        </div>
+        <Badge variant="outline" className="border-neutral-800 text-neutral-400">{venues.filter((venue) => venue.status === "published").length} published</Badge>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="admin-input"
+          placeholder="Поиск: название, адрес, тег"
+        />
+        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+          <AdminSelect
+            value={status}
+            onValueChange={setStatus}
+            options={[
+              { value: "all", label: "Все статусы" },
+              { value: "published", label: "Опубликовано" },
+              { value: "draft", label: "Черновики" },
+              { value: "hidden", label: "Скрыто" },
+              { value: "archived", label: "Архив" },
+            ]}
+          />
+          <AdminSelect
+            value={category}
+            onValueChange={setCategory}
+            options={[
+              { value: "all", label: "Все категории" },
+              ...categories.map((item) => ({ value: item, label: item })),
+            ]}
+          />
+          <AdminSelect
+            value={auditFilter}
+            onValueChange={setAuditFilter}
+            options={[
+              { value: "all", label: "Все карточки" },
+              { value: "issues", label: "Требуют проверки" },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="max-h-[72vh] overflow-y-auto pr-1">
+        <div className="flex flex-col gap-1.5">
+          {filteredVenues.length === 0 ? (
+            <EmptyLine>По этим фильтрам ничего не найдено.</EmptyLine>
+          ) : filteredVenues.map((venue) => {
+            const issues = getVenueAuditIssues(venue);
+            return (
+              <Button
+                type="button"
+                key={venue.id}
+                variant="ghost"
+                onClick={() => onSelectVenue(venue)}
+                className={`admin-list-item h-auto w-full justify-start rounded-lg border p-2 text-left ${selectedVenue?.id === venue.id ? "admin-list-item-active" : ""}`}
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <div className="truncate font-semibold">{venue.name}</div>
+                    <Badge variant="outline" className="shrink-0 border-neutral-800 px-1.5 text-[10px] text-neutral-500">
+                      {venue.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-neutral-500">
+                    <span className="truncate">{venue.category}</span>
+                    <span className="shrink-0">{venue.likesCount || 0} лайков</span>
+                  </div>
+                  {issues.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {issues.slice(0, 3).map((issue) => (
+                        <Badge key={issue} variant="outline" className="border-amber-900/50 bg-amber-950/20 px-1.5 text-[10px] text-amber-200">
+                          {issue}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
+}
+
+function getVenueAuditIssues(venue: Venue) {
+  return [
+    venue.status !== "published" ? venue.status : null,
+    !venue.gallery?.length ? "нет фото" : null,
+    !venue.shortDescription ? "нет описания" : null,
+    !venue.workingHoursSchedule && !venue.workingHours ? "нет графика" : null,
+    !venue.contacts?.phone && !venue.contacts?.telegram && !venue.contacts?.website && !venue.contacts?.instagram && !venue.contacts?.vk ? "нет контакта" : null,
+    venue.premiumConfig?.premiumActive && (!venue.premiumConfig.heroImage || !venue.premiumConfig.ctaUrl || !venue.premiumConfig.ctaText) ? "premium" : null,
+  ].filter(Boolean) as string[];
+}
+
+function venueHasAuditIssues(venue: Venue) {
+  return getVenueAuditIssues(venue).length > 0;
 }
 
 function VenueEditor(props: any) {
@@ -1354,62 +1333,6 @@ function AuditMiniMetric({ label, value, loading }: { label: string; value: numb
       <div className="mt-1 text-base font-semibold text-neutral-100">{loading ? "..." : value}</div>
     </div>
   );
-}
-
-function AuditMetric({ icon: Icon, label, value, note }: { icon: React.ElementType; label: string; value: number; note: string }) {
-  return (
-    <Card size="sm" className="venue-soft-panel p-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</div>
-        <Icon className="h-4 w-4 text-neutral-500" />
-      </div>
-      <div className="mt-3 text-2xl font-semibold text-neutral-100">{value}</div>
-      <div className="mt-1 text-[10px] text-neutral-500">{note}</div>
-    </Card>
-  );
-}
-
-function FunnelItem({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-neutral-900 bg-neutral-950/40 p-3">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</span>
-        <Icon className="h-3.5 w-3.5 text-neutral-500" />
-      </div>
-      <div className="mt-2 text-lg font-semibold text-neutral-100">{value}</div>
-    </div>
-  );
-}
-
-function PeriodBox({ title, period }: { title: string; period: VenueAudit["periods"]["last7d"] }) {
-  return (
-    <div className="rounded-lg border border-neutral-900 bg-neutral-950/40 p-3">
-      <div className="text-xs font-semibold text-neutral-200">{title}</div>
-      <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-neutral-500">
-        <span>Просмотры: <b className="text-neutral-300">{period.views}</b></span>
-        <span>Действия: <b className="text-neutral-300">{period.actions}</b></span>
-        <span>Маршруты: <b className="text-neutral-300">{period.routes}</b></span>
-        <span>Контакты: <b className="text-neutral-300">{period.phoneClicks + period.socialClicks}</b></span>
-      </div>
-    </div>
-  );
-}
-
-function formatPercent(value: number) {
-  return `${Math.round(value * 100)}%`;
-}
-
-function formatEventType(eventType: AnalyticsEvent["eventType"] | string) {
-  const labels: Record<string, string> = {
-    open_venue: "Открытие карточки",
-    open_route: "Маршрут",
-    click_phone: "Клик по телефону",
-    click_social: "Клик по соцсети",
-    open_event: "Открытие события",
-    like: "Лайк",
-    reaction: "Реакция",
-  };
-  return labels[eventType] || eventType;
 }
 
 function Metric({ label, value, note }: { label: string; value: number; note: string }) {
