@@ -14,7 +14,7 @@ export class CollectionController {
 
   @Post()
   @UseGuards(AdminGuard)
-  async saveCollection(@Body() collectionData: any) {
+  async saveCollection(@Body() collectionData: SaveCollectionDto) {
     return this.collectionService.createOrUpdate(collectionData);
   }
 

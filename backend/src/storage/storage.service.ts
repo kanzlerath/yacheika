@@ -43,23 +43,32 @@ export class StorageService implements OnModuleInit {
 
   private async initializeBucket() {
     const bucketName = process.env.MINIO_BUCKET || 'yacheyka-gallery';
+    const policy = {
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Sid: 'PublicRead',
+          Effect: 'Allow',
+          Principal: '*',
+          Action: ['s3:GetObject'],
+          Resource: [`arn:aws:s3:::${bucketName}/*`],
+        },
+      ],
+    };
+
     try {
       await this.s3Client.send(new CreateBucketCommand({ Bucket: bucketName }));
       this.logger.log(`Created bucket "${bucketName}"`);
+    } catch (err) {
+      if (err.name === 'BucketAlreadyOwnedByYou' || err.name === 'BucketAlreadyExists') {
+        this.logger.log(`Bucket "${bucketName}" already exists.`);
+      } else {
+        this.logger.error(`Error initializing bucket "${bucketName}":`, err);
+        return;
+      }
+    }
 
-      const policy = {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Sid: 'PublicRead',
-            Effect: 'Allow',
-            Principal: '*',
-            Action: ['s3:GetObject'],
-            Resource: [`arn:aws:s3:::${bucketName}/*`],
-          },
-        ],
-      };
-
+    try {
       await this.s3Client.send(
         new PutBucketPolicyCommand({
           Bucket: bucketName,
@@ -68,11 +77,7 @@ export class StorageService implements OnModuleInit {
       );
       this.logger.log(`Configured public read access on bucket "${bucketName}"`);
     } catch (err) {
-      if (err.name === 'BucketAlreadyOwnedByYou' || err.name === 'BucketAlreadyExists') {
-        this.logger.log(`Bucket "${bucketName}" already exists.`);
-      } else {
-        this.logger.error(`Error initializing bucket "${bucketName}":`, err);
-      }
+      this.logger.error(`Error configuring public read access on bucket "${bucketName}":`, err);
     }
   }
 

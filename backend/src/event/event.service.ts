@@ -14,10 +14,18 @@ export class EventService {
     private readonly venueRepository: Repository<VenueEntity>,
   ) {}
 
-  async findAll() {
-    return this.eventRepository.find({
-      order: { date: 'ASC', time: 'ASC' },
-    });
+  async findAll(options: { includeNonPublished?: boolean } = {}) {
+    const qb = this.eventRepository
+      .createQueryBuilder('event')
+      .leftJoinAndSelect('event.venue', 'venue')
+      .orderBy('event.date', 'ASC')
+      .addOrderBy('event.time', 'ASC');
+
+    if (!options.includeNonPublished) {
+      qb.where('venue.status = :status', { status: 'published' });
+    }
+
+    return qb.getMany();
   }
 
   async createOrUpdate(data: SaveEventDto) {

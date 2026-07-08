@@ -25,9 +25,10 @@ export class ReactionController {
   async reactVenue(
     @Param('id') venueId: string,
     @Req() request: any,
-    @Body('type') type: 'like' | 'not_my_place' | 'vibe_tag',
-    @Body('vibeTag') vibeTag?: string,
+    @Body() data: ReactVenueDto,
   ) {
+    const { type, vibeTag } = data;
+
     if (!['like', 'not_my_place', 'vibe_tag'].includes(type)) {
       throw new BadRequestException('Unsupported reaction type');
     }

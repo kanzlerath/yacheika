@@ -21,12 +21,18 @@ export class AdminGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const cookies = parseCookieHeader(request.headers.cookie);
     const session = this.adminAuthService.verifySessionToken(cookies[ADMIN_COOKIE_NAME]);
+    const resolved = await this.adminAuthService.resolveSessionAdmin(session);
 
-    if (!session.role) {
+    if (!resolved.admin.role) {
       throw new ForbiddenException('Admin access is restricted');
     }
 
-    request.adminSession = session;
+    request.adminSession = {
+      ...session,
+      adminId: resolved.admin.id,
+      email: resolved.admin.email,
+      role: resolved.admin.role,
+    };
     return true;
   }
 }

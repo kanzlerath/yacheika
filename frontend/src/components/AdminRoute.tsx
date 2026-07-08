@@ -43,7 +43,7 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const fetchAdminData = async () => {
     const [vRes, eRes, aRes, dRes, uRes, sRes] = await Promise.all([
       fetch("/api/venues/admin/all"),
-      fetch("/api/events"),
+      fetch("/api/events/admin/all"),
       fetch("/api/analytics"),
       fetch("/api/admin/dashboard"),
       fetch("/api/admin/users"),

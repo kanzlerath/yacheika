@@ -1,13 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CollectionEntity } from '../entities/collection.entity';
+import { VenueEntity } from '../entities/venue.entity';
+import { SaveCollectionDto } from './dto/save-collection.dto';
 
 @Injectable()
 export class CollectionService {
   constructor(
     @InjectRepository(CollectionEntity)
     private readonly collectionRepository: Repository<CollectionEntity>,
+    @InjectRepository(VenueEntity)
+    private readonly venueRepository: Repository<VenueEntity>,
   ) {}
 
   async findAll() {
@@ -26,16 +30,21 @@ export class CollectionService {
     }));
   }
 
-  async createOrUpdate(data: any) {
+  async createOrUpdate(data: SaveCollectionDto) {
     const id = data.id || `c-${Math.random().toString(36).substring(2, 11)}`;
     let collection = await this.collectionRepository.findOne({
       where: { id },
       relations: ['venues'],
     });
 
-    const venueEntities = data.venueIds
-      ? data.venueIds.map((vId: string) => ({ id: vId }))
+    const requestedVenueIds = Array.from(new Set(data.venueIds || []));
+    const venueEntities = requestedVenueIds.length
+      ? await this.venueRepository.find({ where: { id: In(requestedVenueIds) } })
       : [];
+
+    if (requestedVenueIds.length !== venueEntities.length) {
+      throw new BadRequestException('One or more collection venues do not exist');
+    }
 
     if (collection) {
       collection = this.collectionRepository.merge(collection, {
@@ -48,7 +57,7 @@ export class CollectionService {
         id,
         venues: venueEntities,
         publishedAt: new Date(),
-      } as Partial<CollectionEntity>);
+      });
     }
 
     const saved = await this.collectionRepository.save(collection);

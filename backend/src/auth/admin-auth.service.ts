@@ -42,6 +42,11 @@ const secureTextEquals = (left: string, right: string) => {
 export class AdminAuthService implements OnModuleInit {
   private readonly logger = new Logger(AdminAuthService.name);
   private readonly sessionTtlSeconds = Number(process.env.ADMIN_SESSION_TTL_SECONDS || 604800);
+  private readonly loginAttempts = new Map<string, { count: number; resetAt: number }>();
+  private readonly maxLoginAttempts = Number(process.env.ADMIN_LOGIN_MAX_ATTEMPTS || 8);
+  private readonly loginWindowMs = Number(process.env.ADMIN_LOGIN_WINDOW_MS || 15 * 60 * 1000);
+  private readonly maxTrackedLoginAttempts = Number(process.env.ADMIN_LOGIN_MAX_TRACKED_KEYS || 500);
+  private lastLoginAttemptSweepAt = 0;
 
   constructor(
     @InjectRepository(AdminUserEntity)
@@ -148,15 +153,66 @@ export class AdminAuthService implements OnModuleInit {
     return session;
   }
 
-  async login(emailInput: string, password: string) {
+  private assertLoginAllowed(email: string, ip?: string) {
+    const key = `${email}:${ip || 'unknown'}`;
+    const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
+    const current = this.loginAttempts.get(key);
+    if (!current || current.resetAt <= now) {
+      if (!this.loginAttempts.has(key) && this.loginAttempts.size >= this.maxTrackedLoginAttempts) {
+        throw new UnauthorizedException('Too many admin login attempts');
+      }
+      return key;
+    }
+
+    if (current.count >= this.maxLoginAttempts) {
+      throw new UnauthorizedException('Too many admin login attempts');
+    }
+
+    return key;
+  }
+
+  private recordFailedLogin(key: string) {
+    const now = Date.now();
+    this.sweepExpiredLoginAttempts(now);
+
+    if (this.loginAttempts.size >= this.maxTrackedLoginAttempts && !this.loginAttempts.has(key)) {
+      throw new UnauthorizedException('Too many admin login attempts');
+    }
+
+    const current = this.loginAttempts.get(key);
+    if (!current || current.resetAt <= now) {
+      this.loginAttempts.set(key, { count: 1, resetAt: now + this.loginWindowMs });
+      return;
+    }
+    current.count += 1;
+    this.loginAttempts.set(key, current);
+  }
+
+  private sweepExpiredLoginAttempts(now = Date.now()) {
+    if (now - this.lastLoginAttemptSweepAt < 60_000) {
+      return;
+    }
+
+    this.lastLoginAttemptSweepAt = now;
+    for (const [key, attempt] of this.loginAttempts) {
+      if (attempt.resetAt <= now) {
+        this.loginAttempts.delete(key);
+      }
+    }
+  }
+
+  async login(emailInput: string, password: string, ip?: string) {
     const email = emailInput?.trim().toLowerCase();
     if (!email || !password) {
       this.logger.warn('Admin login rejected: email or password is empty');
       throw new UnauthorizedException('Invalid admin credentials');
     }
 
+    const attemptKey = this.assertLoginAllowed(email, ip);
     const admin = await this.adminRepository.findOne({ where: { email } });
     if (!admin || admin.status !== 'active') {
+      this.recordFailedLogin(attemptKey);
       this.logger.warn(
         `Admin login rejected for ${email}: ${admin ? `status is ${admin.status}` : 'admin user not found'}`,
       );
@@ -165,10 +221,12 @@ export class AdminAuthService implements OnModuleInit {
 
     const passwordMatches = await compare(password, admin.passwordHash);
     if (!passwordMatches) {
+      this.recordFailedLogin(attemptKey);
       this.logger.warn(`Admin login rejected for ${email}: password hash did not match`);
       throw new UnauthorizedException('Invalid admin credentials');
     }
 
+    this.loginAttempts.delete(attemptKey);
     const now = Math.floor(Date.now() / 1000);
     admin.lastLoginAt = new Date();
     await this.adminRepository.save(admin);

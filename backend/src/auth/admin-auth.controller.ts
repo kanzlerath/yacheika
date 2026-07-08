@@ -21,14 +21,15 @@ export class AdminAuthController {
   async login(
     @Body('email') email: string,
     @Body('password') password: string,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const session = await this.adminAuthService.login(email, password);
+    const session = await this.adminAuthService.login(email, password, req.ip);
 
     res.cookie(ADMIN_COOKIE_NAME, session.token, {
       httpOnly: true,
       secure: Boolean(process.env.DOMAIN_NAME),
-      sameSite: 'lax',
+      sameSite: 'strict',
       maxAge: Math.max(0, new Date(session.expiresAt).getTime() - Date.now()),
       path: '/',
     });

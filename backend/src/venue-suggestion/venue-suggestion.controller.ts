@@ -16,7 +16,7 @@ export class VenueSuggestionController {
   @Post('api/users/me/venue-suggestions')
   @UseGuards(TelegramAuthGuard)
   async createAsUser(@Body() data: CreateVenueSuggestionDto, @Req() request: any) {
-    return this.suggestionService.create(data, request.telegramSession?.user);
+    return this.suggestionService.create(data, request.telegramSession);
   }
 
   @Get('api/admin/venue-suggestions')

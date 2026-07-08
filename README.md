@@ -100,7 +100,7 @@ docker exec yacheyka_backend npm run build
 
 - `GET /api/auth/telegram/start` - старт Telegram OAuth/OIDC Authorization Code Flow с PKCE.
 - `GET /api/auth/telegram/callback` - callback из Telegram, проверяет `state`, обменивает `code` и ставит временный httpOnly cookie для получения app session.
-- `GET /api/auth/me` - проверка текущей app session по `Authorization: Bearer <token>` или auth-cookie после callback.
+- `GET /api/auth/me` - проверка текущей app session по httpOnly auth-cookie.
 - `POST /api/auth/logout` - очистка auth-cookie.
 - `POST /api/admin/login` - вход в отдельную админку по email/password.
 - `GET /api/admin/me` - проверка admin session.
@@ -111,7 +111,8 @@ docker exec yacheyka_backend npm run build
 - `DELETE /api/venues/:id` - удаление заведения, только admin session.
 - `POST /api/venues/:id/react` - реакции `like`, `not_my_place`, `vibe_tag`, только authenticated Telegram session.
 - `GET /api/users/me/reactions` - реакции текущего Telegram-пользователя.
-- `GET /api/events` - события.
+- `GET /api/events` - публичные события только для опубликованных заведений.
+- `GET /api/events/admin/all` - все события для админки, только admin session.
 - `POST /api/events` и `DELETE /api/events/:id` - управление событиями, только admin session.
 - `GET /api/collections` - подборки.
 - `POST /api/collections` и `DELETE /api/collections/:id` - управление подборками, только admin session.
@@ -133,7 +134,7 @@ Telegram auth больше не дает admin-доступ. Он использ
 
 ## Текущие ограничения MVP
 
-- TypeORM `synchronize` включен для локальной разработки.
+- TypeORM `synchronize` включен только для локальной разработки и отключен при `NODE_ENV=production`.
 - Frontend сейчас на Vite/React, хотя исходное ТЗ допускает дальнейшее решение по Next.js.
 - Расписание заведений хранится текстом, поэтому фильтр "открыто сейчас" требует отдельного улучшения.
 - Без заполненных Telegram OIDC env-переменных вход через Telegram не стартует.

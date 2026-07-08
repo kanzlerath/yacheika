@@ -6,6 +6,11 @@ import * as express from 'express';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+  const trustProxy = process.env.TRUST_PROXY;
+
+  if (trustProxy && !['false', '0', 'off'].includes(trustProxy.toLowerCase())) {
+    app.getHttpAdapter().getInstance().set('trust proxy', trustProxy === 'true' ? true : trustProxy);
+  }
 
   // Enable CORS for dev convenience
   app.enableCors();
