@@ -1,10 +1,21 @@
 import type React from "react";
+import { useEffect, useState } from "react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Cropper, { type Area } from "react-easy-crop";
+import "react-easy-crop/react-easy-crop.css";
 import { GripVertical, Image, MapPin, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +43,15 @@ export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "i
 const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
 const COMPRESSED_IMAGE_MAX_SIZE = 1800;
 const COMPRESSED_IMAGE_QUALITY = 0.86;
+type UploadTarget = "gallery" | "hero" | "event" | "logo";
+type CropJob = {
+  file: File;
+  queue: File[];
+  target: UploadTarget;
+  aspect: number;
+  title: string;
+  imageUrl: string;
+};
 
 export const compressImageFile = async (file: File) => {
   if (file.type === "image/gif") return file;
@@ -67,6 +87,110 @@ const formatPhoneInput = (value: string) => {
   return `+7 (${parts[0]}${parts[0].length === 3 ? ")" : ""}${parts[1] ? ` ${parts[1]}` : ""}${parts[2] ? `-${parts[2]}` : ""}${parts[3] ? `-${parts[3]}` : ""}`;
 };
 
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const image = new window.Image();
+  image.onload = () => resolve(image);
+  image.onerror = reject;
+  image.src = src;
+});
+
+const cropImageFile = async (file: File, imageUrl: string, crop: Area) => {
+  const image = await loadImage(imageUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(crop.width));
+  canvas.height = Math.max(1, Math.round(crop.height));
+  const context = canvas.getContext("2d");
+  if (!context) return file;
+  context.drawImage(
+    image,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/webp", COMPRESSED_IMAGE_QUALITY);
+  });
+  if (!blob) return file;
+  return new File([blob], file.name.replace(/\.[^.]+$/, "-cropped.webp"), { type: "image/webp" });
+};
+
+function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | null | undefined, target: UploadTarget) => Promise<void>) {
+  const [cropJob, setCropJob] = useState<CropJob | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [cropping, setCropping] = useState(false);
+
+  useEffect(() => () => {
+    if (cropJob) URL.revokeObjectURL(cropJob.imageUrl);
+  }, [cropJob]);
+
+  const startCropQueue = async (files: FileList | File[] | null | undefined, target: UploadTarget, aspect: number, title: string) => {
+    const list = Array.from(files || []);
+    if (!list.length) return;
+    const [file, ...queue] = list;
+    if (file.type === "image/gif") {
+      await uploadSelectedImages([file], target);
+      if (queue.length) await startCropQueue(queue, target, aspect, title);
+      return;
+    }
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setCropJob({
+      file,
+      queue,
+      target,
+      aspect,
+      title,
+      imageUrl: URL.createObjectURL(file),
+    });
+  };
+
+  const closeCrop = () => {
+    if (cropJob) URL.revokeObjectURL(cropJob.imageUrl);
+    setCropJob(null);
+    setCropping(false);
+    setCroppedAreaPixels(null);
+  };
+
+  const confirmCrop = async () => {
+    if (!cropJob || !croppedAreaPixels) return;
+    const currentJob = cropJob;
+    setCropping(true);
+    try {
+      const croppedFile = await cropImageFile(currentJob.file, currentJob.imageUrl, croppedAreaPixels);
+      closeCrop();
+      await uploadSelectedImages([croppedFile], currentJob.target);
+      if (currentJob.queue.length) {
+        await startCropQueue(currentJob.queue, currentJob.target, currentJob.aspect, currentJob.title);
+      }
+    } finally {
+      setCropping(false);
+    }
+  };
+
+  return {
+    startCropQueue,
+    cropDialogProps: {
+      job: cropJob,
+      crop,
+      zoom,
+      cropping,
+      onCropChange: setCrop,
+      onZoomChange: setZoom,
+      onCropComplete: (_: Area, pixels: Area) => setCroppedAreaPixels(pixels),
+      onCancel: closeCrop,
+      onConfirm: confirmCrop,
+    },
+  };
+}
+
 export function VenueEditor(props: any) {
   const {
     editingVenue,
@@ -91,14 +215,16 @@ export function VenueEditor(props: any) {
   } = props;
 
   const schedule = normalizeSchedule(editingVenue.workingHoursSchedule);
+  const { startCropQueue, cropDialogProps } = useImageCropQueue(uploadSelectedImages);
 
   return (
+    <>
     <Tabs defaultValue="main" className="w-full gap-3">
-      <TabsList className="grid h-auto w-full grid-cols-2 md:max-w-xl md:grid-cols-4">
-        <TabsTrigger value="main" className="min-h-9 text-xs">Основное</TabsTrigger>
-        <TabsTrigger value="content" className="min-h-9 text-xs">Контент</TabsTrigger>
-        <TabsTrigger value="media" className="min-h-9 text-xs">Фото</TabsTrigger>
-        <TabsTrigger value="premium" className="min-h-9 text-xs">Premium</TabsTrigger>
+      <TabsList className="grid h-10 w-full grid-cols-2 p-1 md:max-w-xl md:grid-cols-4">
+        <TabsTrigger value="main" className="h-8 text-xs">Основное</TabsTrigger>
+        <TabsTrigger value="content" className="h-8 text-xs">Контент</TabsTrigger>
+        <TabsTrigger value="media" className="h-8 text-xs">Фото</TabsTrigger>
+        <TabsTrigger value="premium" className="h-8 text-xs">Premium</TabsTrigger>
       </TabsList>
 
       <TabsContent value="main" className="flex flex-col gap-4">
@@ -130,7 +256,7 @@ export function VenueEditor(props: any) {
         <ImageUploadBox
           existingUrl={editingVenue.logoUrl}
           uploading={uploadingTarget === "logo"}
-          onSelect={(files) => uploadSelectedImages(files, "logo")}
+          onSelect={(files) => startCropQueue(files, "logo", 1, "Обрезка логотипа")}
           label="Загрузить логотип"
           fit="contain"
         />
@@ -286,7 +412,7 @@ export function VenueEditor(props: any) {
         <ImageUploadBox
           multiple
           uploading={uploadingTarget === "gallery"}
-          onSelect={(files) => uploadSelectedImages(files, "gallery")}
+          onSelect={(files) => startCropQueue(files, "gallery", 4 / 3, "Обрезка фото")}
           label="Добавить фото"
         />
       </AdminBlock>
@@ -334,7 +460,7 @@ export function VenueEditor(props: any) {
             <ImageUploadBox
               existingUrl={editingVenue.premiumConfig.heroImage}
               uploading={uploadingTarget === "hero"}
-              onSelect={(files) => uploadSelectedImages(files, "hero")}
+              onSelect={(files) => startCropQueue(files, "hero", 16 / 9, "Обрезка premium-изображения")}
               label="Главное изображение premium"
             />
             <div className="grid gap-2 sm:grid-cols-2">
@@ -350,15 +476,20 @@ export function VenueEditor(props: any) {
       </AdminBlock>
       </TabsContent>
     </Tabs>
+    <ImageCropDialog {...cropDialogProps} />
+    </>
   );
 }
 
 export function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploadError, uploadingTarget, uploadSelectedImages, onDeleteEvent, createEvent }: any) {
+  const { startCropQueue, cropDialogProps } = useImageCropQueue(uploadSelectedImages);
+
   if (!editingVenue.id) {
     return <AdminBlock title="События"><EmptyLine>Сначала сохраните заведение.</EmptyLine></AdminBlock>;
   }
 
   return (
+    <>
     <AdminBlock title={`События: ${editingVenue.name}`}>
       <div className="mb-4 flex flex-col gap-2">
         {events.length === 0 ? <EmptyLine>Событий пока нет.</EmptyLine> : events.map((event: VenueEvent) => (
@@ -391,7 +522,7 @@ export function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploa
       <ImageUploadBox
         existingUrl={newEvent.coverImage}
         uploading={uploadingTarget === "event"}
-        onSelect={(files) => uploadSelectedImages(files, "event")}
+        onSelect={(files) => startCropQueue(files, "event", 16 / 9, "Обрезка обложки события")}
         label="Обложка события"
       />
       <div className="mt-3 flex justify-end">
@@ -400,6 +531,8 @@ export function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploa
         </Button>
       </div>
     </AdminBlock>
+    <ImageCropDialog {...cropDialogProps} />
+    </>
   );
 }
 
@@ -459,6 +592,78 @@ function ImageUploadBox({ existingUrl, onSelect, label, multiple = false, upload
         </label>
       </div>
     </div>
+  );
+}
+
+function ImageCropDialog({
+  job,
+  crop,
+  zoom,
+  cropping,
+  onCropChange,
+  onZoomChange,
+  onCropComplete,
+  onCancel,
+  onConfirm,
+}: {
+  job: CropJob | null;
+  crop: { x: number; y: number };
+  zoom: number;
+  cropping: boolean;
+  onCropChange: (crop: { x: number; y: number }) => void;
+  onZoomChange: (zoom: number) => void;
+  onCropComplete: (croppedArea: Area, croppedAreaPixels: Area) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog open={Boolean(job)} onOpenChange={(open) => !open && onCancel()}>
+      <DialogContent className="sm:max-w-2xl" showCloseButton={!cropping}>
+        <DialogHeader>
+          <DialogTitle>{job?.title || "Обрезка изображения"}</DialogTitle>
+          <DialogDescription>
+            Подвиньте изображение и настройте масштаб перед загрузкой.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="relative h-[360px] overflow-hidden rounded-xl border border-border bg-black">
+          {job && (
+            <Cropper
+              image={job.imageUrl}
+              crop={crop}
+              zoom={zoom}
+              aspect={job.aspect}
+              onCropChange={onCropChange}
+              onZoomChange={onZoomChange}
+              onCropComplete={onCropComplete}
+              showGrid={false}
+            />
+          )}
+        </div>
+
+        <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Масштаб
+          <input
+            type="range"
+            min={1}
+            max={3}
+            step={0.01}
+            value={zoom}
+            onChange={(event) => onZoomChange(Number(event.target.value))}
+            className="w-full accent-[var(--primary)]"
+          />
+        </label>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={cropping}>
+            Отмена
+          </Button>
+          <Button type="button" onClick={onConfirm} disabled={cropping}>
+            {cropping ? "Готовлю..." : "Обрезать и загрузить"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
