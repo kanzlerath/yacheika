@@ -76,10 +76,10 @@ export function VenueWorkspace({
       </Card>
 
       <Tabs defaultValue="editor" className="w-full gap-4">
-        <TabsList variant="line" className="h-10 w-full justify-start border-b border-border">
-          <TabsTrigger value="editor" className="h-9 flex-none px-4 text-sm">Редактор</TabsTrigger>
-          <TabsTrigger value="events" className="h-9 flex-none px-4 text-sm">События</TabsTrigger>
-          <TabsTrigger value="audit" className="h-9 flex-none px-4 text-sm">Аудит</TabsTrigger>
+        <TabsList className="flex h-11 w-full justify-start gap-1 rounded-none border-b border-border bg-transparent p-0">
+          <TabsTrigger value="editor" className="h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 text-sm data-active:border-foreground data-active:bg-transparent data-active:shadow-none">Редактор</TabsTrigger>
+          <TabsTrigger value="events" className="h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 text-sm data-active:border-foreground data-active:bg-transparent data-active:shadow-none">События</TabsTrigger>
+          <TabsTrigger value="audit" className="h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 text-sm data-active:border-foreground data-active:bg-transparent data-active:shadow-none">Аудит</TabsTrigger>
         </TabsList>
 
         <TabsContent value="editor">
