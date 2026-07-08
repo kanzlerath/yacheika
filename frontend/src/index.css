@@ -680,9 +680,9 @@ body {
 }
 
 .admin-panel-minimal {
-  background: var(--app-panel) !important;
+  background: color-mix(in srgb, var(--app-panel) 92%, var(--app-bg)) !important;
   border-color: var(--app-border) !important;
-  border-radius: 18px !important;
+  border-radius: 16px !important;
   box-shadow: none !important;
 }
 
@@ -792,9 +792,9 @@ body {
 }
 
 .admin-panel-minimal .admin-primary {
-  background: var(--app-text) !important;
-  color: var(--app-bg) !important;
-  border-color: var(--app-text) !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-color: var(--primary) !important;
 }
 
 .admin-panel-minimal .admin-danger {

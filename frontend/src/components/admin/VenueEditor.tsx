@@ -93,15 +93,15 @@ export function VenueEditor(props: any) {
   const schedule = normalizeSchedule(editingVenue.workingHoursSchedule);
 
   return (
-    <Tabs defaultValue="main" className="w-full">
-      <TabsList className="grid h-auto w-full grid-cols-2 bg-neutral-900/80 md:grid-cols-4">
+    <Tabs defaultValue="main" className="w-full gap-3">
+      <TabsList className="grid h-auto w-full grid-cols-2 md:max-w-xl md:grid-cols-4">
         <TabsTrigger value="main" className="min-h-9 text-xs">Основное</TabsTrigger>
         <TabsTrigger value="content" className="min-h-9 text-xs">Контент</TabsTrigger>
         <TabsTrigger value="media" className="min-h-9 text-xs">Фото</TabsTrigger>
         <TabsTrigger value="premium" className="min-h-9 text-xs">Premium</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="main" className="mt-2 flex flex-col gap-4">
+      <TabsContent value="main" className="flex flex-col gap-4">
       <AdminBlock title={editingVenue.id ? "Редактирование заведения" : "Добавление заведения"}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Имя">
@@ -198,7 +198,7 @@ export function VenueEditor(props: any) {
 
       </TabsContent>
 
-      <TabsContent value="content" className="mt-2 flex flex-col gap-4">
+      <TabsContent value="content" className="flex flex-col gap-4">
       <AdminBlock title="Описание и контакты">
         <div className="flex flex-col gap-3">
           <Field label="Короткое описание">
@@ -267,7 +267,7 @@ export function VenueEditor(props: any) {
 
       </TabsContent>
 
-      <TabsContent value="media" className="mt-2 flex flex-col gap-4">
+      <TabsContent value="media" className="flex flex-col gap-4">
       <AdminBlock title="Галерея">
         {uploadError && <div className="mb-2 rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-rose-200">{uploadError}</div>}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleGalleryDragEnd}>
@@ -293,7 +293,7 @@ export function VenueEditor(props: any) {
 
       </TabsContent>
 
-      <TabsContent value="premium" className="mt-2 flex flex-col gap-4">
+      <TabsContent value="premium" className="flex flex-col gap-4">
       <AdminBlock title="Premium">
         <label className="mb-3 flex items-center gap-2 text-xs font-semibold text-neutral-200">
           <Switch
@@ -479,8 +479,8 @@ function SortableImage({ url, onDelete }: { key?: React.Key; url: string; onDele
 
 function Field({ label, children }: { key?: React.Key; label: string; children: React.ReactNode }) {
   return (
-    <label className="block space-y-1">
-      <span className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</span>
+    <label className="flex flex-col gap-1">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>
   );

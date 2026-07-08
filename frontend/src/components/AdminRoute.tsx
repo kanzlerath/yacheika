@@ -206,25 +206,25 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
       className="absolute inset-0 w-full flex flex-col overflow-hidden"
       style={{ backgroundColor: "var(--app-bg)" }}
     >
-      <header className="h-16 shrink-0 border-b border-neutral-900 bg-[#090909] flex items-center justify-between px-4 sm:px-6">
+      <header className="h-14 shrink-0 border-b border-border bg-card/95 flex items-center justify-between px-4 sm:px-6">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-neutral-100">
-            <ShieldCheck className="w-4 h-4 text-rose-500" />
-            <span className="text-sm font-display font-semibold tracking-wide">скоуп / админка</span>
+          <div className="flex items-center gap-2 text-foreground">
+            <ShieldCheck className="size-4 text-primary" />
+            <span className="text-sm font-display font-semibold tracking-wide">Скоуп / админка</span>
           </div>
-          <div className="text-[11px] text-neutral-500 truncate">{admin.email} · {admin.role}</div>
+          <div className="text-[11px] text-muted-foreground truncate">{admin.email} · {admin.role}</div>
         </div>
         <Button
           type="button"
           variant="outline"
           onClick={handleLogout}
-          className="app-text-button"
+          size="sm"
         >
           Выйти
         </Button>
       </header>
 
-      <main className="w-full flex-1 h-0 min-h-0 relative overflow-hidden bg-[#070709]">
+      <main className="w-full flex-1 h-0 min-h-0 relative overflow-hidden bg-background">
         <section
           className={`h-full overflow-y-auto p-4 md:p-6 ${adminMobileShowMap ? "hidden" : "block"}`}
           style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
