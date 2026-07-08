@@ -55,7 +55,7 @@ services:
         condition: service_healthy
     command: sh -c "npm run migration:run && npm run start:prod"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:4002/api/health >/dev/null || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4002/api/health >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 6
