@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { Venue } from "../../types";
 import { AdminSelect, EmptyLine } from "./AdminShared";
 
@@ -35,17 +36,16 @@ export function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Ve
     <div className="flex min-w-0 flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-display text-sm font-semibold text-neutral-100">Заведения</h2>
-          <p className="text-[10px] text-neutral-500">{filteredVenues.length} из {venues.length} · {issueCount} требуют проверки</p>
+          <h2 className="font-display text-sm font-semibold text-foreground">Заведения</h2>
+          <p className="text-[10px] text-muted-foreground">{filteredVenues.length} из {venues.length} · {issueCount} требуют проверки</p>
         </div>
-        <Badge variant="outline" className="border-neutral-800 text-neutral-400">{venues.filter((venue) => venue.status === "published").length} published</Badge>
+        <Badge variant="outline">{venues.filter((venue) => venue.status === "published").length} published</Badge>
       </div>
 
       <div className="flex flex-col gap-2">
         <Input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="admin-input"
           placeholder="Поиск: название, адрес, тег"
         />
         <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
@@ -91,23 +91,26 @@ export function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Ve
                 key={venue.id}
                 variant="ghost"
                 onClick={() => onSelectVenue(venue)}
-                className={`admin-list-item h-auto w-full justify-start rounded-lg border p-2 text-left ${selectedVenue?.id === venue.id ? "admin-list-item-active" : ""}`}
+                className={cn(
+                  "h-auto w-full justify-start rounded-lg border border-transparent p-2 text-left text-muted-foreground",
+                  selectedVenue?.id === venue.id && "border-border bg-muted text-foreground",
+                )}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center justify-between gap-2">
                     <div className="truncate font-semibold">{venue.name}</div>
-                    <Badge variant="outline" className="shrink-0 border-neutral-800 px-1.5 text-[10px] text-neutral-500">
+                    <Badge variant="outline" className="shrink-0 px-1.5 text-[10px]">
                       {venue.status}
                     </Badge>
                   </div>
-                  <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-neutral-500">
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
                     <span className="truncate">{venue.category}</span>
                     <span className="shrink-0">{venue.likesCount || 0} лайков</span>
                   </div>
                   {issues.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1">
                       {issues.slice(0, 3).map((issue) => (
-                        <Badge key={issue} variant="outline" className="border-amber-900/50 bg-amber-950/20 px-1.5 text-[10px] text-amber-200">
+                        <Badge key={issue} variant="secondary" className="px-1.5 text-[10px]">
                           {issue}
                         </Badge>
                       ))}

@@ -1,13 +1,14 @@
 import { AdminDashboard, AnalyticsEvent, Venue } from "../../types";
 import { AdminBlock, EmptyLine, Metric } from "./AdminShared";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function DashboardView({ dashboard, analytics, venues }: { dashboard: AdminDashboard | null; analytics: AnalyticsEvent[]; venues: Venue[] }) {
   const totals = dashboard?.totals;
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="font-display text-lg font-semibold text-neutral-100">Дашборд</h2>
-        <p className="text-xs text-neutral-500">Сводка по аудитории, заведениям и действиям пользователей.</p>
+        <h2 className="font-display text-lg font-semibold text-foreground">Дашборд</h2>
+        <p className="text-xs text-muted-foreground">Сводка по аудитории, заведениям и действиям пользователей.</p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Пользователи" value={totals?.users ?? 0} note={`+${totals?.newUsers7d ?? 0} за 7 дней`} />
@@ -23,13 +24,15 @@ export function DashboardView({ dashboard, analytics, venues }: { dashboard: Adm
           ) : (
             <div className="flex flex-col gap-2">
               {dashboard?.topVenues.map((venue) => (
-                <div key={venue.venueId} className="venue-soft-panel flex items-center justify-between gap-3 p-3">
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold text-neutral-100">{venue.name}</div>
-                    <div className="mt-1 text-[10px] text-neutral-500">Открытия {venue.opens} · Маршруты {venue.routes} · Соц/тел {venue.socials}</div>
-                  </div>
-                  <div className="shrink-0 text-sm font-semibold text-neutral-200">{venue.total}</div>
-                </div>
+                <Card key={venue.venueId} size="sm">
+                  <CardContent className="flex items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-foreground">{venue.name}</div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">Открытия {venue.opens} · Маршруты {venue.routes} · Соц/тел {venue.socials}</div>
+                    </div>
+                    <div className="shrink-0 text-sm font-semibold text-foreground">{venue.total}</div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -41,10 +44,12 @@ export function DashboardView({ dashboard, analytics, venues }: { dashboard: Adm
           ) : (
             <div className="flex flex-col gap-2">
               {dashboard?.incompleteVenues.map((venue) => (
-                <div key={venue.id} className="venue-soft-panel p-3">
-                  <div className="font-semibold text-neutral-100">{venue.name}</div>
-                  <div className="mt-1 text-[10px] text-neutral-500">{venue.issues.join(", ")}</div>
-                </div>
+                <Card key={venue.id} size="sm">
+                  <CardContent className="p-3">
+                    <div className="font-semibold text-foreground">{venue.name}</div>
+                    <div className="mt-1 text-[10px] text-muted-foreground">{venue.issues.join(", ")}</div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -64,10 +69,10 @@ function ActivityFeed({ analytics, venues }: { analytics: AnalyticsEvent[]; venu
       {analytics.length === 0 ? <EmptyLine>Пока нет действий.</EmptyLine> : (
         <div className="flex flex-col gap-2">
           {analytics.slice(0, 24).map((event) => (
-            <div key={event.id} className="grid gap-1 rounded-lg border border-neutral-900 bg-neutral-950/40 p-3 text-[11px] sm:grid-cols-[150px_minmax(0,1fr)_90px] sm:items-center">
-              <span className="font-semibold text-neutral-300">{formatEventType(event.eventType)}</span>
-              <span className="min-w-0 truncate text-neutral-500">{venues.find((venue) => venue.id === event.venueId)?.name || event.venueId || "global"}</span>
-              <span className="text-neutral-600 sm:text-right">{new Date(event.timestamp).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
+            <div key={event.id} className="grid gap-1 rounded-lg border bg-muted/30 p-3 text-[11px] sm:grid-cols-[150px_minmax(0,1fr)_90px] sm:items-center">
+              <span className="font-semibold text-foreground">{formatEventType(event.eventType)}</span>
+              <span className="min-w-0 truncate text-muted-foreground">{venues.find((venue) => venue.id === event.venueId)?.name || event.venueId || "global"}</span>
+              <span className="text-muted-foreground sm:text-right">{new Date(event.timestamp).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</span>
             </div>
           ))}
         </div>

@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { VenueSuggestion } from "../../types";
 import { EmptyLine } from "./AdminShared";
 
@@ -27,24 +29,23 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h2 className="font-display text-lg font-semibold text-neutral-100">Заявки на заведения</h2>
-        <p className="text-xs text-neutral-500">{filteredSuggestions.length} из {suggestions.length} · предложения от гостей и пользователей</p>
+        <h2 className="font-display text-lg font-semibold text-foreground">Заявки на заведения</h2>
+        <p className="text-xs text-muted-foreground">{filteredSuggestions.length} из {suggestions.length} · предложения от гостей и пользователей</p>
       </div>
 
       <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Input value={query} onChange={(event) => setQuery(event.target.value)} className="admin-input" placeholder="Поиск: название, адрес, контакт" />
-        <div className="grid grid-cols-3 gap-1 rounded-lg border border-neutral-900 bg-neutral-950 p-1 sm:grid-cols-5">
+        <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск: название, адрес, контакт" />
+        <ToggleGroup type="single" value={status} onValueChange={(value) => value && setStatus(value as SuggestionStatusFilter)} variant="outline" size="sm" spacing={0} className="grid w-full grid-cols-3 sm:grid-cols-5">
           {(["all", "new", "reviewed", "rejected", "converted"] as const).map((item) => (
-            <button
+            <ToggleGroupItem
               key={item}
-              type="button"
-              onClick={() => setStatus(item)}
-              className={`rounded-md px-2 py-1.5 text-[10px] font-semibold transition ${status === item ? "bg-neutral-800 text-neutral-100" : "text-neutral-500 hover:text-neutral-200"}`}
+              value={item}
+              className="text-[10px]"
             >
               {item === "all" ? "Все" : item}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       {filteredSuggestions.length === 0 ? (
@@ -52,27 +53,29 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
       ) : (
         <div className="grid gap-2">
           {filteredSuggestions.map((suggestion) => (
-            <div key={suggestion.id} className="venue-soft-panel p-3">
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
-                <div className="min-w-0">
-                  <div className="truncate font-semibold text-neutral-100">{suggestion.name}</div>
-                  <div className="mt-1 text-xs text-neutral-400">{suggestion.address}</div>
+            <Card key={suggestion.id} size="sm">
+              <CardContent className="p-3">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-foreground">{suggestion.name}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{suggestion.address}</div>
+                  </div>
+                  <div className="sm:text-right">
+                    <Badge variant="outline">{suggestion.status}</Badge>
+                  </div>
                 </div>
-                <div className="sm:text-right">
-                  <Badge variant="outline" className="border-neutral-800 text-neutral-500">{suggestion.status}</Badge>
+                {(suggestion.comment || suggestion.contact) && (
+                  <div className="mt-3 flex flex-col gap-1 border-t pt-3 text-xs text-muted-foreground">
+                    {suggestion.comment && <div>{suggestion.comment}</div>}
+                    {suggestion.contact && <div className="font-mono">Контакт: {suggestion.contact}</div>}
+                  </div>
+                )}
+                <div className="mt-3 flex flex-wrap justify-between gap-2 text-[10px] text-muted-foreground">
+                  <span>{suggestion.userName || "гость"}</span>
+                  <span>{new Date(suggestion.createdAt).toLocaleString("ru-RU")}</span>
                 </div>
-              </div>
-              {(suggestion.comment || suggestion.contact) && (
-                <div className="mt-3 flex flex-col gap-1 border-t border-neutral-900 pt-3 text-xs text-neutral-400">
-                  {suggestion.comment && <div>{suggestion.comment}</div>}
-                  {suggestion.contact && <div className="font-mono text-neutral-500">Контакт: {suggestion.contact}</div>}
-                </div>
-              )}
-              <div className="mt-3 flex flex-wrap justify-between gap-2 text-[10px] text-neutral-600">
-                <span>{suggestion.userName || "гость"}</span>
-                <span>{new Date(suggestion.createdAt).toLocaleString("ru-RU")}</span>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

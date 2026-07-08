@@ -42,8 +42,8 @@ export function VenueWorkspace({
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <Card size="sm" className="admin-panel-minimal p-4">
-        <CardHeader className="px-0 pt-0">
+      <Card size="sm">
+        <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <CardTitle className="truncate font-display text-base font-semibold text-foreground">
@@ -67,7 +67,7 @@ export function VenueWorkspace({
             </div>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-2 px-0 pb-0 sm:grid-cols-4">
+        <CardContent className="grid gap-2 sm:grid-cols-4">
           <AuditMiniMetric label="Просмотры" value={selectedVenueAudit?.totals.views ?? 0} loading={selectedVenueAuditLoading} />
           <AuditMiniMetric label="Действия" value={selectedVenueAudit?.totals.actions ?? 0} loading={selectedVenueAuditLoading} />
           <AuditMiniMetric label="Лайки" value={selectedVenueAudit?.totals.likes ?? editingVenue.likesCount ?? 0} loading={selectedVenueAuditLoading} />
@@ -95,9 +95,9 @@ export function VenueWorkspace({
         </TabsContent>
       </Tabs>
 
-      {saveError && <div className="rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-rose-200">{saveError}</div>}
+      {saveError && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">{saveError}</div>}
 
-      <Card size="sm" className="admin-panel-minimal p-0">
+      <Card size="sm" className="p-0">
         <CardFooter className="justify-end gap-2 rounded-xl bg-transparent p-3">
           {editingVenue.id && (
             <Button
