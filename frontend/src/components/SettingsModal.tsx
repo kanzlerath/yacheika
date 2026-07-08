@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import TelegramLoginWidget from "./TelegramLoginWidget";
@@ -61,6 +62,10 @@ export default function SettingsModal({
 
   const submitSuggestion = async () => {
     setSuggestionError(null);
+    if (!auth) {
+      setSuggestionError("Войдите, чтобы предложить заведение.");
+      return;
+    }
     if (!suggestionForm.name.trim() || !suggestionForm.address.trim()) {
       setSuggestionError("Укажите название и адрес.");
       return;
@@ -68,7 +73,7 @@ export default function SettingsModal({
 
     setSuggestionStatus("sending");
     try {
-      const res = await fetch(auth ? "/api/users/me/venue-suggestions" : "/api/venue-suggestions", {
+      const res = await fetch("/api/users/me/venue-suggestions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -193,10 +198,9 @@ export default function SettingsModal({
                   <div className="settings-divider pt-2 border-t flex justify-center">
                     <div className="flex w-full flex-col gap-3">
                       <label className="flex items-start gap-2 text-left text-[11px] leading-relaxed text-neutral-500">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={legalConsentAccepted}
-                          onChange={(event) => updateLegalConsent(event.target.checked)}
+                          onCheckedChange={(value) => updateLegalConsent(value === true)}
                           className="mt-0.5 shrink-0"
                         />
                         <span>
@@ -238,41 +242,49 @@ export default function SettingsModal({
                       transition={{ duration: 0.22, ease: appEase }}
                       className="space-y-2 overflow-hidden"
                     >
-                      <Input
-                        value={suggestionForm.name}
-                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, name: event.target.value }))}
-                        className="settings-form-input"
-                        placeholder="Название: например, Весна"
-                      />
-                      <Input
-                        value={suggestionForm.address}
-                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, address: event.target.value }))}
-                        className="settings-form-input"
-                        placeholder="Адрес: ул. Ленина, 34"
-                      />
-                      <Textarea
-                        value={suggestionForm.comment}
-                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, comment: event.target.value }))}
-                        className="settings-form-input min-h-20 resize-none"
-                        placeholder="Комментарий: что это за место, почему стоит добавить"
-                      />
-                      <Input
-                        value={suggestionForm.contact}
-                        onChange={(event) => setSuggestionForm((prev) => ({ ...prev, contact: event.target.value }))}
-                        className="settings-form-input"
-                        placeholder="Контакт, если нужен ответ"
-                      />
-                      {suggestionError && <div className="text-[11px] text-rose-300">{suggestionError}</div>}
-                      {suggestionStatus === "sent" && <div className="text-[11px] text-emerald-300">Заявка отправлена.</div>}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={submitSuggestion}
-                        disabled={suggestionStatus === "sending"}
-                        className="app-text-button w-full"
-                      >
-                        {suggestionStatus === "sending" ? "Отправляем..." : "Отправить"}
-                      </Button>
+                      {!auth ? (
+                        <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs leading-relaxed text-muted-foreground">
+                          Войдите через Telegram или Яндекс ID, чтобы предложить новое место. Так мы сможем связать заявку с профилем и показать статус рассмотрения.
+                        </div>
+                      ) : (
+                        <>
+                          <Input
+                            value={suggestionForm.name}
+                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, name: event.target.value }))}
+                            className="settings-form-input"
+                            placeholder="Название: например, Весна"
+                          />
+                          <Input
+                            value={suggestionForm.address}
+                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, address: event.target.value }))}
+                            className="settings-form-input"
+                            placeholder="Адрес: ул. Ленина, 34"
+                          />
+                          <Textarea
+                            value={suggestionForm.comment}
+                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, comment: event.target.value }))}
+                            className="settings-form-input min-h-20 resize-none"
+                            placeholder="Комментарий: что это за место, почему стоит добавить"
+                          />
+                          <Input
+                            value={suggestionForm.contact}
+                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, contact: event.target.value }))}
+                            className="settings-form-input"
+                            placeholder="Контакт, если нужен ответ"
+                          />
+                          {suggestionError && <div className="text-[11px] text-rose-300">{suggestionError}</div>}
+                          {suggestionStatus === "sent" && <div className="text-[11px] text-emerald-300">Заявка отправлена.</div>}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={submitSuggestion}
+                            disabled={suggestionStatus === "sending"}
+                            className="app-text-button w-full"
+                          >
+                            {suggestionStatus === "sending" ? "Отправляем..." : "Отправить"}
+                          </Button>
+                        </>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
