@@ -18,10 +18,10 @@ export class AnalyticsController {
   @UseGuards(TelegramAuthGuard)
   async logEvent(
     @Req() request: any,
-    @Body('eventType') eventType: string,
-    @Body('venueId') venueId?: string,
-    @Body('metadata') metadata?: Record<string, any>,
+    @Body() data: LogAnalyticsEventDto,
   ) {
+    const { eventType, venueId, metadata } = data;
+
     if (!eventType) {
       throw new BadRequestException('eventType is required');
     }

@@ -11,15 +11,15 @@ export class VenueSuggestionService {
     private readonly suggestionRepository: Repository<VenueSuggestionEntity>,
   ) {}
 
-  async create(data: CreateVenueSuggestionDto, user?: { id?: string; username?: string; firstName?: string; lastName?: string }) {
+  async create(data: CreateVenueSuggestionDto, user?: { userId?: string; username?: string }) {
     const suggestion = this.suggestionRepository.create({
       id: `vs-${Math.random().toString(36).substring(2, 11)}`,
       name: data.name.trim(),
       address: data.address.trim(),
       comment: data.comment?.trim() || undefined,
       contact: data.contact?.trim() || undefined,
-      userId: user?.id,
-      userName: user?.username || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || undefined,
+      userId: user?.userId,
+      userName: user?.username,
       status: 'new',
     });
 

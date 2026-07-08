@@ -30,7 +30,7 @@ export class ReactionService {
     type: 'like' | 'not_my_place' | 'vibe_tag',
     vibeTag?: string,
   ) {
-    const venue = await this.venueRepository.findOne({ where: { id: venueId } });
+    const venue = await this.venueRepository.findOne({ where: { id: venueId, status: 'published' } });
     if (!venue) {
       throw new NotFoundException(`Venue with ID "${venueId}" not found`);
     }

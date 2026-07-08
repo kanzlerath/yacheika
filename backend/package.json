@@ -8,6 +8,8 @@
     "build": "nest build",
     "admin:hash": "node scripts/hash-admin-password.js",
     "admin:check": "node scripts/check-admin-owner.js",
+    "migration:run": "typeorm migration:run -d dist/data-source.js",
+    "migration:revert": "typeorm migration:revert -d dist/data-source.js",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

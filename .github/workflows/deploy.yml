@@ -11,6 +11,31 @@ jobs:
     name: Deploy to VPS
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Validate backend
+        working-directory: backend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Validate frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -19,6 +44,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
+            set -eu
+
             # Check if project directory exists, otherwise clone it
             if [ ! -d "/app/yacheyka" ]; then
               mkdir -p /app
@@ -39,6 +66,7 @@ jobs:
             DB_DATABASE=${{ secrets.DB_DATABASE }}
             DB_PORT=5432
             PORT=4002
+            TRUST_PROXY=true
             MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}
             MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}
             MINIO_BUCKET=yacheyka-gallery
@@ -60,6 +88,17 @@ jobs:
             MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}
             EOF
 
-            # Restart Docker Compose services in production mode
-            docker-compose -f docker-compose.prod.yml down
-            docker-compose -f docker-compose.prod.yml up -d --build
+            # Build new images before touching the running stack.
+            docker-compose -f docker-compose.prod.yml build
+            docker-compose -f docker-compose.prod.yml up -d db minio
+            docker-compose -f docker-compose.prod.yml run --rm backend sh -c "npm run build && npm run migration:run"
+            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+            docker-compose -f docker-compose.prod.yml ps
+            for i in $(seq 1 30); do
+              if docker-compose -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
+                exit 0
+              fi
+              sleep 2
+            done
+            docker-compose -f docker-compose.prod.yml logs --tail=120 backend
+            exit 1

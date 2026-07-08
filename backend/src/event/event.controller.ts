@@ -12,6 +12,12 @@ export class EventController {
     return this.eventService.findAll();
   }
 
+  @Get('admin/all')
+  @UseGuards(AdminGuard)
+  async getAdminEvents() {
+    return this.eventService.findAll({ includeNonPublished: true });
+  }
+
   @Post()
   @UseGuards(AdminGuard)
   async saveEvent(@Body() eventData: SaveEventDto) {

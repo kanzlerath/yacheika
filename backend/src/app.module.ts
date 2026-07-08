@@ -10,6 +10,7 @@ import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminDataModule } from './admin/admin-data.module';
 import { VenueSuggestionModule } from './venue-suggestion/venue-suggestion.module';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { VenueSuggestionModule } from './venue-suggestion/venue-suggestion.modul
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_DATABASE || 'yacheyka',
       autoLoadEntities: true,
-      synchronize: true, // Auto schema sync for development
+      synchronize: process.env.NODE_ENV !== 'production' && process.env.TYPEORM_SYNC !== 'false',
     }),
     AuthModule,
     AdminDataModule,
@@ -34,5 +35,6 @@ import { VenueSuggestionModule } from './venue-suggestion/venue-suggestion.modul
     StorageModule,
     VenueSuggestionModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
