@@ -67,6 +67,12 @@ jobs:
             git pull origin "${REF_NAME}"
           fi
 
+          if docker compose version >/dev/null 2>&1; then
+            COMPOSE="docker compose"
+          else
+            COMPOSE="docker-compose"
+          fi
+
           # Recreate production .env file from secrets
           cat > .env <<'EOF'
           DB_USERNAME=${{ secrets.DB_USERNAME }}
@@ -97,17 +103,19 @@ jobs:
           EOF
 
           # Build new images before touching the running stack.
-          docker-compose -f docker-compose.prod.yml build
-          docker-compose -f docker-compose.prod.yml up -d db minio
-          docker-compose -f docker-compose.prod.yml run --rm backend sh -c "npm run build && npm run migration:run"
-          docker-compose -f docker-compose.prod.yml up -d --remove-orphans
-          docker-compose -f docker-compose.prod.yml ps
+          $COMPOSE -f docker-compose.prod.yml build
+          $COMPOSE -f docker-compose.prod.yml up -d db minio
+          $COMPOSE -f docker-compose.prod.yml run --rm backend sh -c "npm run build && npm run migration:run"
+          $COMPOSE -f docker-compose.prod.yml stop backend || true
+          $COMPOSE -f docker-compose.prod.yml rm -f backend || true
+          $COMPOSE -f docker-compose.prod.yml up -d --remove-orphans
+          $COMPOSE -f docker-compose.prod.yml ps
           for i in $(seq 1 30); do
-            if docker-compose -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
+            if $COMPOSE -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
               exit 0
             fi
             sleep 2
           done
-          docker-compose -f docker-compose.prod.yml logs --tail=120 backend
+          $COMPOSE -f docker-compose.prod.yml logs --tail=120 backend
           exit 1
           REMOTE_SCRIPT
