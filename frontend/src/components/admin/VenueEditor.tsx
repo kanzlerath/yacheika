@@ -220,12 +220,12 @@ export function VenueEditor(props: any) {
 
   return (
     <>
-    <Tabs defaultValue="main" className="w-full gap-3">
-      <TabsList className="grid h-10 w-full grid-cols-2 p-1 md:max-w-xl md:grid-cols-4">
-        <TabsTrigger value="main" className="h-8 text-xs">Основное</TabsTrigger>
-        <TabsTrigger value="content" className="h-8 text-xs">Контент</TabsTrigger>
-        <TabsTrigger value="media" className="h-8 text-xs">Фото</TabsTrigger>
-        <TabsTrigger value="premium" className="h-8 text-xs">Premium</TabsTrigger>
+    <Tabs defaultValue="main" className="w-full gap-4">
+      <TabsList variant="line" className="w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
+        <TabsTrigger value="main" className="h-10 flex-none rounded-none px-4 text-xs">Основное</TabsTrigger>
+        <TabsTrigger value="content" className="h-10 flex-none rounded-none px-4 text-xs">Контент</TabsTrigger>
+        <TabsTrigger value="media" className="h-10 flex-none rounded-none px-4 text-xs">Фото</TabsTrigger>
+        <TabsTrigger value="premium" className="h-10 flex-none rounded-none px-4 text-xs">Premium</TabsTrigger>
       </TabsList>
 
       <TabsContent value="main" className="flex flex-col gap-4">

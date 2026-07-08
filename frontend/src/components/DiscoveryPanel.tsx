@@ -10,51 +10,50 @@ import {
   Heart,
   ArrowLeft,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Venue, Collection, VenueEvent } from "../types";
-import { filterVenuesForDiscovery } from "../utils/venueFilters";
+import {
+  VenueDiscoveryFilters,
+  createEmptyVenueDiscoveryFilters,
+  filterVenuesForDiscovery,
+} from "../utils/venueFilters";
 
 interface DiscoveryPanelProps {
   venues: Venue[];
   collections: Collection[];
   selectedVenue: Venue | null;
   onSelectVenue: (venue: Venue) => void;
-  filters: {
-    category: string;
-    tag: string;
-    openNow: boolean;
-    hasEventToday: boolean;
-    search: string;
-  };
-  setFilters: Dispatch<SetStateAction<{
-    category: string;
-    tag: string;
-    openNow: boolean;
-    hasEventToday: boolean;
-    search: string;
-  }>>;
+  filters: VenueDiscoveryFilters;
+  setFilters: Dispatch<SetStateAction<VenueDiscoveryFilters>>;
   eventsList: VenueEvent[];
   setMobileView?: (view: "map" | "list") => void;
 }
 
 const UNIFIED_PILLS = [
-  { id: "all", label: "Все", type: "all" },
-  { id: "Бар", label: "Бар", type: "category" },
-  { id: "Паб", label: "Паб", type: "category" },
-  { id: "Кафе", label: "Кафе", type: "category" },
-  { id: "Рюмочная", label: "Рюмочная", type: "category" },
-  { id: "Коктейльный бар", label: "Коктейльный бар", type: "category" },
-  { id: "Винный бар", label: "Винный бар", type: "category" },
-  { id: "Крафтовый бар", label: "Крафтовый бар", type: "category" },
-  { id: "Гастробар", label: "Гастробар", type: "category" },
-  { id: "Кальянная", label: "Кальянная", type: "category" },
-  { id: "Караоке", label: "Караоке", type: "category" },
-  { id: "Клуб", label: "Клуб", type: "category" },
-  { id: "Ресторан", label: "Ресторан", type: "category" },
+  { id: "Бар", label: "Бар" },
+  { id: "Паб", label: "Паб" },
+  { id: "Кафе", label: "Кафе" },
+  { id: "Рюмочная", label: "Рюмочная" },
+  { id: "Коктейльный бар", label: "Коктейли" },
+  { id: "Винный бар", label: "Вино" },
+  { id: "Крафтовый бар", label: "Крафт" },
+  { id: "Гастробар", label: "Гастробар" },
+  { id: "Кальянная", label: "Кальянная" },
+  { id: "Караоке", label: "Караоке" },
+  { id: "Клуб", label: "Клуб" },
+  { id: "Ресторан", label: "Ресторан" },
+];
+
+const VIBE_FILTER_GROUPS = [
+  { title: "Атмосфера", tags: ["уютно", "душевно", "романтично", "эстетично", "движ", "для компании"] },
+  { title: "Музыка", tags: ["живая музыка", "DJ", "джаз", "рок", "техно", "караоке"] },
+  { title: "Еда и напитки", tags: ["авторские коктейли", "крафтовое пиво", "вино", "настойки", "полноценная кухня", "закуски"] },
+  { title: "Формат", tags: ["свидание", "после работы", "день рождения", "танцы", "настольные игры", "спорт-трансляции"] },
 ];
 
 const formatVenuesFound = (count: number) => {
@@ -85,42 +84,14 @@ export default function DiscoveryPanel({
     events: eventsList,
   });
 
-  const handlePillClick = (pill: typeof UNIFIED_PILLS[0]) => {
-    const nextFilters = {
-      category: "",
-      tag: "",
-      openNow: false,
-      hasEventToday: false,
-      search: filters.search,
-    };
-
-    if (pill.type === "category") {
-      nextFilters.category = pill.id;
-    }
-
-    setFilters(nextFilters);
-  };
-
-  const activePillValue = filters.category || "all";
-
-  const isPillActive = (pill: typeof UNIFIED_PILLS[0]) => {
-    if (pill.type === "category") {
-      return filters.category === pill.id;
-    }
-    if (pill.type === "all") {
-      return !filters.category && !filters.tag && !filters.openNow && !filters.hasEventToday;
-    }
-    return false;
-  };
+  const activeFilterCount =
+    filters.categories.length +
+    filters.tags.length +
+    Number(filters.openNow) +
+    Number(filters.hasEventToday);
 
   const clearAllFilters = () => {
-    setFilters({
-      category: "",
-      tag: "",
-      openNow: false,
-      hasEventToday: false,
-      search: "",
-    });
+    setFilters(createEmptyVenueDiscoveryFilters());
   };
 
   return (
@@ -172,38 +143,34 @@ export default function DiscoveryPanel({
           </div>
         </div>
 
-        {/* Collapsible filter tags row with chevron toggle */}
-        <div className="flex items-start gap-2">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start gap-2">
           <div className="flex-1 min-w-0">
             <ToggleGroup
-              type="single"
-              value={activePillValue}
-              onValueChange={(value) => {
-                const pill = UNIFIED_PILLS.find((item) => item.id === (value || "all"));
-                if (pill) handlePillClick(pill);
+              type="multiple"
+              value={[
+                ...(filters.openNow ? ["openNow"] : []),
+                ...(filters.hasEventToday ? ["hasEventToday"] : []),
+              ]}
+              onValueChange={(values) => {
+                setFilters((prev) => ({
+                  ...prev,
+                  openNow: values.includes("openNow"),
+                  hasEventToday: values.includes("hasEventToday"),
+                }));
               }}
               className={`flex w-full flex-wrap items-start justify-start gap-1.5 overflow-hidden py-0.5 transition-[max-height] duration-300 ease-out ${
-                isFiltersExpanded ? "max-h-44 pb-1" : "max-h-[36px]"
+                isFiltersExpanded ? "max-h-[360px] pb-1" : "max-h-[36px]"
               }`}
-              spacing={0}
+              spacing={1}
+              variant="outline"
             >
-                {UNIFIED_PILLS.map((pill) => {
-                  const active = isPillActive(pill);
-                  return (
-                    <ToggleGroupItem
-                      key={pill.id}
-                      value={pill.id}
-                      aria-label={pill.label}
-                      className={`h-7 text-[11px] px-3.5 py-1.5 rounded-lg font-medium transition select-none cursor-pointer duration-150 ${
-                        active
-                          ? "discovery-pill-active font-semibold shadow"
-                          : "discovery-pill border"
-                      }`}
-                    >
-                      {pill.label}
-                    </ToggleGroupItem>
-                  );
-                })}
+              <ToggleGroupItem value="openNow" aria-label="Сейчас открыто" className="discovery-pill h-8 rounded-md px-3 text-[11px]">
+                Сейчас открыто
+              </ToggleGroupItem>
+              <ToggleGroupItem value="hasEventToday" aria-label="События сегодня" className="discovery-pill h-8 rounded-md px-3 text-[11px]">
+                События сегодня
+              </ToggleGroupItem>
               </ToggleGroup>
           </div>
           <Button
@@ -216,6 +183,69 @@ export default function DiscoveryPanel({
           >
             {isFiltersExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
+          </div>
+
+          {isFiltersExpanded && (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                  <Sparkles className="size-3" />
+                  Фильтры
+                </div>
+                {activeFilterCount > 0 && (
+                  <span className="text-[10px] font-mono text-zinc-500">{activeFilterCount} выбрано</span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">Тип места</div>
+                <ToggleGroup
+                  type="multiple"
+                  value={filters.categories}
+                  onValueChange={(categories) => setFilters((prev) => ({ ...prev, categories }))}
+                  className="flex w-full flex-wrap justify-start gap-1.5"
+                  spacing={1}
+                  variant="outline"
+                >
+                  {UNIFIED_PILLS.map((pill) => (
+                    <ToggleGroupItem
+                      key={pill.id}
+                      value={pill.id}
+                      aria-label={pill.label}
+                      className="discovery-pill h-8 rounded-md px-3 text-[11px]"
+                    >
+                      {pill.label}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              </div>
+
+              {VIBE_FILTER_GROUPS.map((group) => (
+                <div key={group.title} className="flex flex-col gap-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">{group.title}</div>
+                  <ToggleGroup
+                    type="multiple"
+                    value={filters.tags}
+                    onValueChange={(tags) => setFilters((prev) => ({ ...prev, tags }))}
+                    className="flex w-full flex-wrap justify-start gap-1.5"
+                    spacing={1}
+                    variant="outline"
+                  >
+                    {group.tags.map((tag) => (
+                      <ToggleGroupItem
+                        key={tag}
+                        value={tag}
+                        aria-label={tag}
+                        className="discovery-pill h-8 rounded-md px-3 text-[11px]"
+                      >
+                        {tag}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -230,7 +260,7 @@ export default function DiscoveryPanel({
             <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">
               {formatVenuesFound(filteredVenues.length)}
             </div>
-            {(filters.category || filters.tag || filters.openNow || filters.hasEventToday || filters.search) && (
+            {(activeFilterCount > 0 || filters.search) && (
               <Button
                 type="button"
                 variant="link"

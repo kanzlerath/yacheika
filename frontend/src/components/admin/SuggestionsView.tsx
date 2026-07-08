@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -7,13 +8,26 @@ import { VenueSuggestion } from "../../types";
 import { EmptyLine } from "./AdminShared";
 
 type SuggestionStatusFilter = "all" | VenueSuggestion["status"];
+const STATUS_OPTIONS: Array<{ value: VenueSuggestion["status"]; label: string }> = [
+  { value: "new", label: "Новая" },
+  { value: "reviewed", label: "В работе" },
+  { value: "converted", label: "Принята" },
+  { value: "rejected", label: "Отказ" },
+];
 
 export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[] }) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<SuggestionStatusFilter>("all");
+  const [localSuggestions, setLocalSuggestions] = useState(suggestions);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const sourceSuggestions = localSuggestions;
+
+  useEffect(() => {
+    setLocalSuggestions(suggestions);
+  }, [suggestions]);
   const filteredSuggestions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return suggestions.filter((suggestion) => {
+    return sourceSuggestions.filter((suggestion) => {
       const matchesStatus = status === "all" || suggestion.status === status;
       const matchesQuery = !normalizedQuery || [
         suggestion.name,
@@ -24,13 +38,31 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
       ].some((value) => value?.toLowerCase().includes(normalizedQuery));
       return matchesStatus && matchesQuery;
     });
-  }, [query, status, suggestions]);
+  }, [query, status, sourceSuggestions]);
+
+  const updateStatus = async (suggestion: VenueSuggestion, nextStatus: VenueSuggestion["status"]) => {
+    setUpdatingId(suggestion.id);
+    try {
+      const res = await fetch(`/api/admin/venue-suggestions/${suggestion.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update suggestion status");
+      const updated = await res.json();
+      setLocalSuggestions((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+    } catch (error) {
+      console.error("Failed to update suggestion status:", error);
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="font-display text-lg font-semibold text-foreground">Заявки на заведения</h2>
-        <p className="text-xs text-muted-foreground">{filteredSuggestions.length} из {suggestions.length} · предложения от гостей и пользователей</p>
+        <p className="text-xs text-muted-foreground">{filteredSuggestions.length} из {sourceSuggestions.length} · предложения от гостей и пользователей</p>
       </div>
 
       <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -60,8 +92,20 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
                     <div className="truncate font-semibold text-foreground">{suggestion.name}</div>
                     <div className="mt-1 text-xs text-muted-foreground">{suggestion.address}</div>
                   </div>
-                  <div className="sm:text-right">
-                    <Badge variant="outline">{suggestion.status}</Badge>
+                  <div className="flex flex-wrap gap-1 sm:justify-end">
+                    {STATUS_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={suggestion.status === option.value ? "default" : "outline"}
+                        size="xs"
+                        disabled={updatingId === suggestion.id}
+                        onClick={() => updateStatus(suggestion, option.value)}
+                        className="text-[10px]"
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
                   </div>
                 </div>
                 {(suggestion.comment || suggestion.contact) && (
@@ -74,6 +118,16 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
                   <span>{suggestion.userName || "гость"}</span>
                   <span>{new Date(suggestion.createdAt).toLocaleString("ru-RU")}</span>
                 </div>
+                {suggestion.contact && suggestion.status !== "new" && (
+                  <div className="mt-3 rounded-lg border bg-muted/30 p-3 text-xs text-muted-foreground">
+                    <div className="mb-1 font-semibold text-foreground">Текст ответа</div>
+                    {suggestion.status === "converted"
+                      ? `Спасибо за заявку «${suggestion.name}». Мы рассмотрели место и добавили его в работу.`
+                      : suggestion.status === "rejected"
+                        ? `Спасибо за заявку «${suggestion.name}». Мы рассмотрели место, но пока не можем добавить его в каталог.`
+                        : `Спасибо за заявку «${suggestion.name}». Мы взяли ее в рассмотрение.`}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

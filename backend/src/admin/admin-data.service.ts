@@ -165,6 +165,125 @@ export class AdminDataService {
     };
   }
 
+  async getUserDetail(id: string) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [
+      analyticsRows,
+      reactionRows,
+      dailyAnalyticsRows,
+      dailyReactionRows,
+      recentAnalytics,
+      recentReactions,
+      venues,
+      lastAnalytics,
+      lastReaction,
+    ] = await Promise.all([
+      this.analyticsRepository
+        .createQueryBuilder('analytics')
+        .select('analytics.eventType', 'eventType')
+        .addSelect('COUNT(*)', 'count')
+        .where('analytics.userId = :id', { id })
+        .groupBy('analytics.eventType')
+        .getRawMany(),
+      this.reactionRepository
+        .createQueryBuilder('reaction')
+        .select('reaction.type', 'type')
+        .addSelect('COUNT(*)', 'count')
+        .where('reaction.userId = :id', { id })
+        .groupBy('reaction.type')
+        .getRawMany(),
+      this.analyticsRepository
+        .createQueryBuilder('analytics')
+        .select("TO_CHAR(DATE_TRUNC('day', analytics.timestamp), 'YYYY-MM-DD')", 'date')
+        .addSelect('COUNT(*)', 'count')
+        .where('analytics.userId = :id', { id })
+        .andWhere('analytics.timestamp >= :monthAgo', { monthAgo })
+        .groupBy("DATE_TRUNC('day', analytics.timestamp)")
+        .orderBy("DATE_TRUNC('day', analytics.timestamp)", 'ASC')
+        .getRawMany(),
+      this.reactionRepository
+        .createQueryBuilder('reaction')
+        .select("TO_CHAR(DATE_TRUNC('day', reaction.createdAt), 'YYYY-MM-DD')", 'date')
+        .addSelect('COUNT(*)', 'count')
+        .where('reaction.userId = :id', { id })
+        .andWhere('reaction.createdAt >= :monthAgo', { monthAgo })
+        .groupBy("DATE_TRUNC('day', reaction.createdAt)")
+        .orderBy("DATE_TRUNC('day', reaction.createdAt)", 'ASC')
+        .getRawMany(),
+      this.analyticsRepository.find({ where: { userId: id }, order: { timestamp: 'DESC' }, take: 40 }),
+      this.reactionRepository.find({ where: { userId: id }, order: { createdAt: 'DESC' }, take: 40 }),
+      this.venueRepository.find(),
+      this.analyticsRepository.findOne({ where: { userId: id }, order: { timestamp: 'DESC' } }),
+      this.reactionRepository.findOne({ where: { userId: id }, order: { createdAt: 'DESC' } }),
+    ]);
+
+    const analytics = this.analyticsRowsToMap(analyticsRows);
+    const reactions = reactionRows.reduce<Record<string, number>>((acc, row) => {
+      acc[row.type] = Number(row.count);
+      return acc;
+    }, {});
+    const venueById = new Map(venues.map((venue) => [venue.id, venue]));
+    const daily = this.buildUserDailyActivity(dailyAnalyticsRows, dailyReactionRows);
+    const activeDays30d = daily.filter((row) => row.actions + row.reactions > 0).length;
+    const totalActions = Object.values(analytics).reduce((sum, value) => sum + value, 0);
+    const totalReactions = Object.values(reactions).reduce((sum, value) => sum + value, 0);
+    const lastSeenAt = [lastAnalytics?.timestamp, lastReaction?.createdAt]
+      .filter(Boolean)
+      .sort((a, b) => Number(b) - Number(a))[0] || null;
+
+    const enrichVenue = (venueId?: string) => {
+      if (!venueId) return null;
+      const venue = venueById.get(venueId);
+      return venue ? { id: venue.id, name: venue.name, category: venue.category, status: venue.status } : { id: venueId, name: 'Удаленное заведение' };
+    };
+
+    return {
+      user: {
+        id: user.id,
+        telegramId: user.telegramId,
+        provider: user.provider,
+        providerUserId: user.providerUserId,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatarUrl: user.avatarUrl,
+        email: user.email,
+        createdAt: user.createdAt,
+      },
+      totals: {
+        actions: totalActions,
+        reactions: totalReactions,
+        opens: analytics.open_venue || 0,
+        routes: analytics.open_route || 0,
+        phoneClicks: analytics.click_phone || 0,
+        socialClicks: analytics.click_social || 0,
+        eventOpens: analytics.open_event || 0,
+        likes: reactions.like || 0,
+        notMyPlace: reactions.not_my_place || 0,
+        vibeTags: reactions.vibe_tag || 0,
+        activeDays30d,
+        activeDays7d: daily.filter((row) => row.date >= this.toDateKey(weekAgo) && row.actions + row.reactions > 0).length,
+      },
+      retention: {
+        createdAt: user.createdAt,
+        lastSeenAt,
+        daysSinceSignup: Math.max(0, Math.floor((now.getTime() - new Date(user.createdAt).getTime()) / 86400000)),
+        daysSinceLastSeen: lastSeenAt ? Math.max(0, Math.floor((now.getTime() - new Date(lastSeenAt).getTime()) / 86400000)) : null,
+      },
+      daily,
+      recentAnalytics: recentAnalytics.map((event) => ({ ...event, venue: enrichVenue(event.venueId) })),
+      recentReactions: recentReactions.map((reaction) => ({ ...reaction, venue: enrichVenue(reaction.venueId) })),
+    };
+  }
+
   async getVenueAudit(id: string) {
     const venue = await this.venueRepository.findOne({ where: { id } });
     if (!venue) {
@@ -392,6 +511,33 @@ export class AdminDataService {
     });
 
     return Array.from(rowsByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  private buildUserDailyActivity(
+    analyticsRows: Array<{ date: string; count: string }>,
+    reactionRows: Array<{ date: string; count: string }>,
+  ) {
+    const rowsByDate = new Map<string, { date: string; actions: number; reactions: number }>();
+    const ensure = (date: string) => {
+      const existing = rowsByDate.get(date);
+      if (existing) return existing;
+      const row = { date, actions: 0, reactions: 0 };
+      rowsByDate.set(date, row);
+      return row;
+    };
+
+    analyticsRows.forEach((row) => {
+      ensure(row.date).actions += Number(row.count);
+    });
+    reactionRows.forEach((row) => {
+      ensure(row.date).reactions += Number(row.count);
+    });
+
+    return Array.from(rowsByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  private toDateKey(date: Date) {
+    return date.toISOString().slice(0, 10);
   }
 
   private async countUniqueAnalyticsUsers(venueId: string) {
