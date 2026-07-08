@@ -159,6 +159,41 @@ export interface AdminTelegramUser extends TelegramUser {
   reactionsCount: number;
 }
 
+export interface AdminUserDetail {
+  user: TelegramUser;
+  totals: {
+    actions: number;
+    reactions: number;
+    opens: number;
+    routes: number;
+    phoneClicks: number;
+    socialClicks: number;
+    eventOpens: number;
+    likes: number;
+    notMyPlace: number;
+    vibeTags: number;
+    activeDays30d: number;
+    activeDays7d: number;
+  };
+  retention: {
+    createdAt: string;
+    lastSeenAt: string | null;
+    daysSinceSignup: number;
+    daysSinceLastSeen: number | null;
+  };
+  daily: Array<{
+    date: string;
+    actions: number;
+    reactions: number;
+  }>;
+  recentAnalytics: Array<AnalyticsEvent & {
+    venue?: { id: string; name: string; category?: string; status?: string } | null;
+  }>;
+  recentReactions: Array<Reaction & {
+    venue?: { id: string; name: string; category?: string; status?: string } | null;
+  }>;
+}
+
 export interface VenueAudit {
   venueId: string;
   generatedAt: string;

@@ -404,54 +404,58 @@ export default function AdminPanel({
           )}
 
           {(section === "venues" || section === "add") && (
-            <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
-              <VenueList venues={venues} selectedVenue={selectedVenue} onSelectVenue={loadVenue} />
-              <VenueWorkspace
-                editingVenue={editingVenue}
-                selectedVenueAudit={selectedVenueAudit}
-                selectedVenueAuditLoading={selectedVenueAuditLoading}
-                selectedVenueEvents={selectedVenueEvents}
-                saveError={saveError}
-                saved={saved}
-                onDeleteVenue={onDeleteVenue}
-                saveVenue={saveVenue}
-                editor={(
-                  <VenueEditor
-                    editingVenue={editingVenue}
-                    setEditingVenue={setEditingVenue}
-                    duplicateName={duplicateName}
-                    tagInput={tagInput}
-                    setTagInput={setTagInput}
-                    addTag={addTag}
-                    updateVenueName={updateVenueName}
-                    updateSchedule={updateSchedule}
-                    pendingCoords={pendingCoords}
-                    onToggleMobileMap={onToggleMobileMap}
-                    applyPendingCoords={applyPendingCoords}
-                    uploadError={uploadError}
-                    uploadingTarget={uploadingTarget}
-                    uploadSelectedImages={uploadSelectedImages}
-                    sensors={sensors}
-                    handleGalleryDragEnd={handleGalleryDragEnd}
-                    topItemInput={topItemInput}
-                    setTopItemInput={setTopItemInput}
-                    addTopItem={addTopItem}
-                  />
-                )}
-                eventsEditor={(
-                  <EventEditor
-                    editingVenue={editingVenue}
-                    events={selectedVenueEvents}
-                    newEvent={newEvent}
-                    setNewEvent={setNewEvent}
-                    uploadError={uploadError}
-                    uploadingTarget={uploadingTarget}
-                    uploadSelectedImages={uploadSelectedImages}
-                    onDeleteEvent={onDeleteEvent}
-                    createEvent={createEvent}
-                  />
-                )}
-              />
+            <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
+              <div className="rounded-xl border bg-muted/20 p-3">
+                <VenueList venues={venues} selectedVenue={selectedVenue} onSelectVenue={loadVenue} />
+              </div>
+              <div className="min-w-0 rounded-xl border bg-background p-3 shadow-sm">
+                <VenueWorkspace
+                  editingVenue={editingVenue}
+                  selectedVenueAudit={selectedVenueAudit}
+                  selectedVenueAuditLoading={selectedVenueAuditLoading}
+                  selectedVenueEvents={selectedVenueEvents}
+                  saveError={saveError}
+                  saved={saved}
+                  onDeleteVenue={onDeleteVenue}
+                  saveVenue={saveVenue}
+                  editor={(
+                    <VenueEditor
+                      editingVenue={editingVenue}
+                      setEditingVenue={setEditingVenue}
+                      duplicateName={duplicateName}
+                      tagInput={tagInput}
+                      setTagInput={setTagInput}
+                      addTag={addTag}
+                      updateVenueName={updateVenueName}
+                      updateSchedule={updateSchedule}
+                      pendingCoords={pendingCoords}
+                      onToggleMobileMap={onToggleMobileMap}
+                      applyPendingCoords={applyPendingCoords}
+                      uploadError={uploadError}
+                      uploadingTarget={uploadingTarget}
+                      uploadSelectedImages={uploadSelectedImages}
+                      sensors={sensors}
+                      handleGalleryDragEnd={handleGalleryDragEnd}
+                      topItemInput={topItemInput}
+                      setTopItemInput={setTopItemInput}
+                      addTopItem={addTopItem}
+                    />
+                  )}
+                  eventsEditor={(
+                    <EventEditor
+                      editingVenue={editingVenue}
+                      events={selectedVenueEvents}
+                      newEvent={newEvent}
+                      setNewEvent={setNewEvent}
+                      uploadError={uploadError}
+                      uploadingTarget={uploadingTarget}
+                      uploadSelectedImages={uploadSelectedImages}
+                      onDeleteEvent={onDeleteEvent}
+                      createEvent={createEvent}
+                    />
+                  )}
+                />
+              </div>
             </div>
           )}
         </div>

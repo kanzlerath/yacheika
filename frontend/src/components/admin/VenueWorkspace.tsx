@@ -76,10 +76,10 @@ export function VenueWorkspace({
       </Card>
 
       <Tabs defaultValue="editor" className="w-full gap-4">
-        <TabsList className="flex h-11 w-full justify-start gap-1 rounded-none border-b border-border bg-transparent p-0">
-          <TabsTrigger value="editor" className="h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 text-sm data-active:border-foreground data-active:bg-transparent data-active:shadow-none">Редактор</TabsTrigger>
-          <TabsTrigger value="events" className="h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 text-sm data-active:border-foreground data-active:bg-transparent data-active:shadow-none">События</TabsTrigger>
-          <TabsTrigger value="audit" className="h-11 flex-none rounded-none border-0 border-b-2 border-transparent bg-transparent px-4 text-sm data-active:border-foreground data-active:bg-transparent data-active:shadow-none">Аудит</TabsTrigger>
+        <TabsList variant="line" className="w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
+          <TabsTrigger value="editor" className="h-11 flex-none rounded-none px-4 text-sm">Редактор</TabsTrigger>
+          <TabsTrigger value="events" className="h-11 flex-none rounded-none px-4 text-sm">События</TabsTrigger>
+          <TabsTrigger value="audit" className="h-11 flex-none rounded-none px-4 text-sm">Аудит</TabsTrigger>
         </TabsList>
 
         <TabsContent value="editor">
@@ -97,8 +97,8 @@ export function VenueWorkspace({
 
       {saveError && <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">{saveError}</div>}
 
-      <Card size="sm" className="p-0">
-        <CardFooter className="justify-end gap-2 rounded-xl bg-transparent p-3">
+      <Card size="sm" className="sticky bottom-0 p-0 shadow-lg">
+        <CardFooter className="justify-end gap-2 bg-card/95 p-3 backdrop-blur">
           {editingVenue.id && (
             <Button
               type="button"

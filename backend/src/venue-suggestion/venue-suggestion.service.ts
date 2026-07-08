@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { VenueSuggestionEntity } from '../entities/venue-suggestion.entity';
+import { VenueSuggestionEntity, VenueSuggestionStatus } from '../entities/venue-suggestion.entity';
 import { CreateVenueSuggestionDto } from './dto/create-venue-suggestion.dto';
 
 @Injectable()
@@ -28,5 +28,20 @@ export class VenueSuggestionService {
 
   async findAll() {
     return this.suggestionRepository.find({ order: { createdAt: 'DESC' } });
+  }
+
+  async updateStatus(id: string, status?: VenueSuggestionStatus) {
+    const allowedStatuses: VenueSuggestionStatus[] = ['new', 'reviewed', 'rejected', 'converted'];
+    if (!status || !allowedStatuses.includes(status)) {
+      throw new BadRequestException('Unsupported suggestion status');
+    }
+
+    const suggestion = await this.suggestionRepository.findOne({ where: { id } });
+    if (!suggestion) {
+      throw new NotFoundException('Venue suggestion not found');
+    }
+
+    suggestion.status = status;
+    return this.suggestionRepository.save(suggestion);
   }
 }

@@ -266,9 +266,12 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setAdminMobileShowMap(false)}
+                onClick={() => {
+                  setPendingCoords(null);
+                  setAdminMobileShowMap(false);
+                }}
               >
-                Готово
+                Назад
               </Button>
             </div>
           </Card>

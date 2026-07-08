@@ -17,6 +17,11 @@ export class AdminDataController {
     return this.adminDataService.getUsers();
   }
 
+  @Get('users/:id')
+  async getUserDetail(@Param('id') id: string) {
+    return this.adminDataService.getUserDetail(id);
+  }
+
   @Get('venues/:id/audit')
   async getVenueAudit(@Param('id') id: string) {
     return this.adminDataService.getVenueAudit(id);
