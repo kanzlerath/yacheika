@@ -7,8 +7,7 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Plus, Minus } from "lucide-react";
-import { MapStyle, Venue, VenueEvent } from "../types";
-import { VenueDiscoveryFilters, filterVenuesForDiscovery } from "../utils/venueFilters";
+import { MapStyle, Venue } from "../types";
 
 interface MapContainerProps {
   venues: Venue[];
@@ -16,8 +15,13 @@ interface MapContainerProps {
   onSelectVenue: (venue: Venue) => void;
   adminMode: boolean;
   onCoordsSelect?: (lat: number, lng: number) => void;
-  filters: VenueDiscoveryFilters;
-  eventsList?: VenueEvent[];
+  filters: {
+    category: string;
+    tag: string;
+    openNow: boolean;
+    hasEventToday: boolean;
+    search: string;
+  };
   mapStyle: MapStyle;
   userCoords: { lat: number; lng: number } | null;
   pendingCoords: { lat: number; lng: number } | null;
@@ -142,6 +146,26 @@ const loadFilteredVectorStyle = async (styleName: MapStyle) => {
   if (!response.ok) throw new Error(`Map style failed: ${response.status}`);
   const style = await response.json();
   return stripPoiLayers(style);
+};
+
+const getFilteredVenues = (
+  venues: Venue[],
+  filters: MapContainerProps["filters"],
+  adminMode: boolean,
+) => {
+  return venues.filter((venue) => {
+    if (venue.status !== "published" && !adminMode) return false;
+    if (filters.category && venue.category.toLowerCase() !== filters.category.toLowerCase()) return false;
+    if (filters.tag && !venue.tags.includes(filters.tag)) return false;
+    if (filters.search) {
+      const query = filters.search.toLowerCase();
+      const matchesName = venue.name.toLowerCase().includes(query);
+      const matchesDesc = venue.shortDescription.toLowerCase().includes(query);
+      const matchesTags = venue.tags.some((tag) => tag.toLowerCase().includes(query));
+      if (!matchesName && !matchesDesc && !matchesTags) return false;
+    }
+    return true;
+  });
 };
 
 const toVenueFeatureCollection = (
@@ -391,7 +415,6 @@ export default function MapContainer({
   adminMode,
   onCoordsSelect,
   filters,
-  eventsList = [],
   mapStyle,
   userCoords,
   pendingCoords,
@@ -728,7 +751,7 @@ export default function MapContainer({
     if (!mapRef.current) return;
     const map = mapRef.current;
 
-    const filtered = filterVenuesForDiscovery(venues, filters, { adminMode, events: eventsList });
+    const filtered = getFilteredVenues(venues, filters, adminMode);
     venueByIdRef.current = new Map(filtered.map((venue) => [venue.id, venue]));
     venueSourceDataRef.current = {
       venues: toVenueFeatureCollection(filtered, selectedVenue),
@@ -744,7 +767,7 @@ export default function MapContainer({
     } else {
       map.once("styledata", updateSource);
     }
-  }, [venues, selectedVenue, filters, adminMode, mapStyle, eventsList]);
+  }, [venues, selectedVenue, filters, adminMode, mapStyle]);
 
   return (
     <div id="map-root" className="w-full h-full relative overflow-hidden bg-neutral-950">

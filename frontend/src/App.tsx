@@ -19,7 +19,6 @@ import { Collection, MapStyle, Reaction, TelegramAuthSession, Venue, VenueEvent 
 import { logAnalyticsEvent } from "./utils/analytics";
 import { getLegalDocumentByPath } from "./legalDocuments";
 import { appEase, softTransition } from "./utils/motionPresets";
-import { createEmptyVenueDiscoveryFilters } from "./utils/venueFilters";
 import {
   clearTelegramAuth,
   readStoredTelegramAuth,
@@ -61,7 +60,13 @@ function ScopeApp() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [events, setEvents] = useState<VenueEvent[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
-  const [filters, setFilters] = useState(createEmptyVenueDiscoveryFilters);
+  const [filters, setFilters] = useState({
+    category: "",
+    tag: "",
+    openNow: false,
+    hasEventToday: false,
+    search: "",
+  });
   const [userReactions, setUserReactions] = useState<Reaction[]>([]);
   const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
     const val = localStorage.getItem("yacheyka.mapStyle");
@@ -403,7 +408,6 @@ function ScopeApp() {
             adminMode={false}
             onCoordsSelect={() => undefined}
             filters={filters}
-            eventsList={events}
             mapStyle={mapStyle}
             userCoords={userCoords}
             pendingCoords={null}
