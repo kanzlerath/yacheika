@@ -1,30 +1,12 @@
 import { Venue, VenueEvent } from "../types";
 
 export interface VenueDiscoveryFilters {
-  categories: string[];
-  tags: string[];
+  category: string;
+  tag: string;
   openNow: boolean;
   hasEventToday: boolean;
   search: string;
 }
-
-export const createEmptyVenueDiscoveryFilters = (): VenueDiscoveryFilters => ({
-  categories: [],
-  tags: [],
-  openNow: false,
-  hasEventToday: false,
-  search: "",
-});
-
-export const normalizeVenueDiscoveryFilters = (
-  filters: VenueDiscoveryFilters | (Partial<VenueDiscoveryFilters> & { category?: string; tag?: string }),
-): VenueDiscoveryFilters => ({
-  categories: filters.categories || (filters.category ? [filters.category] : []),
-  tags: filters.tags || (filters.tag ? [filters.tag] : []),
-  openNow: Boolean(filters.openNow),
-  hasEventToday: Boolean(filters.hasEventToday),
-  search: filters.search || "",
-});
 
 interface FilterVenuesOptions {
   adminMode?: boolean;
@@ -152,7 +134,7 @@ export const hasEventOnDate = (
 
 export const filterVenuesForDiscovery = (
   venues: Venue[],
-  filters: VenueDiscoveryFilters | (Partial<VenueDiscoveryFilters> & { category?: string; tag?: string }),
+  filters: VenueDiscoveryFilters,
   options: FilterVenuesOptions = {},
 ) => {
   const {
@@ -162,28 +144,17 @@ export const filterVenuesForDiscovery = (
     now = new Date(),
   } = options;
   const dateKey = getLocalDateKey(now);
-  const normalizedFilters = normalizeVenueDiscoveryFilters(filters);
 
   return venues.filter((venue) => {
     if (venue.status !== "published" && !adminMode) return false;
     if (collectionVenueIds && !collectionVenueIds.includes(venue.id)) return false;
-    if (
-      normalizedFilters.categories.length > 0 &&
-      !normalizedFilters.categories.some((category) => venue.category.toLowerCase() === category.toLowerCase())
-    ) {
-      return false;
-    }
-    if (
-      normalizedFilters.tags.length > 0 &&
-      !normalizedFilters.tags.every((tag) => venue.tags.some((venueTag) => venueTag.toLowerCase() === tag.toLowerCase()))
-    ) {
-      return false;
-    }
-    if (normalizedFilters.openNow && !isVenueOpenNow(venue.workingHours, now)) return false;
-    if (normalizedFilters.hasEventToday && !hasEventOnDate(venue.id, events, dateKey)) return false;
+    if (filters.category && venue.category.toLowerCase() !== filters.category.toLowerCase()) return false;
+    if (filters.tag && !venue.tags.includes(filters.tag)) return false;
+    if (filters.openNow && !isVenueOpenNow(venue.workingHours, now)) return false;
+    if (filters.hasEventToday && !hasEventOnDate(venue.id, events, dateKey)) return false;
 
-    if (normalizedFilters.search) {
-      const query = normalizedFilters.search.toLowerCase();
+    if (filters.search) {
+      const query = filters.search.toLowerCase();
       const matchesName = venue.name.toLowerCase().includes(query);
       const matchesDesc = venue.shortDescription.toLowerCase().includes(query);
       const matchesTags = venue.tags.some((tag) => tag.toLowerCase().includes(query));

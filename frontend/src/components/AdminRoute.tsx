@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
 import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueAudit, VenueEvent, VenueSuggestion } from "../types";
-import { createEmptyVenueDiscoveryFilters } from "../utils/venueFilters";
 
 interface AdminUser {
   id: string;
@@ -33,7 +32,13 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const [selectedVenueAuditLoading, setSelectedVenueAuditLoading] = useState(false);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [adminMobileShowMap, setAdminMobileShowMap] = useState(false);
-  const [filters] = useState(createEmptyVenueDiscoveryFilters);
+  const [filters] = useState({
+    category: "",
+    tag: "",
+    openNow: false,
+    hasEventToday: false,
+    search: "",
+  });
 
   const fetchAdminData = async () => {
     const [vRes, eRes, aRes, dRes, uRes, sRes] = await Promise.all([
@@ -280,7 +285,6 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
             adminMode={true}
             onCoordsSelect={handleMapCoordsClick}
             filters={filters}
-            eventsList={events}
             mapStyle={mapStyle}
             userCoords={null}
             pendingCoords={pendingCoords}

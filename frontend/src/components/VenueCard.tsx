@@ -95,50 +95,6 @@ export default function VenueCard({
   const upcomingEvents = vEvents.filter((event) => event.date >= todayKey);
   const tabOrder = ["info", "vibes", "events"] as const;
   const activeTabIndex = tabOrder.indexOf(activeTab);
-  const socialLinks = [
-    venue.contacts.telegram
-      ? {
-          id: "telegram",
-          label: "Telegram",
-          href: `https://t.me/${venue.contacts.telegram}`,
-          icon: Send,
-          value: venue.contacts.telegram,
-        }
-      : null,
-    venue.contacts.instagram
-      ? {
-          id: "instagram",
-          label: "Instagram",
-          href: `https://instagram.com/${venue.contacts.instagram}`,
-          icon: Instagram,
-          value: venue.contacts.instagram,
-        }
-      : null,
-    venue.contacts.vk
-      ? {
-          id: "vk",
-          label: "VK",
-          href: venue.contacts.vk.startsWith("http") ? venue.contacts.vk : `https://vk.com/${venue.contacts.vk}`,
-          icon: Globe,
-          value: venue.contacts.vk,
-        }
-      : null,
-    venue.contacts.website
-      ? {
-          id: "website",
-          label: "Сайт",
-          href: venue.contacts.website,
-          icon: Globe,
-          value: venue.contacts.website,
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    id: string;
-    label: string;
-    href: string;
-    icon: typeof Globe;
-    value: string;
-  }>;
   const setVenueTab = (tab: "info" | "events" | "vibes") => {
     setActiveTab(tab);
   };
@@ -496,31 +452,58 @@ export default function VenueCard({
 
               {/* Modern Segmented Tab Controls */}
               <Tabs value={activeTab} onValueChange={(value) => setVenueTab(value as "info" | "events" | "vibes")}>
-                <TabsList className="venue-tabs w-full text-sm">
+                <TabsList className="venue-tabs grid w-full grid-cols-3 text-sm">
                 <TabsTrigger
                   value="info"
                   onClick={() => setVenueTab("info")}
-                  className="venue-tab font-display cursor-pointer"
+                  className={`venue-tab font-display transition cursor-pointer ${
+                    activeTab === "info" ? "venue-tab-active" : ""
+                  }`}
                 >
                   О заведении
+                  {activeTab === "info" && (
+                    <motion.div
+                      layoutId="activeTabSurface"
+                      transition={softTransition}
+                      className="absolute inset-0 rounded-[10px] -z-10"
+                    />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="vibes"
                   onClick={() => setVenueTab("vibes")}
-                  className="venue-tab font-display cursor-pointer"
+                  className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeTab === "vibes" ? "venue-tab-active" : ""
+                  }`}
                 >
                   Атмосфера
                   <Badge variant="secondary" className="h-4.5 min-w-4.5 rounded-full px-1 text-[10px] font-mono">
                     {Object.keys(venue.vibeRatings || {}).length}
                   </Badge>
+                  {activeTab === "vibes" && (
+                    <motion.div
+                      layoutId="activeTabSurface"
+                      transition={softTransition}
+                      className="absolute inset-0 rounded-[10px] -z-10"
+                    />
+                  )}
                 </TabsTrigger>
                 <TabsTrigger
                   value="events"
                   onClick={handleEventsTabClick}
-                  className="venue-tab font-display cursor-pointer"
+                  className={`venue-tab font-display transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    activeTab === "events" ? "venue-tab-active" : ""
+                  }`}
                 >
                   События
                   {upcomingEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />}
+                  {activeTab === "events" && (
+                    <motion.div
+                      layoutId="activeTabSurface"
+                      transition={softTransition}
+                      className="absolute inset-0 rounded-[10px] -z-10"
+                    />
+                  )}
                 </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -667,32 +650,40 @@ export default function VenueCard({
                       </div>
 
                       {/* External Classy links row */}
-                      <div className="border-t border-neutral-900 pt-4">
-                        <div className="mb-2 text-[10px] font-mono uppercase tracking-wider text-neutral-500">Соцсети и ссылки</div>
-                        {socialLinks.length > 0 ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            {socialLinks.map((link) => {
-                              const Icon = link.icon;
-                              return (
-                                <a
-                                  key={link.id}
-                                  href={link.href}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-800/60 bg-neutral-900 px-3 text-xs font-semibold text-neutral-300 transition hover:border-neutral-700 hover:bg-neutral-850 hover:text-white"
-                                  onClick={() => handleSocialClick(link.id, link.value)}
-                                >
-                                  <Icon className="w-4 h-4" />
-                                  {link.label}
-                                </a>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          <div className="rounded-xl border border-dashed border-neutral-900 bg-neutral-900/20 px-3 py-3 text-xs leading-relaxed text-neutral-500">
-                            Прямые ссылки пока не добавлены. Для связи используйте телефон или маршрут до заведения.
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2 border-t border-neutral-900 pt-4">
+                          {venue.contacts.telegram && (
+                            <a
+                              href={`https://t.me/${venue.contacts.telegram}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-10 w-10 items-center justify-center bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
+                              onClick={() => handleSocialClick("telegram", venue.contacts.telegram)}
+                            >
+                              <Send className="w-4 h-4 text-[#38bdf8] fill-[#38bdf8]/10" />
+                            </a>
+                          )}
+                          {venue.contacts.instagram && (
+                            <a
+                              href={`https://instagram.com/${venue.contacts.instagram}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-10 w-10 items-center justify-center bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
+                              onClick={() => handleSocialClick("instagram", venue.contacts.instagram)}
+                            >
+                              <Instagram className="w-4 h-4 text-[#fb7185]" />
+                            </a>
+                          )}
+                          {venue.contacts.website && (
+                            <a
+                              href={venue.contacts.website}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex h-10 w-10 items-center justify-center bg-neutral-900 hover:bg-neutral-850 border border-neutral-800/60 rounded-xl transition"
+                              onClick={() => handleSocialClick("website", venue.contacts.website)}
+                            >
+                              <Globe className="w-4 h-4 text-[#818cf8]" />
+                            </a>
+                          )}
                       </div>
                     </div>
 

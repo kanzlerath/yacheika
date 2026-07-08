@@ -81,15 +81,6 @@ html, body, #root {
   background-color: #030303;
 }
 
-html.legal-document-route,
-body.legal-document-route,
-body.legal-document-route #root {
-  height: auto;
-  min-height: 100%;
-  overflow: auto;
-  overscroll-behavior: auto;
-}
-
 body {
   color: #f3f4f6;
   font-family: var(--font-sans);
@@ -296,14 +287,6 @@ body {
   border-color: var(--app-text) !important;
 }
 
-[data-theme] .discovery-pill[data-state="on"],
-[data-theme] .discovery-pill[data-active] {
-  background: var(--app-text) !important;
-  color: var(--app-bg) !important;
-  border-color: var(--app-text) !important;
-  box-shadow: none !important;
-}
-
 [data-theme] .discovery-list-row {
   border-radius: 0;
   box-shadow: none !important;
@@ -474,7 +457,7 @@ body {
 }
 
 .venue-tabs {
-  display: grid !important;
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   padding: 4px;
@@ -492,10 +475,9 @@ body {
   font-weight: 600;
 }
 
-.venue-tab[data-active] {
+.venue-tab-active {
   color: var(--app-text);
   background: color-mix(in srgb, var(--app-text) 9%, transparent);
-  box-shadow: none;
 }
 
 .venue-section {
