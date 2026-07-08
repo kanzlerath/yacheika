@@ -4,10 +4,12 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
+RUN npm run build
+
 EXPOSE 4002
 
-CMD ["npm", "run", "start:dev"]
+CMD ["npm", "run", "start:prod"]
