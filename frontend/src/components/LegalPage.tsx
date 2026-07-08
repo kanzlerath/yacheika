@@ -1,6 +1,16 @@
+import { useEffect } from "react";
 import { LEGAL_LINKS, LegalDocument } from "../legalDocuments";
 
-export default function LegalPage({ document }: { document: LegalDocument }) {
+export default function LegalPage({ document: legalDocument }: { document: LegalDocument }) {
+  useEffect(() => {
+    window.document.documentElement.classList.add("legal-document-route");
+    window.document.body.classList.add("legal-document-route");
+    return () => {
+      window.document.documentElement.classList.remove("legal-document-route");
+      window.document.body.classList.remove("legal-document-route");
+    };
+  }, []);
+
   return (
     <div data-theme="dark" className="legal-page min-h-screen bg-[#05070a] px-5 py-8 text-neutral-200">
       <main className="mx-auto max-w-3xl">
@@ -9,14 +19,14 @@ export default function LegalPage({ document }: { document: LegalDocument }) {
         </a>
 
         <header className="mb-8 border-b border-neutral-900 pb-6">
-          <h1 className="font-display text-3xl font-bold leading-tight text-white">{document.title}</h1>
-          {document.effectiveDate && (
-            <p className="mt-3 text-sm text-neutral-500">Дата вступления в силу: {document.effectiveDate}</p>
+          <h1 className="font-display text-3xl font-bold leading-tight text-white">{legalDocument.title}</h1>
+          {legalDocument.effectiveDate && (
+            <p className="mt-3 text-sm text-neutral-500">Дата вступления в силу: {legalDocument.effectiveDate}</p>
           )}
         </header>
 
         <div className="space-y-8">
-          {document.sections.map((section, index) => (
+          {legalDocument.sections.map((section, index) => (
             <section key={`${section.title || "section"}-${index}`} className="space-y-3">
               {section.title && <h2 className="font-display text-lg font-semibold text-neutral-100">{section.title}</h2>}
               {section.paragraphs?.map((paragraph) => (
@@ -38,7 +48,7 @@ export default function LegalPage({ document }: { document: LegalDocument }) {
         </div>
 
         <nav className="mt-10 grid gap-2 border-t border-neutral-900 pt-6 text-sm">
-          {LEGAL_LINKS.filter((link) => link.href !== document.path).map((link) => (
+          {LEGAL_LINKS.filter((link) => link.href !== legalDocument.path).map((link) => (
             <a key={link.href} href={link.href} className="text-neutral-500 transition hover:text-white">
               {link.label}
             </a>

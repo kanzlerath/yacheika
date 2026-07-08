@@ -8,11 +8,6 @@ import { VenueSuggestionService } from './venue-suggestion.service';
 export class VenueSuggestionController {
   constructor(private readonly suggestionService: VenueSuggestionService) {}
 
-  @Post('api/venue-suggestions')
-  async create(@Body() data: CreateVenueSuggestionDto, @Req() request: any) {
-    return this.suggestionService.create(data, request.telegramSession?.user);
-  }
-
   @Post('api/users/me/venue-suggestions')
   @UseGuards(TelegramAuthGuard)
   async createAsUser(@Body() data: CreateVenueSuggestionDto, @Req() request: any) {
