@@ -105,9 +105,9 @@ jobs:
           # Build new images before touching the running stack.
           $COMPOSE -f docker-compose.prod.yml build
           $COMPOSE -f docker-compose.prod.yml up -d db minio
-          $COMPOSE -f docker-compose.prod.yml run --rm backend sh -c "npm run build && npm run migration:run"
           $COMPOSE -f docker-compose.prod.yml stop backend || true
           $COMPOSE -f docker-compose.prod.yml rm -f backend || true
+          $COMPOSE -f docker-compose.prod.yml up -d --force-recreate backend frontend caddy
           $COMPOSE -f docker-compose.prod.yml up -d --remove-orphans
           $COMPOSE -f docker-compose.prod.yml ps
           for i in $(seq 1 30); do
