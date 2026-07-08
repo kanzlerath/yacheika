@@ -13,32 +13,19 @@ import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from "@d
 import { CSS } from "@dnd-kit/utilities";
 import {
   Calendar,
-  Check,
   GripVertical,
   Image,
   LayoutDashboard,
   List,
   MapPin,
   Plus,
-  Save,
   Trash2,
   Users,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AdminDashboard,
@@ -58,12 +45,13 @@ import {
   normalizeSchedule,
   slugifyVenueName,
 } from "../utils/venueAdmin";
-import { AdminBlock, EmptyLine } from "./admin/AdminShared";
+import { AdminBlock, AdminSelect, EmptyLine } from "./admin/AdminShared";
 import { DashboardView } from "./admin/DashboardView";
 import { EventsOverview } from "./admin/EventsOverview";
 import { SuggestionsView } from "./admin/SuggestionsView";
 import { UsersView } from "./admin/UsersView";
-import { VenueAuditView } from "./admin/VenueAuditView";
+import { VenueList } from "./admin/VenueList";
+import { VenueWorkspace } from "./admin/VenueWorkspace";
 
 interface AdminPanelProps {
   venues: Venue[];
@@ -101,36 +89,6 @@ const CATEGORIES = [
   "Клуб",
   "Ресторан",
 ];
-
-function AdminSelect({
-  value,
-  onValueChange,
-  options,
-}: {
-  value: string;
-  onValueChange: (value: string) => void;
-  options: Array<string | { value: string; label: string }>;
-}) {
-  return (
-    <Select value={value} onValueChange={onValueChange}>
-      <SelectTrigger className="admin-input h-9 w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {options.map((option) => {
-            const normalized = typeof option === "string" ? { value: option, label: option } : option;
-            return (
-              <SelectItem key={normalized.value} value={normalized.value}>
-                {normalized.label}
-              </SelectItem>
-            );
-          })}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  );
-}
 
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
@@ -518,38 +476,42 @@ export default function AdminPanel({
                 saved={saved}
                 onDeleteVenue={onDeleteVenue}
                 saveVenue={saveVenue}
-                editorProps={{
-                  editingVenue,
-                  setEditingVenue,
-                  duplicateName,
-                  tagInput,
-                  setTagInput,
-                  addTag,
-                  updateVenueName,
-                  updateSchedule,
-                  pendingCoords,
-                  onToggleMobileMap,
-                  applyPendingCoords,
-                  uploadError,
-                  uploadingTarget,
-                  uploadSelectedImages,
-                  sensors,
-                  handleGalleryDragEnd,
-                  topItemInput,
-                  setTopItemInput,
-                  addTopItem,
-                }}
-                eventEditorProps={{
-                  editingVenue,
-                  events: selectedVenueEvents,
-                  newEvent,
-                  setNewEvent,
-                  uploadError,
-                  uploadingTarget,
-                  uploadSelectedImages,
-                  onDeleteEvent,
-                  createEvent,
-                }}
+                editor={(
+                  <VenueEditor
+                    editingVenue={editingVenue}
+                    setEditingVenue={setEditingVenue}
+                    duplicateName={duplicateName}
+                    tagInput={tagInput}
+                    setTagInput={setTagInput}
+                    addTag={addTag}
+                    updateVenueName={updateVenueName}
+                    updateSchedule={updateSchedule}
+                    pendingCoords={pendingCoords}
+                    onToggleMobileMap={onToggleMobileMap}
+                    applyPendingCoords={applyPendingCoords}
+                    uploadError={uploadError}
+                    uploadingTarget={uploadingTarget}
+                    uploadSelectedImages={uploadSelectedImages}
+                    sensors={sensors}
+                    handleGalleryDragEnd={handleGalleryDragEnd}
+                    topItemInput={topItemInput}
+                    setTopItemInput={setTopItemInput}
+                    addTopItem={addTopItem}
+                  />
+                )}
+                eventsEditor={(
+                  <EventEditor
+                    editingVenue={editingVenue}
+                    events={selectedVenueEvents}
+                    newEvent={newEvent}
+                    setNewEvent={setNewEvent}
+                    uploadError={uploadError}
+                    uploadingTarget={uploadingTarget}
+                    uploadSelectedImages={uploadSelectedImages}
+                    onDeleteEvent={onDeleteEvent}
+                    createEvent={createEvent}
+                  />
+                )}
               />
             </div>
           )}
@@ -557,249 +519,6 @@ export default function AdminPanel({
       </div>
     </div>
   );
-}
-
-function VenueWorkspace({
-  editingVenue,
-  selectedVenueAudit,
-  selectedVenueAuditLoading,
-  selectedVenueEvents,
-  saveError,
-  saved,
-  onDeleteVenue,
-  saveVenue,
-  editorProps,
-  eventEditorProps,
-}: {
-  editingVenue: Venue;
-  selectedVenueAudit: VenueAudit | null;
-  selectedVenueAuditLoading: boolean;
-  selectedVenueEvents: VenueEvent[];
-  saveError: string | null;
-  saved: boolean;
-  onDeleteVenue: (id: string) => void;
-  saveVenue: () => void;
-  editorProps: any;
-  eventEditorProps: any;
-}) {
-  const hasContacts = Boolean(
-    editingVenue.contacts?.phone ||
-    editingVenue.contacts?.telegram ||
-    editingVenue.contacts?.instagram ||
-    editingVenue.contacts?.vk ||
-    editingVenue.contacts?.website,
-  );
-
-  return (
-    <div className="flex min-w-0 flex-col gap-4">
-      <Card size="sm" className="admin-panel-minimal p-4">
-        <CardHeader className="px-0 pt-0">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <CardTitle className="truncate font-display text-base font-semibold text-neutral-100">
-                {editingVenue.name || "Новое заведение"}
-              </CardTitle>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                <Badge variant="outline" className="border-neutral-800 text-neutral-400">{editingVenue.category}</Badge>
-                <Badge variant="outline" className="border-neutral-800 text-neutral-400">{editingVenue.status}</Badge>
-                {editingVenue.premiumConfig?.premiumActive && (
-                  <Badge variant="secondary" className="bg-amber-500/15 text-amber-200">Premium</Badge>
-                )}
-                {hasContacts && <Badge variant="outline" className="border-emerald-900/60 text-emerald-300">Контакты</Badge>}
-                {selectedVenueEvents.length > 0 && (
-                  <Badge variant="outline" className="border-neutral-800 text-neutral-400">{selectedVenueEvents.length} событий</Badge>
-                )}
-              </div>
-            </div>
-            <div className="text-right text-[10px] text-neutral-500">
-              <div>ID: {editingVenue.id || "после сохранения"}</div>
-              {editingVenue.updatedAt && <div>Обновлено {new Date(editingVenue.updatedAt).toLocaleDateString("ru-RU")}</div>}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="grid gap-2 px-0 pb-0 sm:grid-cols-4">
-          <AuditMiniMetric label="Просмотры" value={selectedVenueAudit?.totals.views ?? 0} loading={selectedVenueAuditLoading} />
-          <AuditMiniMetric label="Действия" value={selectedVenueAudit?.totals.actions ?? 0} loading={selectedVenueAuditLoading} />
-          <AuditMiniMetric label="Лайки" value={selectedVenueAudit?.totals.likes ?? editingVenue.likesCount ?? 0} loading={selectedVenueAuditLoading} />
-          <AuditMiniMetric label="Качество" value={selectedVenueAudit ? `${selectedVenueAudit.quality.score}%` : "—"} loading={selectedVenueAuditLoading} />
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="editor" className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-3 bg-neutral-900/80">
-          <TabsTrigger value="editor" className="min-h-9 text-xs">Редактор</TabsTrigger>
-          <TabsTrigger value="events" className="min-h-9 text-xs">События</TabsTrigger>
-          <TabsTrigger value="audit" className="min-h-9 text-xs">Аудит</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="editor" className="mt-2">
-          <VenueEditor {...editorProps} />
-        </TabsContent>
-
-        <TabsContent value="events" className="mt-2">
-          <EventEditor {...eventEditorProps} />
-        </TabsContent>
-
-        <TabsContent value="audit" className="mt-2">
-          <VenueAuditView audit={selectedVenueAudit} loading={selectedVenueAuditLoading} venue={editingVenue} />
-        </TabsContent>
-      </Tabs>
-
-      {saveError && <div className="rounded-lg border border-rose-900/50 bg-rose-950/25 px-3 py-2 text-rose-200">{saveError}</div>}
-
-      <div className="sticky bottom-0 z-10 flex flex-wrap justify-end gap-2 border-t border-neutral-900 bg-neutral-950/95 py-3 backdrop-blur">
-        {editingVenue.id && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (confirm("Удалить заведение?")) onDeleteVenue(editingVenue.id);
-            }}
-            className="admin-danger flex items-center gap-1.5 rounded-xl border px-4 py-2 font-semibold"
-          >
-            <Trash2 className="h-4 w-4" /> Удалить
-          </Button>
-        )}
-        <Button type="button" variant="outline" onClick={saveVenue} className="admin-primary flex items-center gap-1.5 rounded-xl border px-5 py-2 font-semibold">
-          {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-          {saved ? "Сохранено" : "Сохранить"}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Venue[]; selectedVenue: Venue | null; onSelectVenue: (venue: Venue) => void }) {
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [category, setCategory] = useState("all");
-  const [auditFilter, setAuditFilter] = useState("all");
-  const categories = useMemo(() => Array.from(new Set(venues.map((venue) => venue.category))).sort(), [venues]);
-  const filteredVenues = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return venues.filter((venue) => {
-      const matchesQuery = !normalizedQuery || [
-        venue.name,
-        venue.address,
-        venue.category,
-        venue.status,
-        venue.shortDescription,
-        ...(venue.tags || []),
-      ].some((value) => value?.toLowerCase().includes(normalizedQuery));
-      const matchesStatus = status === "all" || venue.status === status;
-      const matchesCategory = category === "all" || venue.category === category;
-      const matchesAudit = auditFilter === "all" || (auditFilter === "issues" && venueHasAuditIssues(venue));
-      return matchesQuery && matchesStatus && matchesCategory && matchesAudit;
-    });
-  }, [auditFilter, category, query, status, venues]);
-
-  const issueCount = venues.filter(venueHasAuditIssues).length;
-
-  return (
-    <div className="flex min-w-0 flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="font-display text-sm font-semibold text-neutral-100">Заведения</h2>
-          <p className="text-[10px] text-neutral-500">{filteredVenues.length} из {venues.length} · {issueCount} требуют проверки</p>
-        </div>
-        <Badge variant="outline" className="border-neutral-800 text-neutral-400">{venues.filter((venue) => venue.status === "published").length} published</Badge>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="admin-input"
-          placeholder="Поиск: название, адрес, тег"
-        />
-        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-          <AdminSelect
-            value={status}
-            onValueChange={setStatus}
-            options={[
-              { value: "all", label: "Все статусы" },
-              { value: "published", label: "Опубликовано" },
-              { value: "draft", label: "Черновики" },
-              { value: "hidden", label: "Скрыто" },
-              { value: "archived", label: "Архив" },
-            ]}
-          />
-          <AdminSelect
-            value={category}
-            onValueChange={setCategory}
-            options={[
-              { value: "all", label: "Все категории" },
-              ...categories.map((item) => ({ value: item, label: item })),
-            ]}
-          />
-          <AdminSelect
-            value={auditFilter}
-            onValueChange={setAuditFilter}
-            options={[
-              { value: "all", label: "Все карточки" },
-              { value: "issues", label: "Требуют проверки" },
-            ]}
-          />
-        </div>
-      </div>
-
-      <div className="max-h-[72vh] overflow-y-auto pr-1">
-        <div className="flex flex-col gap-1.5">
-          {filteredVenues.length === 0 ? (
-            <EmptyLine>По этим фильтрам ничего не найдено.</EmptyLine>
-          ) : filteredVenues.map((venue) => {
-            const issues = getVenueAuditIssues(venue);
-            return (
-              <Button
-                type="button"
-                key={venue.id}
-                variant="ghost"
-                onClick={() => onSelectVenue(venue)}
-                className={`admin-list-item h-auto w-full justify-start rounded-lg border p-2 text-left ${selectedVenue?.id === venue.id ? "admin-list-item-active" : ""}`}
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center justify-between gap-2">
-                    <div className="truncate font-semibold">{venue.name}</div>
-                    <Badge variant="outline" className="shrink-0 border-neutral-800 px-1.5 text-[10px] text-neutral-500">
-                      {venue.status}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-neutral-500">
-                    <span className="truncate">{venue.category}</span>
-                    <span className="shrink-0">{venue.likesCount || 0} лайков</span>
-                  </div>
-                  {issues.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {issues.slice(0, 3).map((issue) => (
-                        <Badge key={issue} variant="outline" className="border-amber-900/50 bg-amber-950/20 px-1.5 text-[10px] text-amber-200">
-                          {issue}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function getVenueAuditIssues(venue: Venue) {
-  return [
-    venue.status !== "published" ? venue.status : null,
-    !venue.gallery?.length ? "нет фото" : null,
-    !venue.shortDescription ? "нет описания" : null,
-    !venue.workingHoursSchedule && !venue.workingHours ? "нет графика" : null,
-    !venue.contacts?.phone && !venue.contacts?.telegram && !venue.contacts?.website && !venue.contacts?.instagram && !venue.contacts?.vk ? "нет контакта" : null,
-    venue.premiumConfig?.premiumActive && (!venue.premiumConfig.heroImage || !venue.premiumConfig.ctaUrl || !venue.premiumConfig.ctaText) ? "premium" : null,
-  ].filter(Boolean) as string[];
-}
-
-function venueHasAuditIssues(venue: Venue) {
-  return getVenueAuditIssues(venue).length > 0;
 }
 
 function VenueEditor(props: any) {
@@ -1190,15 +909,6 @@ function SortableImage({ url, onDelete }: { key?: React.Key; url: string; onDele
       <Button type="button" variant="ghost" size="icon-sm" onClick={onDelete} className="absolute right-1 top-1 rounded bg-black/70 p-1 text-rose-300">
         <Trash2 className="h-4 w-4" />
       </Button>
-    </div>
-  );
-}
-
-function AuditMiniMetric({ label, value, loading }: { label: string; value: number | string; loading: boolean }) {
-  return (
-    <div className="rounded-lg border border-neutral-900 bg-neutral-950/40 px-3 py-2">
-      <div className="text-[10px] uppercase tracking-wider text-neutral-500">{label}</div>
-      <div className="mt-1 text-base font-semibold text-neutral-100">{loading ? "..." : value}</div>
     </div>
   );
 }

@@ -224,9 +224,9 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
         </Button>
       </header>
 
-      <main className="w-full flex-1 h-0 min-h-0 flex flex-col xl:grid xl:grid-cols-12 relative overflow-hidden bg-[#070709]">
+      <main className="w-full flex-1 h-0 min-h-0 relative overflow-hidden bg-[#070709]">
         <section
-          className={`col-span-12 xl:col-span-8 h-full overflow-y-auto p-4 md:p-6 border-r border-neutral-900/50 ${adminMobileShowMap ? "hidden xl:block" : "block"}`}
+          className={`h-full overflow-y-auto p-4 md:p-6 ${adminMobileShowMap ? "hidden" : "block"}`}
           style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
         >
           <AdminPanel
@@ -250,37 +250,34 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
           />
         </section>
 
-        <section className={`col-span-12 xl:col-span-4 h-full relative border-l border-neutral-900/30 ${adminMobileShowMap ? "block" : "hidden xl:block"}`}>
-          <div className="absolute top-5 left-5 right-5 bg-neutral-950/95 border border-neutral-900 px-4 py-3 rounded-xl z-10 shadow-2xl hidden xl:block">
-            <div className="font-semibold text-xs text-neutral-100 flex items-center gap-1.5">
-              <Map className="w-3.5 h-3.5 text-rose-500" />
-              Карта координат
-            </div>
-            <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">
-              Выберите заведение слева и нажмите в любой точке карты, чтобы добавить координаты в форму.
-            </p>
-          </div>
-
-          {adminMobileShowMap && (
-            <div className="absolute left-4 right-4 bottom-4 z-20 rounded-xl border border-neutral-800 bg-neutral-950/95 p-3 shadow-2xl xl:hidden">
-              <div className="text-xs font-semibold text-neutral-100">
-                {pendingCoords ? "Точка выбрана" : "Нажмите по карте, чтобы выбрать точку"}
-              </div>
-              {pendingCoords && (
-                <div className="mt-1 font-mono text-[10px] text-neutral-500">
-                  {pendingCoords.lat.toFixed(6)}, {pendingCoords.lng.toFixed(6)}
+        <section className={`absolute inset-0 h-full ${adminMobileShowMap ? "block" : "hidden"}`}>
+          <div className="absolute left-4 right-4 top-4 z-20 rounded-xl border border-neutral-800 bg-neutral-950/95 p-3 shadow-2xl md:left-5 md:right-auto md:w-[360px]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-100">
+                  <Map className="w-3.5 h-3.5 text-rose-500" />
+                  Карта координат
                 </div>
-              )}
+                <p className="mt-1 text-[11px] leading-relaxed text-neutral-400">
+                  Нажмите по карте, чтобы выбрать точку для карточки.
+                </p>
+                {pendingCoords && (
+                  <div className="mt-2 font-mono text-[10px] text-neutral-500">
+                    {pendingCoords.lat.toFixed(6)}, {pendingCoords.lng.toFixed(6)}
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 onClick={() => setAdminMobileShowMap(false)}
-                className="mt-3 w-full rounded-lg border border-neutral-800 bg-white px-3 py-2 text-xs font-semibold text-black"
+                className="rounded-lg border border-neutral-800 bg-white px-3 py-2 text-xs font-semibold text-black"
               >
-                Вернуться к форме
+                Готово
               </Button>
             </div>
-          )}
+          </div>
 
           <MapContainer
             venues={venues}
