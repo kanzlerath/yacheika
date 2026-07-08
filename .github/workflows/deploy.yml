@@ -114,7 +114,7 @@ jobs:
           $COMPOSE -f docker-compose.prod.yml up -d --no-deps caddy
           $COMPOSE -f docker-compose.prod.yml ps
           for i in $(seq 1 90); do
-            if $COMPOSE -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
+            if $COMPOSE -f docker-compose.prod.yml exec -T backend wget -qO- http://127.0.0.1:4002/api/health >/dev/null; then
               exit 0
             fi
             if [ "$i" = "10" ] || [ "$i" = "30" ] || [ "$i" = "60" ]; then
