@@ -107,8 +107,9 @@ jobs:
           $COMPOSE -f docker-compose.prod.yml up -d db minio
           $COMPOSE -f docker-compose.prod.yml stop backend || true
           $COMPOSE -f docker-compose.prod.yml rm -f backend || true
-          $COMPOSE -f docker-compose.prod.yml up -d --force-recreate backend frontend caddy
-          $COMPOSE -f docker-compose.prod.yml up -d --remove-orphans
+          $COMPOSE -f docker-compose.prod.yml up -d --no-deps --force-recreate backend
+          $COMPOSE -f docker-compose.prod.yml up -d --no-deps --force-recreate frontend
+          $COMPOSE -f docker-compose.prod.yml up -d --no-deps --force-recreate caddy
           $COMPOSE -f docker-compose.prod.yml ps
           for i in $(seq 1 30); do
             if $COMPOSE -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
