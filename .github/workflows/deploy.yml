@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -37,68 +37,77 @@ jobs:
           npm run build
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          script: |
-            set -eu
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -eu
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
 
-            # Check if project directory exists, otherwise clone it
-            if [ ! -d "/app/yacheyka" ]; then
-              mkdir -p /app
-              git clone https://github.com/${{ github.repository }}.git /app/yacheyka
-              cd /app/yacheyka
-              git checkout ${{ github.ref_name }}
-            else
-              cd /app/yacheyka
-              git fetch --all
-              git checkout ${{ github.ref_name }}
-              git pull origin ${{ github.ref_name }}
+          ssh -i ~/.ssh/deploy_key -p 22 "$SSH_USERNAME@$SSH_HOST" \
+            "REPOSITORY='$REPOSITORY' REF_NAME='$REF_NAME' bash -se" <<'REMOTE_SCRIPT'
+          set -eu
+
+          # Check if project directory exists, otherwise clone it
+          if [ ! -d "/app/yacheyka" ]; then
+            mkdir -p /app
+            git clone https://github.com/${REPOSITORY}.git /app/yacheyka
+            cd /app/yacheyka
+            git checkout "${REF_NAME}"
+          else
+            cd /app/yacheyka
+            git fetch --all
+            git checkout "${REF_NAME}"
+            git pull origin "${REF_NAME}"
+          fi
+
+          # Recreate production .env file from secrets
+          cat > .env <<'EOF'
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_PORT=5432
+          PORT=4002
+          TRUST_PROXY=true
+          MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_BUCKET=yacheyka-gallery
+          AUTH_SESSION_SECRET=${{ secrets.AUTH_SESSION_SECRET }}
+          TELEGRAM_CLIENT_ID=${{ secrets.TELEGRAM_CLIENT_ID }}
+          TELEGRAM_CLIENT_SECRET=${{ secrets.TELEGRAM_CLIENT_SECRET }}
+          TELEGRAM_REDIRECT_URI=${{ secrets.TELEGRAM_REDIRECT_URI }}
+          YANDEX_CLIENT_ID=${{ secrets.YANDEX_CLIENT_ID }}
+          YANDEX_CLIENT_SECRET=${{ secrets.YANDEX_CLIENT_SECRET }}
+          YANDEX_REDIRECT_URI=${{ secrets.YANDEX_REDIRECT_URI }}
+          TELEGRAM_AUTH_MAX_AGE_SECONDS=86400
+          AUTH_SESSION_TTL_SECONDS=604800
+          ADMIN_OWNER_EMAIL=${{ secrets.ADMIN_OWNER_EMAIL }}
+          ADMIN_OWNER_PASSWORD_HASH=${{ secrets.ADMIN_OWNER_PASSWORD_HASH }}
+          ADMIN_SESSION_SECRET=${{ secrets.ADMIN_SESSION_SECRET }}
+          ADMIN_SESSION_TTL_SECONDS=604800
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
+          MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}
+          EOF
+
+          # Build new images before touching the running stack.
+          docker-compose -f docker-compose.prod.yml build
+          docker-compose -f docker-compose.prod.yml up -d db minio
+          docker-compose -f docker-compose.prod.yml run --rm backend sh -c "npm run build && npm run migration:run"
+          docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+          docker-compose -f docker-compose.prod.yml ps
+          for i in $(seq 1 30); do
+            if docker-compose -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
+              exit 0
             fi
-
-            # Recreate production .env file from secrets
-            cat > .env <<'EOF'
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_DATABASE=${{ secrets.DB_DATABASE }}
-            DB_PORT=5432
-            PORT=4002
-            TRUST_PROXY=true
-            MINIO_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}
-            MINIO_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}
-            MINIO_BUCKET=yacheyka-gallery
-            AUTH_SESSION_SECRET=${{ secrets.AUTH_SESSION_SECRET }}
-            TELEGRAM_CLIENT_ID=${{ secrets.TELEGRAM_CLIENT_ID }}
-            TELEGRAM_CLIENT_SECRET=${{ secrets.TELEGRAM_CLIENT_SECRET }}
-            TELEGRAM_REDIRECT_URI=${{ secrets.TELEGRAM_REDIRECT_URI }}
-            YANDEX_CLIENT_ID=${{ secrets.YANDEX_CLIENT_ID }}
-            YANDEX_CLIENT_SECRET=${{ secrets.YANDEX_CLIENT_SECRET }}
-            YANDEX_REDIRECT_URI=${{ secrets.YANDEX_REDIRECT_URI }}
-            TELEGRAM_AUTH_MAX_AGE_SECONDS=86400
-            AUTH_SESSION_TTL_SECONDS=604800
-            ADMIN_OWNER_EMAIL=${{ secrets.ADMIN_OWNER_EMAIL }}
-            ADMIN_OWNER_PASSWORD_HASH=${{ secrets.ADMIN_OWNER_PASSWORD_HASH }}
-            ADMIN_SESSION_SECRET=${{ secrets.ADMIN_SESSION_SECRET }}
-            ADMIN_SESSION_TTL_SECONDS=604800
-            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-            DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}
-            MINIO_PUBLIC_URL=https://${{ secrets.DOMAIN_NAME }}
-            EOF
-
-            # Build new images before touching the running stack.
-            docker-compose -f docker-compose.prod.yml build
-            docker-compose -f docker-compose.prod.yml up -d db minio
-            docker-compose -f docker-compose.prod.yml run --rm backend sh -c "npm run build && npm run migration:run"
-            docker-compose -f docker-compose.prod.yml up -d --remove-orphans
-            docker-compose -f docker-compose.prod.yml ps
-            for i in $(seq 1 30); do
-              if docker-compose -f docker-compose.prod.yml exec -T backend wget -qO- http://localhost:4002/api/health >/dev/null; then
-                exit 0
-              fi
-              sleep 2
-            done
-            docker-compose -f docker-compose.prod.yml logs --tail=120 backend
-            exit 1
+            sleep 2
+          done
+          docker-compose -f docker-compose.prod.yml logs --tail=120 backend
+          exit 1
+          REMOTE_SCRIPT
