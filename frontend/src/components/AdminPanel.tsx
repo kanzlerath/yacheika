@@ -33,6 +33,7 @@ import {
   normalizeSchedule,
   slugifyVenueName,
 } from "../utils/venueAdmin";
+import { cn } from "@/lib/utils";
 import { DashboardView } from "./admin/DashboardView";
 import { EventsOverview } from "./admin/EventsOverview";
 import { SuggestionsView } from "./admin/SuggestionsView";
@@ -362,9 +363,9 @@ export default function AdminPanel({
   };
 
   return (
-    <div id="admin-panel" className="admin-panel-minimal min-h-full border bg-neutral-950 p-3 sm:p-4 text-xs sm:text-sm">
+    <div id="workspace" className="min-h-full rounded-xl border bg-card p-3 text-xs text-card-foreground sm:p-4 sm:text-sm">
       <div className="grid min-h-full grid-cols-1 gap-4 lg:grid-cols-[190px_minmax(0,1fr)]">
-        <nav className="space-y-2 border-b border-neutral-900 pb-3 lg:border-b-0 lg:border-r lg:pr-3">
+        <nav className="flex flex-col gap-1 border-b pb-3 lg:border-b-0 lg:border-r lg:pr-3">
           {[
             ["dashboard", LayoutDashboard, "Дашборд"],
             ["venues", List, "Заведения"],
@@ -378,9 +379,12 @@ export default function AdminPanel({
               type="button"
               variant="ghost"
               onClick={() => (id === "add" ? startCreateVenue() : setSection(id as AdminSection))}
-              className={`admin-tab flex w-full justify-start gap-2 text-left ${section === id ? "admin-tab-active" : ""}`}
+              className={cn(
+                "w-full justify-start gap-2 text-left text-muted-foreground",
+                section === id && "bg-muted text-foreground",
+              )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon data-icon="inline-start" />
               {label as string}
             </Button>
           ))}
