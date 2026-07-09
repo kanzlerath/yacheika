@@ -8,6 +8,12 @@ import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 import { Crop, GripVertical, Image, MapPin, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -462,7 +468,8 @@ export function VenueEditor(props: any) {
               />
             </div>
 
-            <AdminBlock title="CTA-кнопка">
+            <Accordion type="multiple" defaultValue={["cta"]} className="flex flex-col gap-2">
+            <PremiumAccordionSection value="cta" title="CTA-кнопка">
               <div className="grid gap-3 sm:grid-cols-2">
                 <ColorField label="Фон кнопки" hint="Основной цвет CTA." value={editingVenue.premiumConfig.customColors.ctaColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, ctaColor: value } } })} />
                 <ColorField label="Цвет текста" hint="Цвет надписи на CTA." value={editingVenue.premiumConfig.customColors.ctaTextColor || "#05070a"} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, ctaTextColor: value } } })} />
@@ -485,9 +492,9 @@ export function VenueEditor(props: any) {
                   <Input value={editingVenue.premiumConfig.ctaUrl || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaUrl: event.target.value } })} placeholder="https://t.me/..." />
                 </Field>
               </div>
-            </AdminBlock>
+            </PremiumAccordionSection>
 
-            <AdminBlock title="Вайб дня">
+            <PremiumAccordionSection value="vibe" title="Вайб дня">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Emoji">
                   <EmojiPickerPopover
@@ -521,9 +528,9 @@ export function VenueEditor(props: any) {
                   <span className="w-10 text-right font-mono text-xs text-muted-foreground">{editingVenue.premiumConfig.vibeGlowIntensity ?? 35}%</span>
                 </div>
               </div>
-            </AdminBlock>
+            </PremiumAccordionSection>
 
-            <AdminBlock title="Теги и рекомендации">
+            <PremiumAccordionSection value="recommendations" title="Теги и рекомендации">
               <div className="grid gap-3 sm:grid-cols-2">
                 <ColorField label="Цвет тегов" hint="Фон, текст и контур тегов." value={editingVenue.premiumConfig.customColors.tagColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, tagColor: value } } })} />
                 <ColorField label="Обводка рекомендаций" hint="Контур плашки с рекомендациями." value={editingVenue.premiumConfig.customColors.recommendationBorderColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, recommendationBorderColor: value } } })} />
@@ -531,21 +538,35 @@ export function VenueEditor(props: any) {
               <div className="mt-3">
                 <TopItemsEditor editingVenue={editingVenue} setEditingVenue={setEditingVenue} input={topItemInput} setInput={setTopItemInput} addItem={addTopItem} />
               </div>
-            </AdminBlock>
+            </PremiumAccordionSection>
 
-            <AdminBlock title="Общее оформление">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <ColorField label="Фон карточки" hint="Базовый premium-фон." value={editingVenue.premiumConfig.customColors.primary} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, primary: value } } })} />
-                <ColorField label="Акцент" hint="Контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
+            <PremiumAccordionSection value="marker" title="Маркер на карте">
+              <div className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_160px]">
+                <ColorField label="Цвет маркера" hint="Используется для точки заведения и её выделения на карте." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
+                <div className="flex h-24 items-center justify-center rounded-lg border bg-muted/20">
+                  <div
+                    className="flex size-14 items-center justify-center rounded-full"
+                    style={{ backgroundColor: `color-mix(in srgb, ${editingVenue.premiumConfig.customColors.accent} 22%, transparent)` }}
+                  >
+                    <div
+                      className="size-5 rounded-full border-2 border-white shadow-lg"
+                      style={{ backgroundColor: editingVenue.premiumConfig.customColors.accent }}
+                    />
+                  </div>
+                </div>
               </div>
-            </AdminBlock>
-            <ImageUploadBox
-              existingUrl={editingVenue.premiumConfig.heroImage}
-              uploading={uploadingTarget === "hero"}
-              onSelect={(files) => startCropQueue(files, "hero", 16 / 9, "Обрезка premium-изображения")}
-              onCropExisting={() => startCropFromUrl(editingVenue.premiumConfig.heroImage, "hero", 16 / 9, "Обрезка premium-изображения")}
-              label="Главное изображение premium"
-            />
+            </PremiumAccordionSection>
+
+            <PremiumAccordionSection value="image" title="Главное изображение">
+              <ImageUploadBox
+                existingUrl={editingVenue.premiumConfig.heroImage}
+                uploading={uploadingTarget === "hero"}
+                onSelect={(files) => startCropQueue(files, "hero", 16 / 9, "Обрезка premium-изображения")}
+                onCropExisting={() => startCropFromUrl(editingVenue.premiumConfig.heroImage, "hero", 16 / 9, "Обрезка premium-изображения")}
+                label="Главное изображение premium"
+              />
+            </PremiumAccordionSection>
+            </Accordion>
           </div>
         )}
       </AdminBlock>
@@ -690,6 +711,27 @@ function EmojiPickerPopover({ value, onChange }: { value: string; onChange: (emo
         </Suspense>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function PremiumAccordionSection({
+  value,
+  title,
+  children,
+}: {
+  value: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <AccordionItem value={value} className="rounded-lg border bg-card px-4 last:border-b">
+      <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
+        {title}
+      </AccordionTrigger>
+      <AccordionContent className="pb-4">
+        {children}
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 

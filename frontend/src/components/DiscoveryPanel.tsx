@@ -300,11 +300,11 @@ export default function DiscoveryPanel({
                     <div className="grid min-w-0 flex-1 grid-cols-[52px_minmax(0,1fr)] items-center gap-3.5">
                       
                       {/* Micro clean photo without aggressive sizes */}
-                      <div className="h-[52px] w-[52px] rounded-xl bg-zinc-950 overflow-hidden shrink-0 border border-zinc-900/60 relative flex items-center justify-center">
+                      <div className="size-[52px] shrink-0 overflow-hidden rounded-xl">
                         <img
                           src={venue.logoUrl || venue.gallery[0] || "/logo.png"}
                           alt={venue.name}
-                          className="block max-h-[42px] max-w-[42px] object-contain object-center filter brightness-[0.95] transition duration-250 group-hover:scale-105"
+                          className="size-full object-cover object-center transition duration-250 group-hover:scale-105"
                           referrerPolicy="no-referrer"
                           loading="lazy"
                           onError={(event) => {
