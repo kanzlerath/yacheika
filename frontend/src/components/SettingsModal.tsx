@@ -6,6 +6,8 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  Moon,
+  Sun,
   X,
   User,
 } from "lucide-react";
@@ -15,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
@@ -26,7 +29,7 @@ interface SettingsModalProps {
   auth: TelegramAuthSession | null;
   onLogout: () => void;
   mapStyle: MapStyle;
-  onChangeMapStyle: (style: MapStyle) => void;
+  onChangeMapStyle: (style: MapStyle) => Promise<void>;
   nearbySort: boolean;
   onChangeNearbySort: (val: boolean) => void;
   clusterMaxZoom: number;
@@ -38,6 +41,8 @@ export default function SettingsModal({
   onClose,
   auth,
   onLogout,
+  mapStyle,
+  onChangeMapStyle,
   nearbySort,
   onChangeNearbySort,
   clusterMaxZoom,
@@ -181,6 +186,32 @@ export default function SettingsModal({
                         @{currentUser?.username}
                       </div>
                     </div>
+                  </div>
+
+                  <div className="settings-divider flex items-center justify-between gap-3 border-t pt-3">
+                    <div>
+                      <div className="settings-strong text-xs font-semibold">Оформление</div>
+                      <div className="mt-1 text-[11px] text-neutral-500">Тема интерфейса и карты</div>
+                    </div>
+                    <ToggleGroup
+                      type="single"
+                      value={mapStyle}
+                      onValueChange={(value) => {
+                        if (value === "dark" || value === "light") {
+                          void onChangeMapStyle(value);
+                        }
+                      }}
+                      variant="outline"
+                      spacing={1}
+                      aria-label="Тема интерфейса"
+                    >
+                      <ToggleGroupItem value="light" aria-label="Светлая тема" title="Светлая тема">
+                        <Sun />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="dark" aria-label="Тёмная тема" title="Тёмная тема">
+                        <Moon />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
                   </div>
 
                   {/* Actions for authenticated */}

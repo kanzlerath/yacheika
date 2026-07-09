@@ -182,16 +182,32 @@ export class AuthController {
   @Patch('preferences')
   async updatePreferences(
     @Req() req: Request,
-    @Body() body: { clusterMaxZoom?: number },
+    @Body() body: { clusterMaxZoom?: number; appTheme?: 'dark' | 'light' },
   ) {
-    const clusterMaxZoom = Number(body?.clusterMaxZoom);
-    if (!Number.isInteger(clusterMaxZoom) || clusterMaxZoom < 8 || clusterMaxZoom > 18) {
-      throw new BadRequestException('clusterMaxZoom must be an integer between 8 and 18');
+    const preferences: { clusterMaxZoom?: number; appTheme?: 'dark' | 'light' } = {};
+
+    if (body.clusterMaxZoom !== undefined) {
+      const clusterMaxZoom = Number(body.clusterMaxZoom);
+      if (!Number.isInteger(clusterMaxZoom) || clusterMaxZoom < 8 || clusterMaxZoom > 18) {
+        throw new BadRequestException('clusterMaxZoom must be an integer between 8 and 18');
+      }
+      preferences.clusterMaxZoom = clusterMaxZoom;
+    }
+
+    if (body.appTheme !== undefined) {
+      if (!['dark', 'light'].includes(body.appTheme)) {
+        throw new BadRequestException('appTheme must be dark or light');
+      }
+      preferences.appTheme = body.appTheme;
+    }
+
+    if (Object.keys(preferences).length === 0) {
+      throw new BadRequestException('No supported preferences supplied');
     }
 
     const cookies = parseCookieHeader(req.headers.cookie);
     const session = this.authService.verifySessionToken(cookies[AUTH_COOKIE_NAME]);
-    return this.authService.updateUserPreferences(session, { clusterMaxZoom });
+    return this.authService.updateUserPreferences(session, preferences);
   }
 
   @Post('logout')
