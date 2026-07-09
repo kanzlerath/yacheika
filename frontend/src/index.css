@@ -157,20 +157,20 @@ body {
 }
 
 [data-theme="light"] {
-  --app-bg: #f4f5f7;
-  --app-bg-elevated: #daddde;
-  --app-panel: rgba(244, 245, 247, 0.96);
-  --app-panel-soft: rgba(218, 221, 226, 0.56);
+  --app-bg: #f7f7f7;
+  --app-bg-elevated: #e5e5e5;
+  --app-panel: rgba(255, 255, 255, 0.97);
+  --app-panel-soft: rgba(229, 229, 229, 0.68);
   --app-border: rgba(5, 7, 10, 0.12);
   --app-border-strong: rgba(5, 7, 10, 0.2);
   --app-text: #05070a;
-  --app-text-muted: #5f6670;
-  --app-text-subtle: #8a9098;
-  --app-accent: #9b7444;
-  --app-accent-soft: rgba(155, 116, 68, 0.15);
-  --app-focus: #6f84b4;
-  --app-danger: #9a544d;
-  --app-success: #60795f;
+  --app-text-muted: #525252;
+  --app-text-subtle: #858585;
+  --app-accent: #202020;
+  --app-accent-soft: rgba(32, 32, 32, 0.1);
+  --app-focus: #737373;
+  --app-danger: #525252;
+  --app-success: #404040;
   --app-shadow: 0 24px 52px rgba(5, 7, 10, 0.16);
 }
 
@@ -360,6 +360,39 @@ body {
 
 [data-theme] [id^="venue-card-"] {
   color: var(--app-text) !important;
+}
+
+[data-theme="light"] .venue-card-expanded {
+  color: var(--app-text) !important;
+}
+
+[data-theme="light"] .venue-card-expanded .text-white,
+[data-theme="light"] .venue-card-expanded .text-neutral-100,
+[data-theme="light"] .venue-card-expanded .text-neutral-200,
+[data-theme="light"] .venue-card-expanded .text-neutral-300 {
+  color: var(--app-text) !important;
+}
+
+[data-theme="light"] .venue-card-expanded .text-neutral-400,
+[data-theme="light"] .venue-card-expanded .text-neutral-500,
+[data-theme="light"] .venue-card-expanded .text-\[\#8e8e93\] {
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme="light"] .venue-card-expanded .border-neutral-900,
+[data-theme="light"] .venue-card-expanded .border-neutral-900\/40,
+[data-theme="light"] .venue-card-expanded .border-neutral-900\/50,
+[data-theme="light"] .venue-card-expanded .border-neutral-800,
+[data-theme="light"] .venue-card-expanded .border-neutral-800\/60,
+[data-theme="light"] .venue-card-expanded .border-neutral-800\/70 {
+  border-color: var(--app-border) !important;
+}
+
+[data-theme="light"] .venue-card-expanded .bg-neutral-900,
+[data-theme="light"] .venue-card-expanded .bg-neutral-900\/10,
+[data-theme="light"] .venue-card-expanded .bg-neutral-900\/20,
+[data-theme="light"] .venue-card-expanded .bg-neutral-900\/60 {
+  background-color: var(--app-panel-soft) !important;
 }
 
 [data-theme] .settings-surface,

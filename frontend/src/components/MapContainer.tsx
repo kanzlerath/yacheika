@@ -87,6 +87,10 @@ const getRasterFallbackStyle = (styleName: MapStyle) => {
         maxzoom: 20,
         paint: {
           "raster-opacity": styleName === "light" ? 0.98 : 0.96,
+          "raster-saturation": styleName === "light" ? -1 : -0.2,
+          "raster-contrast": styleName === "light" ? 0.08 : 0.12,
+          "raster-brightness-min": styleName === "light" ? 0.08 : 0,
+          "raster-brightness-max": styleName === "light" ? 0.98 : 0.82,
         },
       },
     ],
@@ -437,6 +441,11 @@ export default function MapContainer({
 
   const setVectorStyleWithFallback = (map: maplibregl.Map, styleName: MapStyle) => {
     const requestId = ++styleRequestIdRef.current;
+
+    if (styleName === "light") {
+      setRasterFallbackStyle(map, styleName);
+      return;
+    }
 
     loadFilteredVectorStyle(styleName)
       .then((style) => {
