@@ -1,33 +1,161 @@
+import { useEffect, useId, useState } from "react";
+import { MapStyle } from "../types";
+
 interface TelegramLoginWidgetProps {
   disabled?: boolean;
+  theme?: MapStyle;
 }
 
-export default function TelegramLoginWidget({ disabled = false }: TelegramLoginWidgetProps) {
+type YandexSuggestResult = {
+  handler: () => Promise<Record<string, unknown>>;
+};
+
+declare global {
+  interface Window {
+    YaAuthSuggest?: {
+      init: (
+        oauthQueryParams: Record<string, string>,
+        tokenPageOrigin: string,
+        suggestParams: Record<string, string | number>,
+      ) => Promise<YandexSuggestResult>;
+    };
+  }
+}
+
+let yandexSdkPromise: Promise<void> | null = null;
+
+const loadYandexSuggestSdk = () => {
+  if (window.YaAuthSuggest) return Promise.resolve();
+  if (yandexSdkPromise) return yandexSdkPromise;
+
+  yandexSdkPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[data-yandex-suggest-sdk="true"]');
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Yandex SDK loading failed")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://yastatic.net/s3/passport-sdk/autofill/v1/sdk-suggest-with-polyfills-latest.js";
+    script.async = true;
+    script.dataset.yandexSuggestSdk = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Yandex SDK loading failed"));
+    document.head.appendChild(script);
+  });
+
+  return yandexSdkPromise;
+};
+
+const extractAccessToken = (data: Record<string, unknown>) => {
+  const nestedData = typeof data.data === "object" && data.data ? data.data as Record<string, unknown> : null;
+  const token = data.access_token || data.token || nestedData?.access_token;
+  return typeof token === "string" ? token : "";
+};
+
+export default function TelegramLoginWidget({
+  disabled = false,
+  theme = "dark",
+}: TelegramLoginWidgetProps) {
+  const reactId = useId();
+  const containerId = `yandex-login-${reactId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const [yandexUnavailable, setYandexUnavailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.replaceChildren();
+    setYandexUnavailable(false);
+
+    const initialize = async () => {
+      try {
+        const [configResponse] = await Promise.all([
+          fetch("/api/auth/yandex/config"),
+          loadYandexSuggestSdk(),
+        ]);
+        if (!configResponse.ok) throw new Error("Yandex ID configuration unavailable");
+        const config = await configResponse.json() as { clientId?: string };
+        if (!config.clientId || !window.YaAuthSuggest) throw new Error("Yandex ID is not configured");
+
+        const result = await window.YaAuthSuggest.init(
+          {
+            client_id: config.clientId,
+            response_type: "token",
+            redirect_uri: `${window.location.origin}/auth/yandex/suggest-token`,
+          },
+          window.location.origin,
+          {
+            view: "button",
+            parentId: containerId,
+            buttonView: "main",
+            buttonTheme: theme,
+            buttonSize: "m",
+            buttonBorderRadius: 12,
+            buttonIcon: "ya",
+          },
+        );
+        if (cancelled) return;
+
+        const tokenData = await result.handler();
+        if (cancelled) return;
+        const accessToken = extractAccessToken(tokenData);
+        if (!accessToken) throw new Error("Yandex ID did not return an access token");
+
+        const authResponse = await fetch("/api/auth/yandex/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ accessToken }),
+        });
+        if (!authResponse.ok) throw new Error("Yandex ID token validation failed");
+        window.location.assign("/?auth=success");
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Yandex Suggest authorization failed:", error);
+          setYandexUnavailable(true);
+        }
+      }
+    };
+
+    void initialize();
+    return () => {
+      cancelled = true;
+      container.replaceChildren();
+    };
+  }, [containerId, theme]);
+
   const handleTelegramLogin = () => {
     if (disabled) return;
     window.location.href = "/api/auth/telegram/start";
   };
 
-  const handleYandexLogin = () => {
+  const handleYandexFallback = () => {
     if (disabled) return;
     window.location.href = "/api/auth/yandex/start";
   };
 
   return (
     <div className="grid w-full gap-2">
-      <button
-        onClick={handleYandexLogin}
-        disabled={disabled}
-        className="flex h-11 w-full cursor-pointer items-center justify-between bg-black px-4 font-display text-sm font-semibold text-white shadow-lg shadow-black/15 transition-all hover:bg-neutral-950 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-black disabled:active:scale-100"
+      <div
+        className={disabled ? "pointer-events-none opacity-45" : undefined}
+        aria-disabled={disabled}
       >
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#fc3f1d] text-sm font-black leading-none text-white">
-          Я
-        </span>
-        <span className="min-w-0 flex-1 truncate px-3">Войти с Яндекс ID</span>
-        <span className="size-5 shrink-0" aria-hidden="true" />
-      </button>
+        <div id={containerId} className="yandex-suggest-container min-h-11 w-full" />
+        {yandexUnavailable && (
+          <button
+            type="button"
+            onClick={handleYandexFallback}
+            disabled={disabled}
+            className="h-11 w-full rounded-xl border border-border bg-background px-4 text-sm font-semibold text-foreground disabled:cursor-not-allowed"
+          >
+            Войти с Яндекс ID
+          </button>
+        )}
+      </div>
 
       <button
+        type="button"
         onClick={handleTelegramLogin}
         disabled={disabled}
         className="flex h-11 w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-[#54a9eb] px-5 font-display text-sm font-semibold text-white shadow-lg shadow-sky-500/10 transition-all hover:bg-[#4b9cd9] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-[#54a9eb] disabled:active:scale-100"

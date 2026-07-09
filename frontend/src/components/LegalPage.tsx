@@ -12,7 +12,7 @@ export default function LegalPage({ document: legalDocument }: { document: Legal
   }, []);
 
   return (
-    <div data-theme="dark" className="legal-page min-h-screen bg-[#05070a] px-5 py-8 text-neutral-200">
+    <div data-theme="dark" className="legal-page min-h-screen bg-[#05070a] px-5 text-neutral-200">
       <main className="mx-auto max-w-3xl">
         <a href="/" className="mb-8 inline-flex text-sm font-semibold text-neutral-400 transition hover:text-white">
           ← На главную

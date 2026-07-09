@@ -15,6 +15,7 @@ import LegalPage from "./components/LegalPage";
 import MapContainer from "./components/MapContainer";
 import SettingsModal from "./components/SettingsModal";
 import VenueCard from "./components/VenueCard";
+import YandexSuggestTokenPage from "./components/YandexSuggestTokenPage";
 import { Collection, EventAttendance, MapStyle, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
 import { getLegalDocumentByPath } from "./legalDocuments";
@@ -42,6 +43,10 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 export default function App() {
+  if (window.location.pathname === "/auth/yandex/suggest-token") {
+    return <YandexSuggestTokenPage />;
+  }
+
   const legalDocument = getLegalDocumentByPath(window.location.pathname);
   if (legalDocument) {
     return (
@@ -554,6 +559,7 @@ function ScopeApp() {
         isOpen={showAuthPromptModal}
         onClose={() => setShowAuthPromptModal(false)}
         actionText={authPromptActionText}
+        theme={mapStyle}
       />
 
       <CookieBanner />

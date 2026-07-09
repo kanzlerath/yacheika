@@ -133,6 +133,17 @@ export class AuthService {
     }
   }
 
+  assertYandexSuggestConfigured() {
+    if (!this.yandexClientId) {
+      throw new ServiceUnavailableException('Yandex ID Suggest is not configured');
+    }
+  }
+
+  getYandexPublicConfig() {
+    this.assertYandexSuggestConfigured();
+    return { clientId: this.yandexClientId };
+  }
+
   private createSessionToken(session: AuthSession) {
     this.assertSessionConfigured();
     const payload = toBase64Url(JSON.stringify(session));
@@ -350,6 +361,20 @@ export class AuthService {
       const accessToken = tokenResponse.data?.access_token;
       if (!accessToken) throw new UnauthorizedException('No access_token received from Yandex');
 
+      return this.authenticateYandexAccessToken(accessToken);
+    } catch (error) {
+      console.error('Yandex Auth Error:', error?.response?.data || error.message);
+      throw new UnauthorizedException('Yandex OAuth auth payload is invalid or expired');
+    }
+  }
+
+  async authenticateYandexAccessToken(accessToken: string) {
+    this.assertYandexSuggestConfigured();
+    if (!accessToken || accessToken.length > 4096) {
+      throw new UnauthorizedException('Yandex access token is invalid');
+    }
+
+    try {
       const userInfoResponse = await firstValueFrom(
         this.httpService.get('https://login.yandex.ru/info?format=json', {
           headers: {
@@ -424,8 +449,8 @@ export class AuthService {
         user: savedUser,
       };
     } catch (error) {
-      console.error('Yandex Auth Error:', error?.response?.data || error.message);
-      throw new UnauthorizedException('Yandex OAuth auth payload is invalid or expired');
+      console.error('Yandex Token Auth Error:', error?.response?.data || error.message);
+      throw new UnauthorizedException('Yandex access token is invalid or expired');
     }
   }
 
