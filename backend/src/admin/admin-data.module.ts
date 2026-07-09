@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AnalyticsEventEntity } from '../entities/analytics.entity';
 import { EventEntity } from '../entities/event.entity';
+import { EventAttendanceEntity } from '../entities/event-attendance.entity';
 import { ReactionEntity } from '../entities/reaction.entity';
 import { UserEntity } from '../entities/user.entity';
 import { VenueEntity } from '../entities/venue.entity';
@@ -16,6 +17,7 @@ import { AdminDataService } from './admin-data.service';
       UserEntity,
       VenueEntity,
       EventEntity,
+      EventAttendanceEntity,
       ReactionEntity,
       AnalyticsEventEntity,
     ]),

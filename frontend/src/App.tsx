@@ -15,7 +15,7 @@ import LegalPage from "./components/LegalPage";
 import MapContainer from "./components/MapContainer";
 import SettingsModal from "./components/SettingsModal";
 import VenueCard from "./components/VenueCard";
-import { Collection, MapStyle, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
+import { Collection, EventAttendance, MapStyle, Reaction, TelegramAuthSession, Venue, VenueEvent } from "./types";
 import { logAnalyticsEvent } from "./utils/analytics";
 import { getLegalDocumentByPath } from "./legalDocuments";
 import { appEase, softTransition } from "./utils/motionPresets";
@@ -63,6 +63,7 @@ function ScopeApp() {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [filters, setFilters] = useState(createEmptyVenueDiscoveryFilters);
   const [userReactions, setUserReactions] = useState<Reaction[]>([]);
+  const [eventAttendance, setEventAttendance] = useState<EventAttendance[]>([]);
   const [mapStyle, setMapStyle] = useState<MapStyle>(() => {
     const val = localStorage.getItem("yacheyka.mapStyle");
     return val === "dark" || val === "light" ? val : "dark";
@@ -118,33 +119,37 @@ function ScopeApp() {
     setAuth(null);
     setSelectedVenue(null);
     setUserReactions([]);
+    setEventAttendance([]);
   };
 
   const fetchAllData = async (session = auth) => {
     try {
-      const [vRes, cRes, eRes, rRes] = await Promise.all([
+      const [vRes, cRes, eRes, rRes, aRes] = await Promise.all([
         fetch("/api/venues"),
         fetch("/api/collections"),
         fetch("/api/events"),
         session ? fetch("/api/users/me/reactions") : Promise.resolve(null),
+        session ? fetch("/api/events/me/attendance") : Promise.resolve(null),
       ]);
 
-      if ([vRes, cRes, eRes].some((res) => !res.ok) || (rRes && !rRes.ok)) {
-        if (rRes?.status === 401) handleLogout();
+      if ([vRes, cRes, eRes].some((res) => !res.ok) || (rRes && !rRes.ok) || (aRes && !aRes.ok)) {
+        if (rRes?.status === 401 || aRes?.status === 401) handleLogout();
         throw new Error("Backend returned an error while loading app data.");
       }
 
-      const [vData, cData, eData, rData] = await Promise.all([
+      const [vData, cData, eData, rData, aData] = await Promise.all([
         vRes.json(),
         cRes.json(),
         eRes.json(),
         rRes ? rRes.json() : Promise.resolve([]),
+        aRes ? aRes.json() : Promise.resolve([]),
       ]);
 
       setVenues(vData);
       setCollections(cData);
       setEvents(eData);
       setUserReactions(rData);
+      setEventAttendance(aData);
     } catch (error) {
       console.error("Failed to load backend datastores:", error);
     }
@@ -327,6 +332,27 @@ function ScopeApp() {
     }
   };
 
+  const handleEventAttendance = async (eventId: string, status: "going" | "not_going") => {
+    if (!auth) {
+      setAuthPromptActionText("чтобы отметить планы на мероприятие");
+      setShowAuthPromptModal(true);
+      return;
+    }
+
+    const response = await fetch(`/api/events/${eventId}/attendance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (!response.ok) throw new Error("Event attendance request failed");
+
+    const result = await response.json();
+    setEventAttendance((current) => {
+      const withoutEvent = current.filter((item) => item.eventId !== eventId);
+      return result.attendance ? [...withoutEvent, result.attendance] : withoutEvent;
+    });
+  };
+
   const handleVenueSelected = (venue: Venue) => {
     setSelectedVenue(venue);
     setMobileView("map");
@@ -476,6 +502,8 @@ function ScopeApp() {
                 analyticsEnabled={Boolean(auth)}
                 userReactions={userReactions}
                 vEvents={events.filter((e) => e.venueId === selectedVenue.id)}
+                eventAttendance={eventAttendance}
+                onEventAttendance={handleEventAttendance}
                 onReact={handleReactVenue}
                 onClose={() => setSelectedVenue(null)}
               />

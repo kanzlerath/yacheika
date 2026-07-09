@@ -98,7 +98,16 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
       glowColor: "#c7a469",
       tagColor: "#c7a469",
       ctaColor: "#c7a469",
+      ctaTextColor: "#05070a",
+      vibeTextColor: "#e5e7eb",
+      vibeBackgroundColor: "#0b0f15",
+      vibeBorderColor: "#c7a469",
+      vibeGlowColor: "#c7a469",
+      recommendationBorderColor: "#c7a469",
     },
+    ctaAnimation: "none",
+    vibeGlowEnabled: true,
+    vibeGlowIntensity: 35,
     heroImage: "",
     moodBlock: "",
     moodEmoji: "✨",
@@ -130,8 +139,17 @@ const normalizeVenueForEdit = (venue: Venue) => ({
       glowColor: "#c7a469",
       tagColor: "#c7a469",
       ctaColor: "#c7a469",
+      ctaTextColor: "#05070a",
+      vibeTextColor: "#e5e7eb",
+      vibeBackgroundColor: "#0b0f15",
+      vibeBorderColor: "#c7a469",
+      vibeGlowColor: "#c7a469",
+      recommendationBorderColor: "#c7a469",
       ...(venue.premiumConfig?.customColors || {}),
     },
+    ctaAnimation: venue.premiumConfig?.ctaAnimation || "none",
+    vibeGlowEnabled: venue.premiumConfig?.vibeGlowEnabled ?? true,
+    vibeGlowIntensity: venue.premiumConfig?.vibeGlowIntensity ?? 35,
     heroImage: venue.premiumConfig?.heroImage || "",
     moodBlock: venue.premiumConfig?.moodBlock || "",
     moodEmoji: venue.premiumConfig?.moodEmoji || "✨",
@@ -261,7 +279,7 @@ export default function AdminPanel({
     return data.url as string;
   };
 
-  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "hero" | "event" | "logo") => {
+  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "hero" | "event" | "logo", replaceUrl?: string) => {
     const list = Array.from(files || []);
     if (!list.length) return;
     setUploadError(null);
@@ -281,7 +299,12 @@ export default function AdminPanel({
       if (!validFiles.length) return;
       const urls = await Promise.all(validFiles.map(uploadFile));
       if (target === "gallery") {
-        setEditingVenue((prev: any) => ({ ...prev, gallery: [...prev.gallery, ...urls] }));
+        setEditingVenue((prev: any) => ({
+          ...prev,
+          gallery: replaceUrl
+            ? prev.gallery.map((url: string) => url === replaceUrl ? urls[0] : url)
+            : [...prev.gallery, ...urls],
+        }));
       } else if (target === "hero") {
         setEditingVenue((prev: any) => ({
           ...prev,
@@ -440,6 +463,7 @@ export default function AdminPanel({
                       topItemInput={topItemInput}
                       setTopItemInput={setTopItemInput}
                       addTopItem={addTopItem}
+                      events={selectedVenueEvents}
                     />
                   )}
                   eventsEditor={(

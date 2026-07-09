@@ -1,5 +1,6 @@
-import { Controller, Post, UploadedFile, UseGuards, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, UploadedFile, UseGuards, UseInterceptors, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { AdminGuard } from '../auth/admin.guard';
 import { StorageService } from './storage.service';
 
@@ -22,5 +23,14 @@ export class StorageController {
     file: Express.Multer.File,
   ) {
     return this.storageService.uploadFile(file);
+  }
+
+  @Get('image')
+  @UseGuards(AdminGuard)
+  async getStoredImage(@Query('url') url: string, @Res() response: Response) {
+    const image = await this.storageService.getStoredImage(url);
+    response.setHeader('Content-Type', image.contentType);
+    response.setHeader('Cache-Control', 'private, max-age=60');
+    return response.send(image.body);
   }
 }

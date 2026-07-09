@@ -77,7 +77,16 @@ export class VenueEntity {
       glowColor: string;
       tagColor?: string;
       ctaColor?: string;
+      ctaTextColor?: string;
+      vibeTextColor?: string;
+      vibeBackgroundColor?: string;
+      vibeBorderColor?: string;
+      vibeGlowColor?: string;
+      recommendationBorderColor?: string;
     };
+    ctaAnimation?: 'none' | 'breathe' | 'shimmer' | 'nudge';
+    vibeGlowEnabled?: boolean;
+    vibeGlowIntensity?: number;
     heroImage?: string;
     moodBlock?: string;
     moodEmoji?: string;

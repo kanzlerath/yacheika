@@ -22,7 +22,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
+import { EventAttendance, Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
 import { appEase, panelTransition, softTransition } from "../utils/motionPresets";
 import { WEEKDAYS, formatTodaySchedule, normalizeSchedule } from "../utils/venueAdmin";
@@ -38,6 +38,9 @@ interface VenueCardProps {
   onClose?: () => void;
   onOpenRoute?: (venue: Venue) => void;
   onNavigateToCollection?: (tag: string) => void;
+  previewMode?: boolean;
+  eventAttendance?: EventAttendance[];
+  onEventAttendance?: (eventId: string, status: "going" | "not_going") => void | Promise<void>;
 }
 
 const VIBE_GROUPS = [
@@ -117,11 +120,15 @@ export default function VenueCard({
   onReact,
   onClose,
   onOpenRoute,
+  previewMode = false,
+  eventAttendance = [],
+  onEventAttendance,
 }: VenueCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(previewMode);
   const [activeTab, setActiveTab] = useState<"info" | "events" | "vibes">("info");
   const [showVibeCreator, setShowVibeCreator] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [attendancePending, setAttendancePending] = useState<string | null>(null);
 
   // Filter user's reactions
   const hasLiked = userReactions.some(r => r.venueId === venue.id && r.type === "like");
@@ -140,6 +147,12 @@ export default function VenueCard({
   const glowColor = customColors?.glowColor || accentColor;
   const tagColor = customColors?.tagColor || accentColor;
   const ctaColor = customColors?.ctaColor || accentColor;
+  const ctaTextColor = customColors?.ctaTextColor || "#05070a";
+  const vibeTextColor = customColors?.vibeTextColor || "#e5e7eb";
+  const vibeBackgroundColor = customColors?.vibeBackgroundColor || "#0b0f15";
+  const vibeBorderColor = customColors?.vibeBorderColor || glowColor;
+  const vibeGlowColor = customColors?.vibeGlowColor || glowColor;
+  const recommendationBorderColor = customColors?.recommendationBorderColor || accentColor;
   const moodEmoji = premium.moodEmoji || "✨";
   const compactHeight = "calc(226px + env(safe-area-inset-bottom, 0px))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
@@ -279,7 +292,7 @@ export default function VenueCard({
 
   return (
     <>
-    <motion.div
+    {!previewMode && <motion.div
       drag={isExpanded ? false : "y"}
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={{ top: 0.05, bottom: 0.6 }}
@@ -306,6 +319,7 @@ export default function VenueCard({
         ["--venue-glow" as any]: glowColor,
         ["--venue-tag" as any]: tagColor,
         ["--venue-cta" as any]: ctaColor,
+        ["--venue-cta-text" as any]: ctaTextColor,
       }}
       id={`venue-card-${venue.id}`}
     >
@@ -424,7 +438,7 @@ export default function VenueCard({
           )}
         </AnimatePresence>
       </div>
-    </motion.div>
+    </motion.div>}
 
     <AnimatePresence>
       {isExpanded && (
@@ -435,14 +449,23 @@ export default function VenueCard({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={panelTransition}
-              className="fixed inset-0 z-[80] overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl"
+              className={`${previewMode ? "relative h-[760px] w-full rounded-xl border" : "fixed inset-0 z-[80]"} overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl`}
               style={{
                 paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
-                background: "var(--app-bg)",
+                background: isPremiumActive
+                  ? `linear-gradient(to bottom, color-mix(in srgb, ${primaryColor} 88%, var(--app-panel)), var(--app-bg))`
+                  : "var(--app-bg)",
                 ["--venue-accent" as any]: accentColor,
                 ["--venue-glow" as any]: glowColor,
                 ["--venue-tag" as any]: tagColor,
                 ["--venue-cta" as any]: ctaColor,
+                ["--venue-cta-text" as any]: ctaTextColor,
+                ["--venue-vibe-text" as any]: vibeTextColor,
+                ["--venue-vibe-bg" as any]: vibeBackgroundColor,
+                ["--venue-vibe-border" as any]: vibeBorderColor,
+                ["--venue-vibe-glow" as any]: vibeGlowColor,
+                ["--venue-vibe-glow-intensity" as any]: `${premium.vibeGlowEnabled === false ? 0 : premium.vibeGlowIntensity ?? 35}%`,
+                ["--venue-recommendation-border" as any]: recommendationBorderColor,
               }}
             >
               {/* Simplified airy title and header bar */}
@@ -471,7 +494,7 @@ export default function VenueCard({
                   </div>
                 </div>
 
-                <Button
+                {!previewMode && <Button
                   type="button"
                   variant="ghost"
                   size="icon-lg"
@@ -480,7 +503,7 @@ export default function VenueCard({
                   aria-label="Свернуть карточку"
                 >
                   ×
-                </Button>
+                </Button>}
               </div>
 
               {isPremiumActive && premium.heroImage && (
@@ -508,7 +531,7 @@ export default function VenueCard({
                   href={premium.ctaUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="premium-cta app-text-button w-full"
+                  className={`premium-cta premium-cta-${premium.ctaAnimation || "none"} app-text-button w-full`}
                   onClick={() => handleSocialClick("premium_cta", premium.ctaText || "Подробнее")}
                 >
                   {premium.ctaText || "Подробнее"}
@@ -522,7 +545,7 @@ export default function VenueCard({
                     {moodEmoji}
                   </div>
                   <div>
-                    <p className="text-[15px] text-neutral-200 leading-relaxed italic">«{premium.moodBlock}»</p>
+                    <p className="text-[15px] leading-relaxed italic">«{premium.moodBlock}»</p>
                   </div>
                 </div>
               )}
@@ -930,6 +953,33 @@ export default function VenueCard({
                                 >
                                   {ev.description}
                                 </ExpandableText>
+                                <div className="flex gap-2 pt-2">
+                                  {(["going", "not_going"] as const).map((status) => {
+                                    const active = eventAttendance.some((item) => item.eventId === ev.id && item.status === status);
+                                    return (
+                                      <Button
+                                        key={status}
+                                        type="button"
+                                        variant={active ? "default" : "outline"}
+                                        size="sm"
+                                        disabled={attendancePending === ev.id}
+                                        onClick={async (event) => {
+                                          event.stopPropagation();
+                                          if (!onEventAttendance) return;
+                                          setAttendancePending(ev.id);
+                                          try {
+                                            await onEventAttendance(ev.id, status);
+                                          } finally {
+                                            setAttendancePending(null);
+                                          }
+                                        }}
+                                        className="flex-1"
+                                      >
+                                        {status === "going" ? "Пойду" : "Не пойду"}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             </article>
                           ))}

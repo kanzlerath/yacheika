@@ -3,6 +3,7 @@ import { AdminUserEntity } from './entities/admin-user.entity';
 import { AnalyticsEventEntity } from './entities/analytics.entity';
 import { CollectionEntity } from './entities/collection.entity';
 import { EventEntity } from './entities/event.entity';
+import { EventAttendanceEntity } from './entities/event-attendance.entity';
 import { ReactionEntity } from './entities/reaction.entity';
 import { UserEntity } from './entities/user.entity';
 import { VenueSuggestionEntity } from './entities/venue-suggestion.entity';
@@ -20,6 +21,7 @@ export default new DataSource({
     AnalyticsEventEntity,
     CollectionEntity,
     EventEntity,
+    EventAttendanceEntity,
     ReactionEntity,
     UserEntity,
     VenueSuggestionEntity,

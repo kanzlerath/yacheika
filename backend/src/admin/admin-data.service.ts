@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, Repository } from 'typeorm';
 import { AnalyticsEventEntity } from '../entities/analytics.entity';
 import { EventEntity } from '../entities/event.entity';
+import { EventAttendanceEntity } from '../entities/event-attendance.entity';
 import { ReactionEntity } from '../entities/reaction.entity';
 import { UserEntity } from '../entities/user.entity';
 import { VenueEntity } from '../entities/venue.entity';
@@ -16,6 +17,8 @@ export class AdminDataService {
     private readonly venueRepository: Repository<VenueEntity>,
     @InjectRepository(EventEntity)
     private readonly eventRepository: Repository<EventEntity>,
+    @InjectRepository(EventAttendanceEntity)
+    private readonly attendanceRepository: Repository<EventAttendanceEntity>,
     @InjectRepository(ReactionEntity)
     private readonly reactionRepository: Repository<ReactionEntity>,
     @InjectRepository(AnalyticsEventEntity)
@@ -185,6 +188,9 @@ export class AdminDataService {
       venues,
       lastAnalytics,
       lastReaction,
+      attendanceRows,
+      recentAttendance,
+      lastAttendance,
     ] = await Promise.all([
       this.analyticsRepository
         .createQueryBuilder('analytics')
@@ -223,6 +229,20 @@ export class AdminDataService {
       this.venueRepository.find(),
       this.analyticsRepository.findOne({ where: { userId: id }, order: { timestamp: 'DESC' } }),
       this.reactionRepository.findOne({ where: { userId: id }, order: { createdAt: 'DESC' } }),
+      this.attendanceRepository
+        .createQueryBuilder('attendance')
+        .select('attendance.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('attendance.userId = :id', { id })
+        .groupBy('attendance.status')
+        .getRawMany(),
+      this.attendanceRepository.find({
+        where: { userId: id },
+        relations: { event: true, venue: true },
+        order: { updatedAt: 'DESC' },
+        take: 40,
+      }),
+      this.attendanceRepository.findOne({ where: { userId: id }, order: { updatedAt: 'DESC' } }),
     ]);
 
     const analytics = this.analyticsRowsToMap(analyticsRows);
@@ -235,7 +255,12 @@ export class AdminDataService {
     const activeDays30d = daily.filter((row) => row.actions + row.reactions > 0).length;
     const totalActions = Object.values(analytics).reduce((sum, value) => sum + value, 0);
     const totalReactions = Object.values(reactions).reduce((sum, value) => sum + value, 0);
-    const lastSeenAt = [lastAnalytics?.timestamp, lastReaction?.createdAt]
+    const attendance = attendanceRows.reduce<Record<string, number>>((acc, row) => {
+      acc[row.status] = Number(row.count);
+      return acc;
+    }, {});
+    const attendanceTotal = Object.values(attendance).reduce((sum, value) => sum + value, 0);
+    const lastSeenAt = [lastAnalytics?.timestamp, lastReaction?.createdAt, lastAttendance?.updatedAt]
       .filter(Boolean)
       .sort((a, b) => Number(b) - Number(a))[0] || null;
 
@@ -259,7 +284,7 @@ export class AdminDataService {
         createdAt: user.createdAt,
       },
       totals: {
-        actions: totalActions,
+        actions: totalActions + attendanceTotal,
         reactions: totalReactions,
         opens: analytics.open_venue || 0,
         routes: analytics.open_route || 0,
@@ -269,6 +294,8 @@ export class AdminDataService {
         likes: reactions.like || 0,
         notMyPlace: reactions.not_my_place || 0,
         vibeTags: reactions.vibe_tag || 0,
+        eventsGoing: attendance.going || 0,
+        eventsNotGoing: attendance.not_going || 0,
         activeDays30d,
         activeDays7d: daily.filter((row) => row.date >= this.toDateKey(weekAgo) && row.actions + row.reactions > 0).length,
       },
@@ -281,6 +308,15 @@ export class AdminDataService {
       daily,
       recentAnalytics: recentAnalytics.map((event) => ({ ...event, venue: enrichVenue(event.venueId) })),
       recentReactions: recentReactions.map((reaction) => ({ ...reaction, venue: enrichVenue(reaction.venueId) })),
+      recentAttendance: recentAttendance.map((item) => ({
+        id: item.id,
+        eventId: item.eventId,
+        venueId: item.venueId,
+        status: item.status,
+        updatedAt: item.updatedAt,
+        event: item.event ? { id: item.event.id, title: item.event.title, date: item.event.date, time: item.event.time } : null,
+        venue: item.venue ? { id: item.venue.id, name: item.venue.name } : enrichVenue(item.venueId),
+      })),
     };
   }
 
@@ -304,6 +340,8 @@ export class AdminDataService {
       recentAnalytics,
       recentReactions,
       upcomingEvents,
+      attendanceRows,
+      recentAttendance,
     ] = await Promise.all([
       this.aggregateAnalyticsByType(id),
       this.aggregateAnalyticsByType(id, weekAgo),
@@ -354,6 +392,19 @@ export class AdminDataService {
         order: { date: 'ASC', time: 'ASC' },
         take: 8,
       }),
+      this.attendanceRepository
+        .createQueryBuilder('attendance')
+        .select('attendance.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('attendance.venueId = :id', { id })
+        .groupBy('attendance.status')
+        .getRawMany(),
+      this.attendanceRepository.find({
+        where: { venueId: id },
+        relations: { event: true, user: true },
+        order: { updatedAt: 'DESC' },
+        take: 30,
+      }),
     ]);
 
     const totalAnalytics = this.analyticsRowsToMap(allAnalyticsRows);
@@ -362,6 +413,11 @@ export class AdminDataService {
     const reactions = this.reactionRowsToSummary(reactionRows);
     const opens = totalAnalytics.open_venue || 0;
     const actionCount = this.sumAnalyticsActions(totalAnalytics);
+    const attendance = attendanceRows.reduce<Record<string, number>>((acc, row) => {
+      acc[row.status] = Number(row.count);
+      return acc;
+    }, {});
+    const attendanceTotal = (attendance.going || 0) + (attendance.not_going || 0);
 
     return {
       venueId: venue.id,
@@ -372,10 +428,12 @@ export class AdminDataService {
         phoneClicks: totalAnalytics.click_phone || 0,
         socialClicks: totalAnalytics.click_social || 0,
         eventOpens: totalAnalytics.open_event || 0,
-        actions: actionCount,
+        actions: actionCount + attendanceTotal,
         likes: reactions.likes,
         notMyPlace: reactions.notMyPlace,
         vibeTags: reactions.vibeTotal,
+        eventsGoing: attendance.going || 0,
+        eventsNotGoing: attendance.not_going || 0,
         uniqueUsers: await this.countUniqueAnalyticsUsers(id),
         conversionRate: opens ? Number((actionCount / opens).toFixed(3)) : 0,
       },
@@ -387,6 +445,13 @@ export class AdminDataService {
       reactions,
       recentAnalytics,
       recentReactions,
+      recentAttendance: recentAttendance.map((item) => ({
+        id: item.id,
+        status: item.status,
+        updatedAt: item.updatedAt,
+        event: item.event ? { id: item.event.id, title: item.event.title, date: item.event.date, time: item.event.time } : null,
+        user: item.user ? { id: item.user.id, username: item.user.username, firstName: item.user.firstName } : null,
+      })),
       upcomingEvents,
       quality: this.buildVenueQualityChecklist(venue, upcomingEvents.length),
     };
@@ -541,13 +606,30 @@ export class AdminDataService {
   }
 
   private async countUniqueAnalyticsUsers(venueId: string) {
-    const row = await this.analyticsRepository
-      .createQueryBuilder('analytics')
-      .select('COUNT(DISTINCT analytics.userId)', 'count')
-      .where('analytics.venueId = :venueId', { venueId })
-      .andWhere('analytics.userId IS NOT NULL')
-      .getRawOne();
-    return Number(row?.count || 0);
+    const [analyticsUsers, reactionUsers, attendanceUsers] = await Promise.all([
+      this.analyticsRepository
+        .createQueryBuilder('analytics')
+        .select('DISTINCT analytics.userId', 'userId')
+        .where('analytics.venueId = :venueId', { venueId })
+        .andWhere('analytics.userId IS NOT NULL')
+        .getRawMany(),
+      this.reactionRepository
+        .createQueryBuilder('reaction')
+        .select('DISTINCT reaction.userId', 'userId')
+        .where('reaction.venueId = :venueId', { venueId })
+        .getRawMany(),
+      this.attendanceRepository
+        .createQueryBuilder('attendance')
+        .select('DISTINCT attendance.userId', 'userId')
+        .where('attendance.venueId = :venueId', { venueId })
+        .getRawMany(),
+    ]);
+
+    return new Set(
+      [...analyticsUsers, ...reactionUsers, ...attendanceUsers]
+        .map((row) => row.userId)
+        .filter(Boolean),
+    ).size;
   }
 
   private buildVenueQualityChecklist(venue: VenueEntity, eventsCount: number) {

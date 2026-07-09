@@ -8,6 +8,8 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
@@ -50,6 +52,30 @@ class PremiumColorsDto {
   @IsOptional()
   @IsString()
   ctaColor?: string;
+
+  @IsOptional()
+  @IsString()
+  ctaTextColor?: string;
+
+  @IsOptional()
+  @IsString()
+  vibeTextColor?: string;
+
+  @IsOptional()
+  @IsString()
+  vibeBackgroundColor?: string;
+
+  @IsOptional()
+  @IsString()
+  vibeBorderColor?: string;
+
+  @IsOptional()
+  @IsString()
+  vibeGlowColor?: string;
+
+  @IsOptional()
+  @IsString()
+  recommendationBorderColor?: string;
 }
 
 class PremiumConfigDto {
@@ -64,6 +90,20 @@ class PremiumConfigDto {
   @ValidateNested()
   @Type(() => PremiumColorsDto)
   customColors?: PremiumColorsDto;
+
+  @IsOptional()
+  @IsIn(['none', 'breathe', 'shimmer', 'nudge'])
+  ctaAnimation?: 'none' | 'breathe' | 'shimmer' | 'nudge';
+
+  @IsOptional()
+  @IsBoolean()
+  vibeGlowEnabled?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  vibeGlowIntensity?: number;
 
   @IsOptional()
   @IsString()
