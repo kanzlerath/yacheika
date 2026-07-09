@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { EventEntity } from '../entities/event.entity';
+import { EventAttendanceEntity } from '../entities/event-attendance.entity';
 import { VenueEntity } from '../entities/venue.entity';
 import { SaveEventDto } from './dto/save-event.dto';
 
@@ -12,6 +13,8 @@ export class EventService {
     private readonly eventRepository: Repository<EventEntity>,
     @InjectRepository(VenueEntity)
     private readonly venueRepository: Repository<VenueEntity>,
+    @InjectRepository(EventAttendanceEntity)
+    private readonly attendanceRepository: Repository<EventAttendanceEntity>,
   ) {}
 
   async findAll(options: { includeNonPublished?: boolean } = {}) {
@@ -44,6 +47,49 @@ export class EventService {
     }
 
     return this.eventRepository.save(event);
+  }
+
+  async findUserAttendance(userId: string) {
+    return this.attendanceRepository.find({
+      where: { userId },
+      order: { updatedAt: 'DESC' },
+    });
+  }
+
+  async toggleAttendance(
+    eventId: string,
+    userId: string,
+    status: 'going' | 'not_going',
+  ) {
+    const event = await this.eventRepository.findOne({
+      where: { id: eventId },
+      relations: { venue: true },
+    });
+    if (!event || event.venue?.status !== 'published') {
+      throw new NotFoundException('Event not found');
+    }
+
+    const existing = await this.attendanceRepository.findOne({
+      where: { userId, eventId },
+    });
+    if (existing?.status === status) {
+      await this.attendanceRepository.remove(existing);
+      return { removed: true, attendance: null };
+    }
+
+    const attendance = existing
+      ? this.attendanceRepository.merge(existing, { status })
+      : this.attendanceRepository.create({
+          userId,
+          eventId,
+          venueId: event.venueId,
+          status,
+        });
+
+    return {
+      added: !existing,
+      attendance: await this.attendanceRepository.save(attendance),
+    };
   }
 
   async delete(id: string) {

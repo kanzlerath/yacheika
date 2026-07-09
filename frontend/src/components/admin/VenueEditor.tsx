@@ -6,7 +6,7 @@ import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sort
 import { CSS } from "@dnd-kit/utilities";
 import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
-import { GripVertical, Image, MapPin, Plus, Trash2 } from "lucide-react";
+import { Crop, GripVertical, Image, MapPin, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,13 +20,15 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { PremiumConfig, VenueEvent, WeekdayKey, WorkingHoursSchedule } from "../../types";
+import { VenueEvent, WeekdayKey, WorkingHoursSchedule } from "../../types";
 import { normalizePremiumRecommendations } from "../../utils/premium";
 import { WEEKDAYS, buildWorkingHoursText, normalizeSchedule } from "../../utils/venueAdmin";
 import { AdminBlock, AdminSelect, EmptyLine } from "./AdminShared";
+import VenueCard from "../VenueCard";
 
 const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
@@ -57,6 +59,7 @@ type CropJob = {
   aspect: number;
   title: string;
   imageUrl: string;
+  replaceUrl?: string;
 };
 
 export const compressImageFile = async (file: File) => {
@@ -125,7 +128,7 @@ const cropImageFile = async (file: File, imageUrl: string, crop: Area) => {
   return new File([blob], file.name.replace(/\.[^.]+$/, "-cropped.webp"), { type: "image/webp" });
 };
 
-function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | null | undefined, target: UploadTarget) => Promise<void>) {
+function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | null | undefined, target: UploadTarget, replaceUrl?: string) => Promise<void>) {
   const [cropJob, setCropJob] = useState<CropJob | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -136,7 +139,7 @@ function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | nul
     if (cropJob) URL.revokeObjectURL(cropJob.imageUrl);
   }, [cropJob]);
 
-  const startCropQueue = async (files: FileList | File[] | null | undefined, target: UploadTarget, aspect: number, title: string) => {
+  const startCropQueue = async (files: FileList | File[] | null | undefined, target: UploadTarget, aspect: number, title: string, replaceUrl?: string) => {
     const list = Array.from(files || []);
     if (!list.length) return;
     const [file, ...queue] = list;
@@ -155,7 +158,17 @@ function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | nul
       aspect,
       title,
       imageUrl: URL.createObjectURL(file),
+      replaceUrl,
     });
+  };
+
+  const startCropFromUrl = async (url: string, target: UploadTarget, aspect: number, title: string, replaceUrl?: string) => {
+    const response = await fetch(`/api/storage/image?url=${encodeURIComponent(url)}`);
+    if (!response.ok) throw new Error("Не удалось загрузить исходное изображение для обрезки");
+    const blob = await response.blob();
+    const extension = blob.type.split("/")[1] || "jpg";
+    const file = new File([blob], `existing-image.${extension}`, { type: blob.type || "image/jpeg" });
+    await startCropQueue([file], target, aspect, title, replaceUrl);
   };
 
   const closeCrop = () => {
@@ -172,7 +185,7 @@ function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | nul
     try {
       const croppedFile = await cropImageFile(currentJob.file, currentJob.imageUrl, croppedAreaPixels);
       closeCrop();
-      await uploadSelectedImages([croppedFile], currentJob.target);
+      await uploadSelectedImages([croppedFile], currentJob.target, currentJob.replaceUrl);
       if (currentJob.queue.length) {
         await startCropQueue(currentJob.queue, currentJob.target, currentJob.aspect, currentJob.title);
       }
@@ -183,6 +196,7 @@ function useImageCropQueue(uploadSelectedImages: (files: FileList | File[] | nul
 
   return {
     startCropQueue,
+    startCropFromUrl,
     cropDialogProps: {
       job: cropJob,
       crop,
@@ -218,10 +232,11 @@ export function VenueEditor(props: any) {
     topItemInput,
     setTopItemInput,
     addTopItem,
+    events = [],
   } = props;
 
   const schedule = normalizeSchedule(editingVenue.workingHoursSchedule);
-  const { startCropQueue, cropDialogProps } = useImageCropQueue(uploadSelectedImages);
+  const { startCropQueue, startCropFromUrl, cropDialogProps } = useImageCropQueue(uploadSelectedImages);
 
   return (
     <>
@@ -263,6 +278,7 @@ export function VenueEditor(props: any) {
           existingUrl={editingVenue.logoUrl}
           uploading={uploadingTarget === "logo"}
           onSelect={(files) => startCropQueue(files, "logo", 1, "Обрезка логотипа")}
+          onCropExisting={() => startCropFromUrl(editingVenue.logoUrl, "logo", 1, "Обрезка логотипа")}
           label="Загрузить логотип"
           fit="contain"
         />
@@ -408,6 +424,7 @@ export function VenueEditor(props: any) {
                   key={url}
                   url={url}
                   onDelete={() => setEditingVenue({ ...editingVenue, gallery: editingVenue.gallery.filter((item: string) => item !== url) })}
+                  onCrop={() => startCropFromUrl(url, "gallery", 4 / 3, "Обрезка фото", url)}
                 />
               ))}
             </div>
@@ -434,42 +451,101 @@ export function VenueEditor(props: any) {
         </label>
         {editingVenue.premiumConfig.premiumActive && (
           <div className="flex flex-col gap-4">
-            <PremiumVenuePreview venue={editingVenue} />
-            <div className="grid gap-2 sm:grid-cols-2">
-              <ColorField label="Акцент" hint="Контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
-              <ColorField label="Свечение" hint="Мягкая подсветка premium-карточки." value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
-              <ColorField label="Цвет тегов" hint="Фон и контур тегов в premium-карточке." value={editingVenue.premiumConfig.customColors.tagColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, tagColor: value } } })} />
-              <ColorField label="CTA" hint="Главная premium-кнопка в карточке." value={editingVenue.premiumConfig.customColors.ctaColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, ctaColor: value } } })} />
+            <div className="relative mx-auto w-full max-w-[760px] overflow-hidden rounded-xl border bg-black">
+              <VenueCard
+                venue={editingVenue}
+                userReactions={[]}
+                vEvents={events}
+                onReact={() => undefined}
+                onEventAttendance={() => undefined}
+                previewMode
+              />
             </div>
-            <div className="grid gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
-              <Field label="Emoji">
-                <div className="flex gap-2">
+
+            <AdminBlock title="CTA-кнопка">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ColorField label="Фон кнопки" hint="Основной цвет CTA." value={editingVenue.premiumConfig.customColors.ctaColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, ctaColor: value } } })} />
+                <ColorField label="Цвет текста" hint="Цвет надписи на CTA." value={editingVenue.premiumConfig.customColors.ctaTextColor || "#05070a"} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, ctaTextColor: value } } })} />
+                <Field label="Текст кнопки">
+                  <Input value={editingVenue.premiumConfig.ctaText || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaText: event.target.value } })} placeholder="Например: Забронировать стол" />
+                </Field>
+                <Field label="Анимация">
+                  <AdminSelect
+                    value={editingVenue.premiumConfig.ctaAnimation || "none"}
+                    onValueChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaAnimation: value } })}
+                    options={[
+                      { value: "none", label: "Без анимации" },
+                      { value: "breathe", label: "Мягко пульсирует" },
+                      { value: "shimmer", label: "Блик" },
+                      { value: "nudge", label: "Подрагивает" },
+                    ]}
+                  />
+                </Field>
+                <Field label="Ссылка">
+                  <Input value={editingVenue.premiumConfig.ctaUrl || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaUrl: event.target.value } })} placeholder="https://t.me/..." />
+                </Field>
+              </div>
+            </AdminBlock>
+
+            <AdminBlock title="Вайб дня">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Emoji">
                   <EmojiPickerPopover
                     value={editingVenue.premiumConfig.moodEmoji || "✨"}
                     onChange={(emoji) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodEmoji: emoji } })}
                   />
-                  <Input value={editingVenue.premiumConfig.moodEmoji || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodEmoji: event.target.value } })} placeholder="✨" maxLength={4} />
+                </Field>
+                <Field label="Надпись">
+                  <Input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} placeholder="Например: Сегодня винил и тихий свет" />
+                </Field>
+                <ColorField label="Цвет текста" hint="Надпись внутри блока." value={editingVenue.premiumConfig.customColors.vibeTextColor || "#e5e7eb"} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, vibeTextColor: value } } })} />
+                <ColorField label="Цвет фона" hint="Фон блока вайба." value={editingVenue.premiumConfig.customColors.vibeBackgroundColor || "#0b0f15"} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, vibeBackgroundColor: value } } })} />
+                <ColorField label="Цвет обводки" hint="Контур блока вайба." value={editingVenue.premiumConfig.customColors.vibeBorderColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, vibeBorderColor: value } } })} />
+                <ColorField label="Цвет свечения" hint="Цвет внешнего свечения." value={editingVenue.premiumConfig.customColors.vibeGlowColor || editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, vibeGlowColor: value } } })} />
+              </div>
+              <div className="mt-3 flex flex-col gap-3 rounded-lg border p-3">
+                <label className="flex items-center justify-between gap-3 text-xs font-semibold">
+                  Свечение
+                  <Switch checked={editingVenue.premiumConfig.vibeGlowEnabled ?? true} onCheckedChange={(checked) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, vibeGlowEnabled: checked } })} />
+                </label>
+                <div className="flex items-center gap-3">
+                  <Slider
+                    value={[editingVenue.premiumConfig.vibeGlowIntensity ?? 35]}
+                    min={0}
+                    max={100}
+                    step={5}
+                    disabled={editingVenue.premiumConfig.vibeGlowEnabled === false}
+                    onValueChange={([value]) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, vibeGlowIntensity: value } })}
+                    aria-label="Интенсивность свечения"
+                  />
+                  <span className="w-10 text-right font-mono text-xs text-muted-foreground">{editingVenue.premiumConfig.vibeGlowIntensity ?? 35}%</span>
                 </div>
-              </Field>
-              <Field label="Вайб дня">
-                <Input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} placeholder="Например: Сегодня винил и тихий свет до поздней ночи" />
-              </Field>
-            </div>
-            <TopItemsEditor editingVenue={editingVenue} setEditingVenue={setEditingVenue} input={topItemInput} setInput={setTopItemInput} addItem={addTopItem} />
+              </div>
+            </AdminBlock>
+
+            <AdminBlock title="Теги и рекомендации">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ColorField label="Цвет тегов" hint="Фон, текст и контур тегов." value={editingVenue.premiumConfig.customColors.tagColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, tagColor: value } } })} />
+                <ColorField label="Обводка рекомендаций" hint="Контур плашки с рекомендациями." value={editingVenue.premiumConfig.customColors.recommendationBorderColor || editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, recommendationBorderColor: value } } })} />
+              </div>
+              <div className="mt-3">
+                <TopItemsEditor editingVenue={editingVenue} setEditingVenue={setEditingVenue} input={topItemInput} setInput={setTopItemInput} addItem={addTopItem} />
+              </div>
+            </AdminBlock>
+
+            <AdminBlock title="Общее оформление">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ColorField label="Фон карточки" hint="Базовый premium-фон." value={editingVenue.premiumConfig.customColors.primary} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, primary: value } } })} />
+                <ColorField label="Акцент" hint="Контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
+              </div>
+            </AdminBlock>
             <ImageUploadBox
               existingUrl={editingVenue.premiumConfig.heroImage}
               uploading={uploadingTarget === "hero"}
               onSelect={(files) => startCropQueue(files, "hero", 16 / 9, "Обрезка premium-изображения")}
+              onCropExisting={() => startCropFromUrl(editingVenue.premiumConfig.heroImage, "hero", 16 / 9, "Обрезка premium-изображения")}
               label="Главное изображение premium"
             />
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Field label="CTA ссылка">
-                <Input value={editingVenue.premiumConfig.ctaUrl || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaUrl: event.target.value } })} placeholder="https://t.me/..." />
-              </Field>
-              <Field label="CTA текст">
-                <Input value={editingVenue.premiumConfig.ctaText || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, ctaText: event.target.value } })} placeholder="Например: Забронировать стол" />
-              </Field>
-            </div>
           </div>
         )}
       </AdminBlock>
@@ -481,7 +557,7 @@ export function VenueEditor(props: any) {
 }
 
 export function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploadError, uploadingTarget, uploadSelectedImages, onDeleteEvent, createEvent }: any) {
-  const { startCropQueue, cropDialogProps } = useImageCropQueue(uploadSelectedImages);
+  const { startCropQueue, startCropFromUrl, cropDialogProps } = useImageCropQueue(uploadSelectedImages);
 
   if (!editingVenue.id) {
     return <AdminBlock title="События"><EmptyLine>Сначала сохраните заведение.</EmptyLine></AdminBlock>;
@@ -524,6 +600,7 @@ export function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploa
         existingUrl={newEvent.coverImage}
         uploading={uploadingTarget === "event"}
         onSelect={(files) => startCropQueue(files, "event", 16 / 9, "Обрезка обложки события")}
+        onCropExisting={() => startCropFromUrl(newEvent.coverImage, "event", 16 / 9, "Обрезка обложки события")}
         label="Обложка события"
       />
       <div className="mt-3 flex justify-end">
@@ -616,85 +693,7 @@ function EmojiPickerPopover({ value, onChange }: { value: string; onChange: (emo
   );
 }
 
-function PremiumVenuePreview({ venue }: { venue: any }) {
-  const premium = venue.premiumConfig as PremiumConfig;
-  const colors = premium.customColors || {
-    primary: "#131923",
-    accent: "#c7a469",
-    glowColor: "#c7a469",
-    tagColor: "#c7a469",
-    ctaColor: "#c7a469",
-  };
-  const items = normalizePremiumRecommendations(premium.topItems || premium.featuredDrinks || []);
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Предпросмотр карточки</div>
-      <div
-        className="mx-auto w-full max-w-md overflow-hidden rounded-xl border text-white"
-        style={{
-          backgroundColor: colors.primary,
-          borderColor: colors.accent,
-          boxShadow: `0 0 24px color-mix(in srgb, ${colors.glowColor} 24%, transparent)`,
-        }}
-      >
-        {premium.heroImage ? (
-          <img src={premium.heroImage} alt="" className="aspect-video w-full object-cover" />
-        ) : (
-          <div className="flex aspect-video items-center justify-center bg-neutral-950 text-xs text-neutral-600">Главное изображение</div>
-        )}
-        <div className="flex flex-col gap-4 p-4">
-          <div>
-            <div className="text-[10px] uppercase text-neutral-500">{venue.category || "Категория"}</div>
-            <div className="mt-1 text-lg font-semibold">{venue.name || "Название заведения"}</div>
-          </div>
-          {venue.tags?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {venue.tags.slice(0, 5).map((tag: string) => (
-                <span
-                  key={tag}
-                  className="rounded-md border px-2 py-1 text-[10px] font-semibold"
-                  style={{
-                    color: colors.tagColor || colors.accent,
-                    borderColor: colors.tagColor || colors.accent,
-                    backgroundColor: `color-mix(in srgb, ${colors.tagColor || colors.accent} 18%, #05070a)`,
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-          {premium.moodBlock && (
-            <div className="flex gap-2 rounded-lg border border-neutral-800 p-3 text-xs text-neutral-300">
-              <span>{premium.moodEmoji || "✨"}</span>
-              <span>{premium.moodBlock}</span>
-            </div>
-          )}
-          {items.length > 0 && (
-            <div className="flex flex-col gap-2 rounded-lg border border-neutral-800 p-3">
-              <div className="text-[10px] font-semibold uppercase text-neutral-500">Рекомендуем</div>
-              {items.slice(0, 4).map((item, index) => (
-                <div key={`${item.text}-${index}`} className="grid grid-cols-[24px_minmax(0,1fr)] gap-2 text-xs">
-                  <span>{item.emoji}</span>
-                  <span>{item.text}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          <div
-            className="rounded-lg px-3 py-2 text-center text-xs font-semibold text-black"
-            style={{ backgroundColor: colors.ctaColor || colors.accent }}
-          >
-            {premium.ctaText || "Подробнее"}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ImageUploadBox({ existingUrl, onSelect, label, multiple = false, uploading = false, fit = "cover" }: any) {
+function ImageUploadBox({ existingUrl, onSelect, onCropExisting, label, multiple = false, uploading = false, fit = "cover" }: any) {
   const preview = existingUrl;
   return (
     <div className="mt-3 rounded-xl border p-3">
@@ -717,6 +716,12 @@ function ImageUploadBox({ existingUrl, onSelect, label, multiple = false, upload
             }}
           />
         </label>
+        {preview && onCropExisting && (
+          <Button type="button" variant="outline" size="sm" onClick={() => void onCropExisting()} disabled={uploading}>
+            <Crop data-icon="inline-start" />
+            Обрезать текущую
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -794,7 +799,7 @@ function ImageCropDialog({
   );
 }
 
-function SortableImage({ url, onDelete }: { key?: React.Key; url: string; onDelete: () => void }) {
+function SortableImage({ url, onDelete, onCrop }: { key?: React.Key; url: string; onDelete: () => void; onCrop: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: url });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className="relative aspect-video overflow-hidden rounded-lg border bg-muted shadow-sm">
@@ -804,6 +809,9 @@ function SortableImage({ url, onDelete }: { key?: React.Key; url: string; onDele
       </Button>
       <Button type="button" variant="destructive" size="icon-sm" onClick={onDelete} className="absolute right-1 top-1">
         <Trash2 />
+      </Button>
+      <Button type="button" variant="secondary" size="icon-sm" onClick={() => void onCrop()} className="absolute bottom-1 right-1" aria-label="Обрезать фото">
+        <Crop />
       </Button>
     </div>
   );

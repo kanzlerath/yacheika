@@ -47,7 +47,16 @@ export interface PremiumConfig {
     glowColor: string;
     tagColor?: string;
     ctaColor?: string;
+    ctaTextColor?: string;
+    vibeTextColor?: string;
+    vibeBackgroundColor?: string;
+    vibeBorderColor?: string;
+    vibeGlowColor?: string;
+    recommendationBorderColor?: string;
   };
+  ctaAnimation?: 'none' | 'breathe' | 'shimmer' | 'nudge';
+  vibeGlowEnabled?: boolean;
+  vibeGlowIntensity?: number;
   heroImage?: string;
   moodBlock?: string; // Current mood or event overlay (e.g. "сегодня техно")
   moodEmoji?: string;
@@ -110,6 +119,16 @@ export interface VenueEvent {
   date: string; // YYYY-MM-DD
   time: string; // HH:MM
   coverImage?: string;
+}
+
+export interface EventAttendance {
+  id: string;
+  userId: string;
+  eventId: string;
+  venueId: string;
+  status: 'going' | 'not_going';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Collection {
@@ -180,6 +199,8 @@ export interface AdminUserDetail {
     likes: number;
     notMyPlace: number;
     vibeTags: number;
+    eventsGoing: number;
+    eventsNotGoing: number;
     activeDays30d: number;
     activeDays7d: number;
   };
@@ -200,6 +221,15 @@ export interface AdminUserDetail {
   recentReactions: Array<Reaction & {
     venue?: { id: string; name: string; category?: string; status?: string } | null;
   }>;
+  recentAttendance: Array<{
+    id: string;
+    eventId: string;
+    venueId: string;
+    status: 'going' | 'not_going';
+    updatedAt: string;
+    event?: { id: string; title: string; date: string; time: string } | null;
+    venue?: { id: string; name: string } | null;
+  }>;
 }
 
 export interface VenueAudit {
@@ -215,6 +245,8 @@ export interface VenueAudit {
     likes: number;
     notMyPlace: number;
     vibeTags: number;
+    eventsGoing: number;
+    eventsNotGoing: number;
     uniqueUsers: number;
     conversionRate: number;
   };
@@ -241,6 +273,13 @@ export interface VenueAudit {
   };
   recentAnalytics: AnalyticsEvent[];
   recentReactions: Reaction[];
+  recentAttendance: Array<{
+    id: string;
+    status: 'going' | 'not_going';
+    updatedAt: string;
+    event?: { id: string; title: string; date: string; time: string } | null;
+    user?: { id: string; username: string; firstName: string } | null;
+  }>;
   upcomingEvents: VenueEvent[];
   quality: {
     score: number;

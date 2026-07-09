@@ -1,6 +1,5 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { S3Client, CreateBucketCommand, PutBucketPolicyCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-
+import { BadRequestException, Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { S3Client, CreateBucketCommand, GetObjectCommand, PutBucketPolicyCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 const FILE_EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -103,6 +102,33 @@ export class StorageService implements OnModuleInit {
     return {
       url: publicUrl,
       key: fileKey,
+    };
+  }
+
+  async getStoredImage(urlValue: string) {
+    const bucketName = process.env.MINIO_BUCKET || 'yacheyka-gallery';
+    const publicUrl = new URL(process.env.MINIO_PUBLIC_URL || 'http://localhost:9000');
+    let requestedUrl: URL;
+
+    try {
+      requestedUrl = new URL(urlValue);
+    } catch {
+      throw new BadRequestException('Invalid image URL');
+    }
+
+    const publicPath = publicUrl.pathname.replace(/\/+$/, '');
+    const prefix = `${publicPath}/${bucketName}/`.replace(/\/+/g, '/');
+    if (requestedUrl.origin !== publicUrl.origin || !requestedUrl.pathname.startsWith(prefix)) {
+      throw new BadRequestException('Only project storage images can be cropped');
+    }
+
+    const key = decodeURIComponent(requestedUrl.pathname.slice(prefix.length));
+    if (!key || key.includes('..')) throw new BadRequestException('Invalid storage key');
+
+    const object = await this.s3Client.send(new GetObjectCommand({ Bucket: bucketName, Key: key }));
+    return {
+      contentType: object.ContentType || 'application/octet-stream',
+      body: Buffer.from(await object.Body.transformToByteArray()),
     };
   }
 }

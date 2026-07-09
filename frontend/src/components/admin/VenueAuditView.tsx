@@ -112,6 +112,26 @@ export function VenueAuditView({ audit, loading, venue }: { audit: VenueAudit | 
         </AuditBlock>
       </div>
 
+      <AuditBlock title="Посещение мероприятий">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FunnelItem icon={Check} label="Пойдут" value={audit.totals.eventsGoing} />
+          <FunnelItem icon={TriangleAlert} label="Не пойдут" value={audit.totals.eventsNotGoing} />
+        </div>
+        <div className="mt-3 flex max-h-64 flex-col gap-2 overflow-y-auto">
+          {audit.recentAttendance.map((item) => (
+            <div key={item.id} className="rounded-lg border bg-muted/30 px-3 py-2 text-xs">
+              <div className="font-semibold text-foreground">
+                {item.status === "going" ? "Пойдёт" : "Не пойдёт"} · {item.event?.title || "Событие удалено"}
+              </div>
+              <div className="text-muted-foreground">
+                @{item.user?.username || item.user?.firstName || "пользователь"} · {new Date(item.updatedAt).toLocaleString("ru-RU")}
+              </div>
+            </div>
+          ))}
+          {audit.recentAttendance.length === 0 && <EmptyLine>Решений по мероприятиям пока нет.</EmptyLine>}
+        </div>
+      </AuditBlock>
+
       <AuditBlock title="Последние действия по карточке">
         <div className="max-h-80 overflow-y-auto">
           {audit.recentAnalytics.length === 0 ? (

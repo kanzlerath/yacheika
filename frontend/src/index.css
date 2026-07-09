@@ -542,6 +542,9 @@ body {
 .premium-cta {
   background: var(--venue-cta, var(--app-accent)) !important;
   border-color: var(--venue-cta, var(--app-accent)) !important;
+  color: var(--venue-cta-text, #05070a) !important;
+  position: relative;
+  overflow: hidden;
 }
 
 .app-text-button-like-active {
@@ -603,18 +606,20 @@ body {
 
 .recommended-panel {
   position: relative;
-  border: 1px solid color-mix(in srgb, var(--venue-accent, var(--app-accent)) 42%, var(--app-border));
+  border: 1px solid var(--venue-recommendation-border, var(--venue-accent, var(--app-accent)));
   border-radius: 12px;
   background: color-mix(in srgb, var(--app-panel-soft) 52%, transparent);
-  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--venue-accent, var(--app-accent)) 72%, transparent);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--venue-recommendation-border, var(--venue-accent, var(--app-accent))) 72%, transparent);
 }
 
 .premium-mood-panel {
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--venue-glow, var(--app-accent)) 42%, var(--app-border));
-  background: color-mix(in srgb, var(--app-panel) 82%, transparent);
+  border: 1px solid var(--venue-vibe-border, var(--venue-glow, var(--app-accent)));
+  background: var(--venue-vibe-bg, var(--app-panel));
+  color: var(--venue-vibe-text, var(--app-text));
+  box-shadow: 0 0 24px color-mix(in srgb, var(--venue-vibe-glow, var(--venue-glow, var(--app-accent))) var(--venue-vibe-glow-intensity, 35%), transparent);
 }
 
 .premium-mood-panel::before {
@@ -627,9 +632,9 @@ body {
     from var(--mood-angle, 0deg),
     transparent 0deg,
     transparent 42deg,
-    color-mix(in srgb, var(--venue-glow, var(--app-accent)) 18%, transparent) 72deg,
-    color-mix(in srgb, var(--venue-glow, var(--app-accent)) 92%, transparent) 96deg,
-    color-mix(in srgb, var(--venue-glow, var(--app-accent)) 22%, transparent) 126deg,
+    color-mix(in srgb, var(--venue-vibe-glow, var(--app-accent)) 18%, transparent) 72deg,
+    color-mix(in srgb, var(--venue-vibe-glow, var(--app-accent)) 92%, transparent) 96deg,
+    color-mix(in srgb, var(--venue-vibe-glow, var(--app-accent)) 22%, transparent) 126deg,
     transparent 164deg,
     transparent 360deg
   );
@@ -638,7 +643,49 @@ body {
   mask-composite: exclude;
   pointer-events: none;
   animation: mood-glow-orbit 7s linear infinite;
-  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--venue-glow, var(--app-accent)) 42%, transparent));
+  filter: drop-shadow(0 0 12px color-mix(in srgb, var(--venue-vibe-glow, var(--app-accent)) var(--venue-vibe-glow-intensity, 35%), transparent));
+}
+
+.premium-cta-breathe {
+  animation: premium-cta-breathe 1.8s ease-in-out infinite;
+}
+
+.premium-cta-nudge {
+  animation: premium-cta-nudge 3.2s ease-in-out infinite;
+}
+
+.premium-cta-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, rgb(255 255 255 / 36%) 48%, transparent 72%);
+  transform: translateX(-120%);
+  animation: premium-cta-shimmer 2.6s ease-in-out infinite;
+}
+
+@keyframes premium-cta-breathe {
+  50% { transform: scale(1.018); filter: brightness(1.1); }
+}
+
+@keyframes premium-cta-nudge {
+  0%, 82%, 100% { transform: translateX(0); }
+  86% { transform: translateX(-3px); }
+  90% { transform: translateX(3px); }
+  94% { transform: translateX(-2px); }
+}
+
+@keyframes premium-cta-shimmer {
+  0%, 35% { transform: translateX(-120%); }
+  75%, 100% { transform: translateX(120%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-cta-breathe,
+  .premium-cta-nudge,
+  .premium-cta-shimmer::after,
+  .premium-mood-panel::before {
+    animation: none;
+  }
 }
 
 .premium-mood-panel > * {

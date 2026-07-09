@@ -150,6 +150,10 @@ function UserDetailPanel({
               <Metric label="Маршруты" value={detail.totals.routes} compact />
               <Metric label="Лайки" value={detail.totals.likes} compact />
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Metric label="Пойдут на события" value={detail.totals.eventsGoing} compact />
+              <Metric label="Не пойдут" value={detail.totals.eventsNotGoing} compact />
+            </div>
             <div className="flex flex-col gap-2">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Последние действия</div>
               {detail.recentAnalytics.slice(0, 8).map((event) => (
@@ -159,6 +163,16 @@ function UserDetailPanel({
                 </div>
               ))}
               {detail.recentAnalytics.length === 0 && <EmptyLine>Событий пока нет.</EmptyLine>}
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Планы на мероприятия</div>
+              {detail.recentAttendance.slice(0, 8).map((attendance) => (
+                <div key={attendance.id} className="rounded-lg border bg-muted/20 px-3 py-2 text-xs">
+                  <div className="font-semibold text-foreground">{attendance.status === "going" ? "Пойдёт" : "Не пойдёт"} · {attendance.event?.title || "Событие удалено"}</div>
+                  <div className="text-muted-foreground">{attendance.venue?.name || "без заведения"} · {new Date(attendance.updatedAt).toLocaleString("ru-RU")}</div>
+                </div>
+              ))}
+              {detail.recentAttendance.length === 0 && <EmptyLine>Решений по мероприятиям пока нет.</EmptyLine>}
             </div>
             <div className="flex flex-col gap-2">
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Реакции</div>
