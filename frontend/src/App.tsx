@@ -70,6 +70,9 @@ function ScopeApp() {
   const [nearbySort, setNearbySort] = useState<boolean>(() => {
     return localStorage.getItem("yacheyka.nearbySort") === "true";
   });
+  const [clusterMaxZoom, setClusterMaxZoom] = useState(
+    () => auth?.user.preferences?.clusterMaxZoom ?? 14,
+  );
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAuthPromptModal, setShowAuthPromptModal] = useState(false);
@@ -86,6 +89,28 @@ function ScopeApp() {
   const handleNearbySortChange = (val: boolean) => {
     setNearbySort(val);
     localStorage.setItem("yacheyka.nearbySort", String(val));
+  };
+
+  const handleClusterMaxZoomChange = async (value: number) => {
+    const previousValue = clusterMaxZoom;
+    setClusterMaxZoom(value);
+    if (!auth) return;
+
+    try {
+      const response = await fetch("/api/auth/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clusterMaxZoom: value }),
+      });
+      if (!response.ok) throw new Error("Failed to save map preferences");
+
+      const updatedAuth = await response.json() as TelegramAuthSession;
+      setAuth(updatedAuth);
+      storeTelegramAuth(updatedAuth);
+    } catch (error) {
+      setClusterMaxZoom(previousValue);
+      throw error;
+    }
   };
 
   const handleLogout = () => {
@@ -205,6 +230,10 @@ function ScopeApp() {
   useEffect(() => {
     fetchAllData(auth);
   }, [auth?.user?.id]);
+
+  useEffect(() => {
+    setClusterMaxZoom(auth?.user.preferences?.clusterMaxZoom ?? 14);
+  }, [auth?.user.preferences?.clusterMaxZoom]);
 
   const handleReactVenue = async (
     venueId: string,
@@ -407,6 +436,7 @@ function ScopeApp() {
             mapStyle={mapStyle}
             userCoords={userCoords}
             pendingCoords={null}
+            clusterMaxZoom={clusterMaxZoom}
           />
 
           <AnimatePresence>
@@ -463,6 +493,8 @@ function ScopeApp() {
         onChangeMapStyle={handleMapStyleChange}
         nearbySort={nearbySort}
         onChangeNearbySort={handleNearbySortChange}
+        clusterMaxZoom={clusterMaxZoom}
+        onChangeClusterMaxZoom={handleClusterMaxZoomChange}
       />
 
       <AuthPromptModal

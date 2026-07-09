@@ -13,6 +13,9 @@ export interface TelegramUser {
   lastName?: string;
   avatarUrl?: string;
   email?: string;
+  preferences?: {
+    clusterMaxZoom?: number;
+  };
   createdAt: string;
 }
 
@@ -48,11 +51,16 @@ export interface PremiumConfig {
   heroImage?: string;
   moodBlock?: string; // Current mood or event overlay (e.g. "сегодня техно")
   moodEmoji?: string;
-  featuredDrinks?: string[];
-  topItems?: string[];
+  featuredDrinks?: PremiumRecommendation[];
+  topItems?: PremiumRecommendation[];
   ctaUrl?: string;
   ctaText?: string;
 }
+
+export type PremiumRecommendation = string | {
+  text: string;
+  emoji: string;
+};
 
 export interface Venue {
   id: string;

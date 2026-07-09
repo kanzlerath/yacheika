@@ -485,7 +485,8 @@ body {
 
 .venue-tab {
   position: relative;
-  min-height: 40px;
+  height: 100%;
+  min-width: 0;
   border-radius: 10px;
   color: var(--app-text-muted);
   font-size: 12px;
@@ -605,7 +606,7 @@ body {
   border: 1px solid color-mix(in srgb, var(--venue-accent, var(--app-accent)) 42%, var(--app-border));
   border-radius: 12px;
   background: color-mix(in srgb, var(--app-panel-soft) 52%, transparent);
-  animation: recommended-pulse 2.8s var(--app-ease) infinite;
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--venue-accent, var(--app-accent)) 72%, transparent);
 }
 
 .premium-mood-panel {
@@ -646,9 +647,9 @@ body {
 }
 
 .premium-tag-pill {
-  color: color-mix(in srgb, var(--venue-tag, var(--app-accent)) 82%, var(--app-text)) !important;
-  background: color-mix(in srgb, var(--venue-tag, var(--app-accent)) 13%, var(--app-bg)) !important;
-  border: 1px solid color-mix(in srgb, var(--venue-tag, var(--app-accent)) 54%, var(--app-border)) !important;
+  color: color-mix(in srgb, var(--venue-tag, var(--app-accent)) 58%, white) !important;
+  background: color-mix(in srgb, var(--venue-tag, var(--app-accent)) 22%, var(--app-bg)) !important;
+  border: 1px solid color-mix(in srgb, var(--venue-tag, var(--app-accent)) 72%, var(--app-border)) !important;
 }
 
 @property --mood-angle {
@@ -663,15 +664,6 @@ body {
   }
 }
 
-@keyframes recommended-pulse {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--venue-glow, var(--app-accent)) 0%, transparent);
-  }
-  50% {
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--venue-glow, var(--app-accent)) 32%, transparent);
-  }
-}
 
 .venue-info-row {
   display: grid;

@@ -79,13 +79,11 @@ class PremiumConfigDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  featuredDrinks?: string[];
+  featuredDrinks?: Array<string | { text: string; emoji: string }>;
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  topItems?: string[];
+  topItems?: Array<string | { text: string; emoji: string }>;
 
   @IsOptional()
   @IsString()
