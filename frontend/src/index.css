@@ -70,22 +70,14 @@
   --shadow-amber-glow: 0 0 15px rgba(245, 158, 11, 0.4);
 }
 
-html,
-body {
-  min-height: 100%;
-  width: 100%;
-  position: relative;
-  margin: 0;
-  padding: 0;
-  overscroll-behavior: none;
-  background-color: #030303;
-}
-
-#root {
-  height: 100vh;
+html, body, #root {
+  height: 100%;
   width: 100%;
   position: relative;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
   background-color: #030303;
 }
 
@@ -814,13 +806,17 @@ body {
   }
 }
 
-@supports (height: 100lvh) {
+@supports (height: 100dvh) {
+  html,
+  body,
   #root {
-    height: 100lvh;
+    height: 100dvh;
   }
 }
 
 @media (display-mode: standalone) {
+  html,
+  body,
   #root {
     height: 100vh !important;
   }
