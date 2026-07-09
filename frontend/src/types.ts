@@ -15,6 +15,7 @@ export interface TelegramUser {
   email?: string;
   preferences?: {
     clusterMaxZoom?: number;
+    appTheme?: MapStyle;
   };
   createdAt: string;
 }

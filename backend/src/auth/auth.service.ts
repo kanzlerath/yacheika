@@ -441,7 +441,7 @@ export class AuthService {
 
   async updateUserPreferences(
     session: AuthSession,
-    preferences: { clusterMaxZoom?: number },
+    preferences: { clusterMaxZoom?: number; appTheme?: 'dark' | 'light' },
   ) {
     const user = await this.userRepository.findOne({ where: { id: session.userId } });
     if (!user) throw new UnauthorizedException('Session user does not exist');

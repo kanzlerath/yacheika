@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Map, ShieldCheck } from "lucide-react";
+import { Map, Moon, ShieldCheck, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,11 @@ interface AdminUser {
   status: "active" | "disabled";
 }
 
-interface AdminRouteProps {
-  mapStyle: MapStyle;
-}
-
-export default function AdminRoute({ mapStyle }: AdminRouteProps) {
+export default function AdminRoute() {
+  const [adminTheme, setAdminTheme] = useState<MapStyle>(() => {
+    const stored = localStorage.getItem("yacheyka.adminTheme");
+    return stored === "light" || stored === "dark" ? stored : "dark";
+  });
   const [admin, setAdmin] = useState<AdminUser | null | undefined>(undefined);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [venues, setVenues] = useState<Venue[]>([]);
@@ -34,6 +34,14 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [adminMobileShowMap, setAdminMobileShowMap] = useState(false);
   const [filters] = useState(createEmptyVenueDiscoveryFilters);
+
+  const toggleAdminTheme = () => {
+    setAdminTheme((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      localStorage.setItem("yacheyka.adminTheme", next);
+      return next;
+    });
+  };
 
   const fetchAdminData = async () => {
     const [vRes, eRes, aRes, dRes, uRes, sRes] = await Promise.all([
@@ -188,17 +196,21 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
   };
 
   if (admin === undefined) {
-    return <div className="min-h-screen bg-background" />;
+    return <div data-theme={adminTheme} className={`min-h-screen bg-background ${adminTheme === "dark" ? "dark" : ""}`} />;
   }
 
   if (!admin) {
-    return <AdminLoginForm error={loginError} onSubmit={handleLogin} />;
+    return (
+      <div data-theme={adminTheme} className={`min-h-screen bg-background ${adminTheme === "dark" ? "dark" : ""}`}>
+        <AdminLoginForm error={loginError} onSubmit={handleLogin} />
+      </div>
+    );
   }
 
   return (
     <div
-      data-theme={mapStyle}
-      className="absolute inset-0 w-full flex flex-col overflow-hidden"
+      data-theme={adminTheme}
+      className={`absolute inset-0 w-full flex flex-col overflow-hidden ${adminTheme === "dark" ? "dark" : ""}`}
       style={{ backgroundColor: "var(--app-bg)" }}
     >
       <header className="h-14 shrink-0 border-b border-border bg-card/95 flex items-center justify-between px-4 sm:px-6">
@@ -209,14 +221,26 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
           </div>
           <div className="text-[11px] text-muted-foreground truncate">{admin.email} · {admin.role}</div>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleLogout}
-          size="sm"
-        >
-          Выйти
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleAdminTheme}
+            aria-label={adminTheme === "dark" ? "Включить светлую тему" : "Включить тёмную тему"}
+            title={adminTheme === "dark" ? "Светлая тема" : "Тёмная тема"}
+          >
+            {adminTheme === "dark" ? <Sun /> : <Moon />}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleLogout}
+            size="sm"
+          >
+            Выйти
+          </Button>
+        </div>
       </header>
 
       <main className="w-full flex-1 h-0 min-h-0 relative overflow-hidden bg-background">
@@ -284,7 +308,7 @@ export default function AdminRoute({ mapStyle }: AdminRouteProps) {
             onCoordsSelect={handleMapCoordsClick}
             filters={filters}
             eventsList={events}
-            mapStyle={mapStyle}
+            mapStyle={adminTheme}
             userCoords={null}
             pendingCoords={pendingCoords}
           />

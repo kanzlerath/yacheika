@@ -82,9 +82,27 @@ function ScopeApp() {
 
   const currentUser = auth?.user ?? null;
 
-  const handleMapStyleChange = (style: MapStyle) => {
+  const handleMapStyleChange = async (style: MapStyle) => {
+    const previousStyle = mapStyle;
     setMapStyle(style);
     localStorage.setItem("yacheyka.mapStyle", style);
+    if (!auth) return;
+
+    try {
+      const response = await fetch("/api/auth/preferences", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ appTheme: style }),
+      });
+      if (!response.ok) throw new Error("Failed to save theme preference");
+      const updatedAuth = await response.json() as TelegramAuthSession;
+      setAuth(updatedAuth);
+      storeTelegramAuth(updatedAuth);
+    } catch (error) {
+      setMapStyle(previousStyle);
+      localStorage.setItem("yacheyka.mapStyle", previousStyle);
+      throw error;
+    }
   };
 
   const handleNearbySortChange = (val: boolean) => {
@@ -240,6 +258,13 @@ function ScopeApp() {
     setClusterMaxZoom(auth?.user.preferences?.clusterMaxZoom ?? 14);
   }, [auth?.user.preferences?.clusterMaxZoom]);
 
+  useEffect(() => {
+    const preferredTheme = auth?.user.preferences?.appTheme;
+    if (!preferredTheme) return;
+    setMapStyle(preferredTheme);
+    localStorage.setItem("yacheyka.mapStyle", preferredTheme);
+  }, [auth?.user.preferences?.appTheme]);
+
   const handleReactVenue = async (
     venueId: string,
     type: "like" | "not_my_place" | "vibe_tag",
@@ -366,14 +391,14 @@ function ScopeApp() {
   };
 
   if (window.location.pathname === "/admin") {
-    return <AdminRoute mapStyle={mapStyle} />;
+    return <AdminRoute />;
   }
 
   return (
     <div
       id="application-root"
       data-theme={mapStyle}
-      className="absolute inset-0 w-full flex flex-col overflow-hidden transition-colors duration-300"
+      className={`absolute inset-0 w-full flex flex-col overflow-hidden transition-colors duration-300 ${mapStyle === "dark" ? "dark" : ""}`}
       style={{ backgroundColor: "var(--app-bg)" }}
     >
       <header

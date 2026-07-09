@@ -34,6 +34,7 @@ export class UserEntity {
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   preferences: {
     clusterMaxZoom?: number;
+    appTheme?: 'dark' | 'light';
   };
 
   @CreateDateColumn()
