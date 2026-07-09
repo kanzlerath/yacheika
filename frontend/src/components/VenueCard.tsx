@@ -446,7 +446,7 @@ export default function VenueCard({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={panelTransition}
-              className={`${previewMode ? "relative h-[760px] w-full rounded-xl border" : "fixed inset-0 z-[80]"} overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl`}
+              className={`venue-card-expanded ${previewMode ? "relative h-[760px] w-full rounded-xl border" : "fixed inset-0 z-[80]"} overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl`}
               style={{
                 paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
                 background: "var(--app-bg)",
