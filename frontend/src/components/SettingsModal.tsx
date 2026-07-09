@@ -118,7 +118,7 @@ export default function SettingsModal({
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="safe-modal-shell fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -135,7 +135,7 @@ export default function SettingsModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={panelTransition}
-            className="settings-surface relative w-full max-w-md rounded-2xl border p-6 shadow-2xl z-10 space-y-6 overflow-hidden max-h-[90vh] overflow-y-auto"
+            className="safe-modal-content settings-surface relative z-10 max-h-full w-full max-w-md space-y-6 overflow-y-auto rounded-2xl border p-6 shadow-2xl"
           >
             {/* Header */}
             <div className="settings-divider flex items-center justify-between pb-3 border-b">
@@ -281,7 +281,7 @@ export default function SettingsModal({
                           <a href="/privacy" className="underline decoration-neutral-700 hover:text-neutral-200">Политикой обработки персональных данных</a>.
                         </span>
                       </label>
-                      <TelegramLoginWidget disabled={!legalConsentAccepted} />
+                      <TelegramLoginWidget disabled={!legalConsentAccepted} theme={mapStyle} />
                     </div>
                   </div>
                 </motion.div>

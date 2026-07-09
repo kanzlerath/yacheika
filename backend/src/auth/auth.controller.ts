@@ -40,6 +40,16 @@ export class AuthController {
     return process.env.FRONTEND_URL || (process.env.DOMAIN_NAME ? `https://${process.env.DOMAIN_NAME}` : 'http://localhost:3000');
   }
 
+  private setAuthCookie(res: Response, authSession: { token: string; expiresAt: string }) {
+    res.cookie(AUTH_COOKIE_NAME, authSession.token, {
+      httpOnly: true,
+      secure: Boolean(process.env.DOMAIN_NAME),
+      sameSite: 'lax',
+      maxAge: Math.max(0, new Date(authSession.expiresAt).getTime() - Date.now()),
+      path: '/',
+    });
+  }
+
   @Get('telegram/start')
   startTelegramLogin(@Res() res: Response) {
     this.authService.assertOidcConfigured();
@@ -130,6 +140,29 @@ export class AuthController {
     });
 
     return res.redirect(authUrl.toString());
+  }
+
+  @Get('yandex/config')
+  getYandexConfig() {
+    return this.authService.getYandexPublicConfig();
+  }
+
+  @Post('yandex/token')
+  async handleYandexSuggestToken(
+    @Body() body: { accessToken?: string },
+    @Res() res: Response,
+  ) {
+    const accessToken = String(body?.accessToken || '').trim();
+    if (!accessToken) {
+      throw new BadRequestException('Yandex access token is missing');
+    }
+
+    const authSession = await this.authService.authenticateYandexAccessToken(accessToken);
+    this.setAuthCookie(res, authSession);
+    return res.json({
+      expiresAt: authSession.expiresAt,
+      user: authSession.user,
+    });
   }
 
   @Get('yandex/callback')

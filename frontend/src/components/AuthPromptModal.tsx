@@ -9,17 +9,20 @@ import { ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
+import { MapStyle } from "../types";
 
 interface AuthPromptModalProps {
   isOpen: boolean;
   onClose: () => void;
   actionText?: string;
+  theme: MapStyle;
 }
 
 export default function AuthPromptModal({
   isOpen,
   onClose,
   actionText = "чтобы ставить отметки заведениям и делиться вайбом",
+  theme,
 }: AuthPromptModalProps) {
   const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
 
@@ -32,7 +35,7 @@ export default function AuthPromptModal({
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div className="safe-modal-shell fixed inset-0 z-[120] flex items-center justify-center">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -49,7 +52,7 @@ export default function AuthPromptModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 12 }}
             transition={panelTransition}
-            className="auth-prompt-surface relative z-10 flex w-full max-w-sm flex-col gap-6 overflow-hidden rounded-2xl border border-neutral-850 bg-neutral-950 p-6 text-center shadow-2xl"
+            className="safe-modal-content auth-prompt-surface relative z-10 flex max-h-full w-full max-w-sm flex-col gap-6 overflow-y-auto rounded-2xl border border-neutral-850 bg-neutral-950 p-6 text-center shadow-2xl"
           >
             {/* Close Button */}
             <Button
@@ -102,7 +105,7 @@ export default function AuthPromptModal({
                   <a href="/privacy" className="underline decoration-neutral-700 hover:text-neutral-200">Политикой обработки персональных данных</a>.
                 </span>
               </label>
-              <TelegramLoginWidget disabled={!legalConsentAccepted} />
+              <TelegramLoginWidget disabled={!legalConsentAccepted} theme={theme} />
               <span className="text-[10px] text-neutral-500 font-mono">
                 Безопасный вход. Telegram и Яндекс ID проверяются сервером.
               </span>
