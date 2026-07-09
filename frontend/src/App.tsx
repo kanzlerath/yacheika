@@ -42,6 +42,11 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
+const SYSTEM_SURFACE_COLORS: Record<MapStyle, string> = {
+  dark: "#05070a",
+  light: "#f7f7f7",
+};
+
 export default function App() {
   if (window.location.pathname === "/auth/yandex/suggest-token") {
     return <YandexSuggestTokenPage />;
@@ -86,6 +91,12 @@ function ScopeApp() {
   const [mobileView, setMobileView] = useState<"map" | "list">("map");
 
   const currentUser = auth?.user ?? null;
+
+  useEffect(() => {
+    const surface = SYSTEM_SURFACE_COLORS[mapStyle];
+    document.documentElement.style.setProperty("--system-surface", surface);
+    document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')?.setAttribute("content", surface);
+  }, [mapStyle]);
 
   const handleMapStyleChange = async (style: MapStyle) => {
     const previousStyle = mapStyle;

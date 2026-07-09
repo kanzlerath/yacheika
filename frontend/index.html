@@ -7,6 +7,24 @@
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#05070a" />
+    <script>
+      (() => {
+        let savedTheme = null;
+        try {
+          savedTheme = localStorage.getItem("yacheyka.mapStyle");
+        } catch {
+          // Storage can be unavailable in restricted browsing modes.
+        }
+
+        const darkRoutes = ["/privacy", "/terms", "/consent", "/delete-account", "/auth/yandex/suggest-token"];
+        const surface = !darkRoutes.includes(window.location.pathname) && savedTheme === "light"
+          ? "#f7f7f7"
+          : "#05070a";
+        document.documentElement.style.setProperty("--system-surface", surface);
+        document.querySelector('meta[name="theme-color"]')?.setAttribute("content", surface);
+      })();
+    </script>
 
     <!-- iOS PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes" />
