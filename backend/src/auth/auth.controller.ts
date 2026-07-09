@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Res, BadRequestException, Req } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query, Res, BadRequestException, Req } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 import { AuthService } from './auth.service';
@@ -177,6 +177,21 @@ export class AuthController {
     const session = this.authService.verifySessionToken(token);
     const resolvedSession = await this.authService.resolveSessionUser(session);
     return resolvedSession;
+  }
+
+  @Patch('preferences')
+  async updatePreferences(
+    @Req() req: Request,
+    @Body() body: { clusterMaxZoom?: number },
+  ) {
+    const clusterMaxZoom = Number(body?.clusterMaxZoom);
+    if (!Number.isInteger(clusterMaxZoom) || clusterMaxZoom < 8 || clusterMaxZoom > 18) {
+      throw new BadRequestException('clusterMaxZoom must be an integer between 8 and 18');
+    }
+
+    const cookies = parseCookieHeader(req.headers.cookie);
+    const session = this.authService.verifySessionToken(cookies[AUTH_COOKIE_NAME]);
+    return this.authService.updateUserPreferences(session, { clusterMaxZoom });
   }
 
   @Post('logout')

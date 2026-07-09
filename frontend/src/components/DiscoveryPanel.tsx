@@ -11,7 +11,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
-  Sparkles,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,15 +187,21 @@ export default function DiscoveryPanel({
 
           {isFiltersExpanded && (
             <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-500">
-                  <Sparkles className="size-3" />
-                  Фильтры
-                </div>
-                {activeFilterCount > 0 && (
+              {activeFilterCount > 0 && (
+                <div className="flex items-center justify-end gap-2">
                   <span className="text-[10px] font-mono text-zinc-500">{activeFilterCount} выбрано</span>
-                )}
-              </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    onClick={clearAllFilters}
+                    title="Сбросить фильтры"
+                    aria-label="Сбросить фильтры"
+                  >
+                    <RotateCcw />
+                  </Button>
+                </div>
+              )}
 
               <div className="flex flex-col gap-2">
                 <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">Тип места</div>
@@ -263,12 +269,13 @@ export default function DiscoveryPanel({
             {(activeFilterCount > 0 || filters.search) && (
               <Button
                 type="button"
-                variant="link"
-                size="xs"
+                variant="ghost"
+                size="icon-xs"
                 onClick={clearAllFilters}
-                className="h-auto px-0 text-[10px] text-rose-400 hover:text-rose-300 font-mono"
+                title="Сбросить фильтры"
+                aria-label="Сбросить фильтры"
               >
-                Сбросить
+                <RotateCcw />
               </Button>
             )}
           </div>
@@ -277,7 +284,7 @@ export default function DiscoveryPanel({
             {filteredVenues.length === 0 ? (
               <div className="text-center py-10 text-xs text-zinc-500 border border-dashed border-zinc-900 rounded-xl space-y-1">
                 <div>Места не найдены.</div>
-                <div className="text-[10px]">Кликните "Сбросить" для вызова полного списка.</div>
+                <div className="text-[10px]">Очистите выбранные параметры, чтобы увидеть полный список.</div>
               </div>
             ) : (
               filteredVenues.map((venue) => {

@@ -34,6 +34,7 @@ import {
   slugifyVenueName,
 } from "../utils/venueAdmin";
 import { cn } from "@/lib/utils";
+import { normalizePremiumRecommendations } from "../utils/premium";
 import { DashboardView } from "./admin/DashboardView";
 import { EventsOverview } from "./admin/EventsOverview";
 import { SuggestionsView } from "./admin/SuggestionsView";
@@ -134,8 +135,8 @@ const normalizeVenueForEdit = (venue: Venue) => ({
     heroImage: venue.premiumConfig?.heroImage || "",
     moodBlock: venue.premiumConfig?.moodBlock || "",
     moodEmoji: venue.premiumConfig?.moodEmoji || "✨",
-    topItems: venue.premiumConfig?.topItems || venue.premiumConfig?.featuredDrinks || [],
-    featuredDrinks: venue.premiumConfig?.featuredDrinks || venue.premiumConfig?.topItems || [],
+    topItems: normalizePremiumRecommendations(venue.premiumConfig?.topItems || venue.premiumConfig?.featuredDrinks || []),
+    featuredDrinks: normalizePremiumRecommendations(venue.premiumConfig?.featuredDrinks || venue.premiumConfig?.topItems || []),
     ctaUrl: venue.premiumConfig?.ctaUrl || "",
     ctaText: venue.premiumConfig?.ctaText || "",
   },
@@ -240,8 +241,8 @@ export default function AdminPanel({
       ...prev,
       premiumConfig: {
         ...prev.premiumConfig,
-        topItems: [...(prev.premiumConfig.topItems || []), item],
-        featuredDrinks: [...(prev.premiumConfig.topItems || []), item],
+        topItems: [...(prev.premiumConfig.topItems || []), { text: item, emoji: "✨" }],
+        featuredDrinks: [...(prev.premiumConfig.topItems || []), { text: item, emoji: "✨" }],
       },
     }));
     setTopItemInput("");

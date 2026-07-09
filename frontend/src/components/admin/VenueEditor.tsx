@@ -1,5 +1,6 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import type { EmojiClickData } from "emoji-picker-react";
 import { DndContext, closestCenter } from "@dnd-kit/core";
 import { SortableContext, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -18,12 +19,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { VenueEvent, WeekdayKey, WorkingHoursSchedule } from "../../types";
+import { PremiumConfig, VenueEvent, WeekdayKey, WorkingHoursSchedule } from "../../types";
+import { normalizePremiumRecommendations } from "../../utils/premium";
 import { WEEKDAYS, buildWorkingHoursText, normalizeSchedule } from "../../utils/venueAdmin";
 import { AdminBlock, AdminSelect, EmptyLine } from "./AdminShared";
+
+const EmojiPicker = lazy(() => import("emoji-picker-react"));
 
 const CATEGORIES = [
   "Бар",
@@ -429,18 +434,7 @@ export function VenueEditor(props: any) {
         </label>
         {editingVenue.premiumConfig.premiumActive && (
           <div className="flex flex-col gap-4">
-            <div
-              className="rounded-xl border bg-muted/30 p-4"
-              style={{
-                borderColor: editingVenue.premiumConfig.customColors.accent,
-                boxShadow: `0 0 24px color-mix(in srgb, ${editingVenue.premiumConfig.customColors.glowColor} 28%, transparent)`,
-              }}
-            >
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Превью premium-акцентов</div>
-              <div className="mt-3 inline-flex rounded-lg px-3 py-2 text-xs font-semibold" style={{ backgroundColor: editingVenue.premiumConfig.customColors.accent, color: "#05070a" }}>
-                CTA / активная кнопка
-              </div>
-            </div>
+            <PremiumVenuePreview venue={editingVenue} />
             <div className="grid gap-2 sm:grid-cols-2">
               <ColorField label="Акцент" hint="Контуры, маркер и активные элементы." value={editingVenue.premiumConfig.customColors.accent} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, accent: value } } })} />
               <ColorField label="Свечение" hint="Мягкая подсветка premium-карточки." value={editingVenue.premiumConfig.customColors.glowColor} onChange={(value) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, customColors: { ...editingVenue.premiumConfig.customColors, glowColor: value } } })} />
@@ -449,7 +443,13 @@ export function VenueEditor(props: any) {
             </div>
             <div className="grid gap-2 sm:grid-cols-[96px_minmax(0,1fr)]">
               <Field label="Emoji">
-                <Input value={editingVenue.premiumConfig.moodEmoji || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodEmoji: event.target.value } })} placeholder="✨" maxLength={4} />
+                <div className="flex gap-2">
+                  <EmojiPickerPopover
+                    value={editingVenue.premiumConfig.moodEmoji || "✨"}
+                    onChange={(emoji) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodEmoji: emoji } })}
+                  />
+                  <Input value={editingVenue.premiumConfig.moodEmoji || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodEmoji: event.target.value } })} placeholder="✨" maxLength={4} />
+                </div>
               </Field>
               <Field label="Вайб дня">
                 <Input value={editingVenue.premiumConfig.moodBlock || ""} onChange={(event) => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, moodBlock: event.target.value } })} placeholder="Например: Сегодня винил и тихий свет до поздней ночи" />
@@ -538,22 +538,41 @@ export function EventEditor({ editingVenue, events, newEvent, setNewEvent, uploa
 }
 
 function TopItemsEditor({ editingVenue, setEditingVenue, input, setInput, addItem }: any) {
-  const items = editingVenue.premiumConfig.topItems || [];
+  const items = normalizePremiumRecommendations(editingVenue.premiumConfig.topItems || []);
+  const updateItems = (next: Array<{ text: string; emoji: string }>) => {
+    setEditingVenue({
+      ...editingVenue,
+      premiumConfig: {
+        ...editingVenue.premiumConfig,
+        topItems: next,
+        featuredDrinks: next,
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Рекомендуем</div>
       <div className="flex flex-col gap-1.5">
-        {items.map((item: string, index: number) => (
-          <div key={`${item}-${index}`} className="flex items-center gap-2">
-            <Input
-              value={item}
-              onChange={(event) => {
+        {items.map((item, index) => (
+          <div key={`${item.text}-${index}`} className="flex items-center gap-2">
+            <EmojiPickerPopover
+              value={item.emoji}
+              onChange={(emoji) => {
                 const next = [...items];
-                next[index] = event.target.value;
-                setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, topItems: next, featuredDrinks: next } });
+                next[index] = { ...item, emoji };
+                updateItems(next);
               }}
             />
-            <Button type="button" variant="destructive" size="icon-sm" onClick={() => setEditingVenue({ ...editingVenue, premiumConfig: { ...editingVenue.premiumConfig, topItems: items.filter((_: string, i: number) => i !== index), featuredDrinks: items.filter((_: string, i: number) => i !== index) } })}>
+            <Input
+              value={item.text}
+              onChange={(event) => {
+                const next = [...items];
+                next[index] = { ...item, text: event.target.value };
+                updateItems(next);
+              }}
+            />
+            <Button type="button" variant="destructive" size="icon-sm" onClick={() => updateItems(items.filter((_, i) => i !== index))}>
               <Trash2 />
             </Button>
           </div>
@@ -562,6 +581,114 @@ function TopItemsEditor({ editingVenue, setEditingVenue, input, setInput, addIte
       <div className="flex gap-2">
         <Input value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => event.key === "Enter" && addItem()} placeholder="Например: Домашний негрони" />
         <Button type="button" variant="outline" onClick={addItem}>Добавить</Button>
+      </div>
+    </div>
+  );
+}
+
+function EmojiPickerPopover({ value, onChange }: { value: string; onChange: (emoji: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const selectEmoji = (data: EmojiClickData) => {
+    onChange(data.emoji);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="icon" aria-label="Выбрать emoji">
+          <span className="text-base">{value || "✨"}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-auto p-0">
+        <Suspense fallback={<div className="flex h-[420px] w-[320px] items-center justify-center text-xs text-muted-foreground">Загружаю emoji...</div>}>
+          <EmojiPicker
+            onEmojiClick={selectEmoji}
+            width={320}
+            height={420}
+            lazyLoadEmojis
+            previewConfig={{ showPreview: false }}
+            searchPlaceHolder="Найти emoji"
+          />
+        </Suspense>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PremiumVenuePreview({ venue }: { venue: any }) {
+  const premium = venue.premiumConfig as PremiumConfig;
+  const colors = premium.customColors || {
+    primary: "#131923",
+    accent: "#c7a469",
+    glowColor: "#c7a469",
+    tagColor: "#c7a469",
+    ctaColor: "#c7a469",
+  };
+  const items = normalizePremiumRecommendations(premium.topItems || premium.featuredDrinks || []);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Предпросмотр карточки</div>
+      <div
+        className="mx-auto w-full max-w-md overflow-hidden rounded-xl border text-white"
+        style={{
+          backgroundColor: colors.primary,
+          borderColor: colors.accent,
+          boxShadow: `0 0 24px color-mix(in srgb, ${colors.glowColor} 24%, transparent)`,
+        }}
+      >
+        {premium.heroImage ? (
+          <img src={premium.heroImage} alt="" className="aspect-video w-full object-cover" />
+        ) : (
+          <div className="flex aspect-video items-center justify-center bg-neutral-950 text-xs text-neutral-600">Главное изображение</div>
+        )}
+        <div className="flex flex-col gap-4 p-4">
+          <div>
+            <div className="text-[10px] uppercase text-neutral-500">{venue.category || "Категория"}</div>
+            <div className="mt-1 text-lg font-semibold">{venue.name || "Название заведения"}</div>
+          </div>
+          {venue.tags?.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {venue.tags.slice(0, 5).map((tag: string) => (
+                <span
+                  key={tag}
+                  className="rounded-md border px-2 py-1 text-[10px] font-semibold"
+                  style={{
+                    color: colors.tagColor || colors.accent,
+                    borderColor: colors.tagColor || colors.accent,
+                    backgroundColor: `color-mix(in srgb, ${colors.tagColor || colors.accent} 18%, #05070a)`,
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          {premium.moodBlock && (
+            <div className="flex gap-2 rounded-lg border border-neutral-800 p-3 text-xs text-neutral-300">
+              <span>{premium.moodEmoji || "✨"}</span>
+              <span>{premium.moodBlock}</span>
+            </div>
+          )}
+          {items.length > 0 && (
+            <div className="flex flex-col gap-2 rounded-lg border border-neutral-800 p-3">
+              <div className="text-[10px] font-semibold uppercase text-neutral-500">Рекомендуем</div>
+              {items.slice(0, 4).map((item, index) => (
+                <div key={`${item.text}-${index}`} className="grid grid-cols-[24px_minmax(0,1fr)] gap-2 text-xs">
+                  <span>{item.emoji}</span>
+                  <span>{item.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div
+            className="rounded-lg px-3 py-2 text-center text-xs font-semibold text-black"
+            style={{ backgroundColor: colors.ctaColor || colors.accent }}
+          >
+            {premium.ctaText || "Подробнее"}
+          </div>
+        </div>
       </div>
     </div>
   );

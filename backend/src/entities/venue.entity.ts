@@ -81,8 +81,8 @@ export class VenueEntity {
     heroImage?: string;
     moodBlock?: string;
     moodEmoji?: string;
-    featuredDrinks?: string[];
-    topItems?: string[];
+    featuredDrinks?: Array<string | { text: string; emoji: string }>;
+    topItems?: Array<string | { text: string; emoji: string }>;
     ctaUrl?: string;
     ctaText?: string;
   };

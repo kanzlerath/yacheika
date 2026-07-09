@@ -21,6 +21,7 @@ interface MapContainerProps {
   mapStyle: MapStyle;
   userCoords: { lat: number; lng: number } | null;
   pendingCoords: { lat: number; lng: number } | null;
+  clusterMaxZoom?: number;
 }
 
 const NSK_CENTER: [number, number] = [82.9204, 55.0302]; // [lng, lat]
@@ -189,13 +190,13 @@ const toSelectedVenueFeatureCollection = (venue: Venue | null): VenueFeatureColl
     : [],
 });
 
-const ensureVenueLayers = (map: maplibregl.Map) => {
+const ensureVenueLayers = (map: maplibregl.Map, clusterMaxZoom = 14) => {
   if (!map.getSource(VENUES_SOURCE_ID)) {
     map.addSource(VENUES_SOURCE_ID, {
       type: "geojson",
       data: EMPTY_VENUE_COLLECTION,
       cluster: true,
-      clusterMaxZoom: 14,
+      clusterMaxZoom,
       clusterRadius: 58,
     });
   }
@@ -395,6 +396,7 @@ export default function MapContainer({
   mapStyle,
   userCoords,
   pendingCoords,
+  clusterMaxZoom = 14,
 }: MapContainerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -410,7 +412,7 @@ export default function MapContainer({
   });
 
   const syncVenueSources = (map: maplibregl.Map) => {
-    ensureVenueLayers(map);
+    ensureVenueLayers(map, clusterMaxZoom);
     const venuesSource = map.getSource(VENUES_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
     const selectedSource = map.getSource(SELECTED_VENUE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
     venuesSource?.setData(venueSourceDataRef.current.venues);
@@ -503,7 +505,7 @@ export default function MapContainer({
     map.on("styleimagemissing", missingImageHandler);
 
     map.on("load", () => {
-      ensureVenueLayers(map);
+      ensureVenueLayers(map, clusterMaxZoom);
     });
 
     setVectorStyleWithFallback(map, mapStyle);
@@ -521,7 +523,7 @@ export default function MapContainer({
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [clusterMaxZoom]);
 
   // Update Map Style dynamically
   useEffect(() => {
@@ -679,7 +681,7 @@ export default function MapContainer({
     };
 
     const bindLayerHandlers = () => {
-      ensureVenueLayers(map);
+      ensureVenueLayers(map, clusterMaxZoom);
       if (!map.getLayer(CLUSTERS_LAYER_ID) || !map.getLayer(VENUE_HIT_LAYER_ID) || layerHandlersBound) return;
       map.on("click", CLUSTERS_LAYER_ID, clusterClickHandler);
       map.on("click", VENUE_HIT_LAYER_ID, venueClickHandler);
@@ -708,7 +710,7 @@ export default function MapContainer({
         map.off("mouseleave", VENUE_HIT_LAYER_ID, pointerLeaveHandler);
       }
     };
-  }, [adminMode, onCoordsSelect, onSelectVenue]);
+  }, [adminMode, clusterMaxZoom, onCoordsSelect, onSelectVenue]);
 
   // Center/Fly to Selected Venue
   useEffect(() => {

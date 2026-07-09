@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
@@ -28,6 +29,8 @@ interface SettingsModalProps {
   onChangeMapStyle: (style: MapStyle) => void;
   nearbySort: boolean;
   onChangeNearbySort: (val: boolean) => void;
+  clusterMaxZoom: number;
+  onChangeClusterMaxZoom: (value: number) => Promise<void>;
 }
 
 export default function SettingsModal({
@@ -37,6 +40,8 @@ export default function SettingsModal({
   onLogout,
   nearbySort,
   onChangeNearbySort,
+  clusterMaxZoom,
+  onChangeClusterMaxZoom,
 }: SettingsModalProps) {
   const currentUser = auth?.user ?? null;
   const [suggestionOpen, setSuggestionOpen] = useState(false);
@@ -49,6 +54,7 @@ export default function SettingsModal({
   const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
   const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
+  const [clusterZoomDraft, setClusterZoomDraft] = useState(clusterMaxZoom);
 
   const updateLegalConsent = (value: boolean) => {
     setLegalConsentAccepted(value);
@@ -59,6 +65,10 @@ export default function SettingsModal({
       setLegalConsentAccepted(false);
     }
   }, [auth, isOpen]);
+
+  useEffect(() => {
+    setClusterZoomDraft(clusterMaxZoom);
+  }, [clusterMaxZoom]);
 
   const submitSuggestion = async () => {
     setSuggestionError(null);
@@ -89,6 +99,14 @@ export default function SettingsModal({
     } catch (error) {
       setSuggestionStatus("error");
       setSuggestionError(error instanceof Error ? error.message : "Не удалось отправить заявку.");
+    }
+  };
+
+  const commitClusterZoom = async (value: number) => {
+    try {
+      await onChangeClusterMaxZoom(value);
+    } catch {
+      setClusterZoomDraft(clusterMaxZoom);
     }
   };
 
@@ -181,6 +199,26 @@ export default function SettingsModal({
                     <a href="/delete-account" className="text-center text-[11px] font-semibold text-neutral-500 transition hover:text-neutral-200">
                       Удалить аккаунт
                     </a>
+                  </div>
+                  <div className="settings-divider flex flex-col gap-3 border-t pt-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="settings-strong text-xs font-semibold">Кластеризация карты</div>
+                        <div className="mt-1 text-[11px] leading-relaxed text-neutral-500">
+                          Метки объединяются до масштаба {clusterZoomDraft}
+                        </div>
+                      </div>
+                      <span className="font-mono text-xs text-neutral-400">{clusterZoomDraft}</span>
+                    </div>
+                    <Slider
+                      value={[clusterZoomDraft]}
+                      min={8}
+                      max={18}
+                      step={1}
+                      onValueChange={([value]) => setClusterZoomDraft(value)}
+                      onValueCommit={([value]) => void commitClusterZoom(value)}
+                      aria-label="Масштаб кластеризации карты"
+                    />
                   </div>
                 </motion.div>
               ) : (

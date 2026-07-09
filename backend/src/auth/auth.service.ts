@@ -438,4 +438,23 @@ export class AuthService {
       expiresAt: new Date(session.exp * 1000).toISOString(),
     };
   }
+
+  async updateUserPreferences(
+    session: AuthSession,
+    preferences: { clusterMaxZoom?: number },
+  ) {
+    const user = await this.userRepository.findOne({ where: { id: session.userId } });
+    if (!user) throw new UnauthorizedException('Session user does not exist');
+
+    user.preferences = {
+      ...(user.preferences || {}),
+      ...preferences,
+    };
+    const savedUser = await this.userRepository.save(user);
+
+    return {
+      user: savedUser,
+      expiresAt: new Date(session.exp * 1000).toISOString(),
+    };
+  }
 }

@@ -142,9 +142,21 @@
   <body class="text-zinc-300 antialiased">
     <noscript><div><img src="https://mc.yandex.ru/watch/109734721" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <script>
-      if (window.location.pathname !== '/') {
-        document.documentElement.classList.add('skip-preloader');
-      }
+      (() => {
+        const isStandalone =
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.navigator.standalone === true;
+        const shouldShow =
+          window.location.pathname === '/' &&
+          (isStandalone || sessionStorage.getItem('scope.preloaderShown') !== 'true');
+
+        if (!shouldShow) {
+          document.documentElement.classList.add('skip-preloader');
+          return;
+        }
+
+        sessionStorage.setItem('scope.preloaderShown', 'true');
+      })();
     </script>
     <!-- PWA App Animated Preloader -->
     <div id="pwa-preloader" class="preloader-overlay">
@@ -174,11 +186,12 @@
     
     <!-- Automatic preloader dismissal -->
     <script>
-      window.addEventListener('load', () => {
-        if (window.location.pathname !== '/') {
-          document.getElementById('pwa-preloader')?.remove();
-          return;
-        }
+      const isStandaloneApp =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true;
+      const preloaderTemplate = document.getElementById('pwa-preloader')?.cloneNode(true);
+
+      const dismissPreloader = () => {
         setTimeout(() => {
           const preloader = document.getElementById('pwa-preloader');
           if (preloader) {
@@ -186,6 +199,23 @@
             setTimeout(() => preloader.remove(), 500);
           }
         }, 2400);
+      };
+
+      window.addEventListener('load', () => {
+        if (document.documentElement.classList.contains('skip-preloader')) {
+          document.getElementById('pwa-preloader')?.remove();
+          return;
+        }
+        dismissPreloader();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (!isStandaloneApp || document.visibilityState !== 'visible' || !preloaderTemplate) return;
+        if (document.getElementById('pwa-preloader')) return;
+
+        const preloader = preloaderTemplate.cloneNode(true);
+        document.body.appendChild(preloader);
+        dismissPreloader();
       });
     </script>
 

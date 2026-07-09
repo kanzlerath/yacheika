@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Heart,
@@ -17,6 +17,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { Venue, VenueEvent, Reaction, PremiumConfig } from "../types";
 import { logAnalyticsEvent } from "../utils/analytics";
 import { appEase, panelTransition, softTransition } from "../utils/motionPresets";
 import { WEEKDAYS, formatTodaySchedule, normalizeSchedule } from "../utils/venueAdmin";
+import { normalizePremiumRecommendations } from "../utils/premium";
 
 interface VenueCardProps {
   key?: string | number;
@@ -49,6 +51,63 @@ const VIBE_GROUPS = [
   { title: "Особенности", tags: ["летник", "панорамные окна", "танцпол", "сцена", "ВИП-зона", "можно с животными", "можно с ноутбуком", "бронирование", "фейс-контроль"] },
   { title: "Цены", tags: ["недорого", "средний чек", "премиум"] },
 ];
+
+function ExpandableText({
+  children,
+  lines,
+  className = "",
+}: {
+  children: string;
+  lines: number;
+  className?: string;
+}) {
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+
+  useEffect(() => {
+    const element = textRef.current;
+    if (!element) return;
+
+    const measure = () => {
+      if (expanded) return;
+      setOverflowing(element.scrollHeight > element.clientHeight + 1);
+    };
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [children, expanded, lines]);
+
+  return (
+    <div className="flex flex-col items-start gap-2">
+      <p
+        ref={textRef}
+        className={className}
+        style={expanded ? undefined : { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: lines, overflow: "hidden" }}
+      >
+        {children}
+      </p>
+      {(overflowing || expanded) && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className="px-0 text-muted-foreground"
+        >
+          {expanded ? "Свернуть" : "Показать полностью"}
+          <ChevronDown
+            data-icon="inline-end"
+            className={expanded ? "rotate-180" : undefined}
+          />
+        </Button>
+      )}
+    </div>
+  );
+}
 
 export default function VenueCard({
   venue,
@@ -77,6 +136,7 @@ export default function VenueCard({
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
   const accentColor = customColors?.accent || "#d2a56b";
+  const primaryColor = customColors?.primary || "#05070a";
   const glowColor = customColors?.glowColor || accentColor;
   const tagColor = customColors?.tagColor || accentColor;
   const ctaColor = customColors?.ctaColor || accentColor;
@@ -86,7 +146,7 @@ export default function VenueCard({
   const galleryImages = venue.gallery.filter(Boolean);
   const lightboxImages = isPremiumActive && premium.heroImage ? [premium.heroImage, ...galleryImages] : galleryImages;
   const logoImage = venue.logoUrl || galleryImages[0] || "/logo.png";
-  const topItems = premium.topItems || premium.featuredDrinks || [];
+  const topItems = normalizePremiumRecommendations(premium.topItems || premium.featuredDrinks || []);
 
   // Reputation metrics
   const totalFeedback = venue.likesCount + venue.notMyPlaceCount;
@@ -237,7 +297,9 @@ export default function VenueCard({
         isPremiumActive ? "venue-card-premium" : ""
       }`}
       style={{
-        background: "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
+        background: isPremiumActive
+          ? `linear-gradient(to bottom, color-mix(in srgb, ${primaryColor} 88%, var(--app-panel)), var(--app-bg))`
+          : "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
         borderColor: isPremiumActive ? `color-mix(in srgb, ${accentColor} 38%, var(--app-border))` : "var(--app-border)",
         boxShadow: "var(--app-shadow)",
         ["--venue-accent" as any]: accentColor,
@@ -496,7 +558,7 @@ export default function VenueCard({
 
               {/* Modern Segmented Tab Controls */}
               <Tabs value={activeTab} onValueChange={(value) => setVenueTab(value as "info" | "events" | "vibes")}>
-                <TabsList className="venue-tabs w-full text-sm">
+                <TabsList className="venue-tabs h-12 w-full text-sm">
                 <TabsTrigger
                   value="info"
                   onClick={() => setVenueTab("info")}
@@ -534,9 +596,12 @@ export default function VenueCard({
                 >
                     <div className="w-full shrink-0 overflow-hidden space-y-6 text-[15px]">
                       {/* Gorgeous airy Typography */}
-                      <p className="leading-relaxed text-neutral-300 font-sans whitespace-pre-line">
+                      <ExpandableText
+                        lines={6}
+                        className="whitespace-pre-line font-sans leading-relaxed text-neutral-300"
+                      >
                         {venue.fullDescription || venue.shortDescription}
-                      </p>
+                      </ExpandableText>
 
                       {/* Clean minimalist borderless tag pill layout */}
                       <div className="flex flex-wrap gap-2 pt-1 border-t border-neutral-900/40">
@@ -591,10 +656,10 @@ export default function VenueCard({
                           </div>
                           
                           <div className="space-y-2.5 text-sm">
-                            {topItems.map((drink, i) => (
-                              <div key={i} className="grid grid-cols-[24px_minmax(0,1fr)] items-start gap-2.5 leading-relaxed">
-                                <span className="font-mono text-xs text-neutral-500">{i + 1}.</span>
-                                <span className="font-semibold text-neutral-300">{drink}</span>
+                            {topItems.map((item, i) => (
+                              <div key={`${item.text}-${i}`} className="grid grid-cols-[28px_minmax(0,1fr)] items-start gap-2.5 leading-relaxed">
+                                <span className="text-base" aria-hidden="true">{item.emoji}</span>
+                                <span className="font-semibold text-neutral-200">{item.text}</span>
                               </div>
                             ))}
                           </div>
@@ -832,10 +897,10 @@ export default function VenueCard({
                       ) : (
                         <div className="space-y-4 pt-1">
                           {upcomingEvents.map((ev) => (
-                            <button
+                            <article
                               key={ev.id}
                               onClick={() => handleEventOpen(ev)}
-                              className="venue-soft-panel w-full overflow-hidden flex flex-col sm:flex-row gap-4 p-4.5 transition duration-200 cursor-pointer"
+                              className="venue-soft-panel flex w-full flex-col gap-4 overflow-hidden p-4.5 transition duration-200 sm:flex-row"
                             >
                               {ev.coverImage && (
                                 <div className="w-full sm:w-36 shrink-0 rounded-xl overflow-hidden bg-neutral-900 border border-neutral-800">
@@ -859,9 +924,14 @@ export default function VenueCard({
                                 </div>
                                 
                                 <h4 className="text-base font-display font-medium text-white leading-snug">{ev.title}</h4>
-                                <p className="text-sm text-[#8e8e93] leading-relaxed">{ev.description}</p>
+                                <ExpandableText
+                                  lines={5}
+                                  className="text-sm leading-relaxed text-[#8e8e93]"
+                                >
+                                  {ev.description}
+                                </ExpandableText>
                               </div>
-                            </button>
+                            </article>
                           ))}
                         </div>
                       )}

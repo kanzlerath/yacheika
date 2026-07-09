@@ -31,6 +31,11 @@ export class UserEntity {
   @Column({ nullable: true })
   email: string | null;
 
+  @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
+  preferences: {
+    clusterMaxZoom?: number;
+  };
+
   @CreateDateColumn()
   createdAt: Date;
 
