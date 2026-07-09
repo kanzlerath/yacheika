@@ -70,45 +70,15 @@
   --shadow-amber-glow: 0 0 15px rgba(245, 158, 11, 0.4);
 }
 
-html {
-  min-height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  overscroll-behavior: none;
-  background-color: #030303;
-}
-
-body {
-  min-height: 100%;
-  width: 100%;
-  position: relative;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: none;
-  background-color: #030303;
-}
-
-#root {
-  height: 100vh;
-  min-height: 100vh;
+html, body, #root {
+  height: 100%;
   width: 100%;
   position: relative;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
   background-color: #030303;
-}
-
-@media (display-mode: browser) {
-  body:not(.legal-document-route)::after {
-    content: "";
-    display: block;
-    width: 1px;
-    height: 1px;
-    pointer-events: none;
-  }
 }
 
 html.legal-document-route,
@@ -833,6 +803,22 @@ body {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    height: 100dvh;
+  }
+}
+
+@media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    height: 100vh !important;
   }
 }
 
