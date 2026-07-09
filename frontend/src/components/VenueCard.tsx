@@ -143,7 +143,6 @@ export default function VenueCard({
   // Custom colors from Premium settings if active
   const customColors = isPremiumActive && premium.customColors ? premium.customColors : null;
   const accentColor = customColors?.accent || "#d2a56b";
-  const primaryColor = customColors?.primary || "#05070a";
   const glowColor = customColors?.glowColor || accentColor;
   const tagColor = customColors?.tagColor || accentColor;
   const ctaColor = customColors?.ctaColor || accentColor;
@@ -310,9 +309,7 @@ export default function VenueCard({
         isPremiumActive ? "venue-card-premium" : ""
       }`}
       style={{
-        background: isPremiumActive
-          ? `linear-gradient(to bottom, color-mix(in srgb, ${primaryColor} 88%, var(--app-panel)), var(--app-bg))`
-          : "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
+        background: "linear-gradient(to bottom, var(--app-panel), var(--app-bg))",
         borderColor: isPremiumActive ? `color-mix(in srgb, ${accentColor} 38%, var(--app-border))` : "var(--app-border)",
         boxShadow: "var(--app-shadow)",
         ["--venue-accent" as any]: accentColor,
@@ -349,11 +346,11 @@ export default function VenueCard({
               <div className="flex items-start gap-4 justify-between">
                 <div className="flex items-center gap-4 min-w-0">
                   {/* Classiest image thumbnail rounded */}
-                  <div className="w-16 h-16 rounded-2xl bg-neutral-900 overflow-hidden shrink-0 border border-neutral-800/60 shadow">
+                  <div className="size-16 shrink-0 overflow-hidden rounded-2xl">
                     <img
                       src={logoImage}
                       alt={venue.name}
-                      className="w-full h-full object-contain p-2 filter brightness-[0.95]"
+                      className="size-full object-cover"
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       onError={(event) => {
@@ -452,9 +449,7 @@ export default function VenueCard({
               className={`${previewMode ? "relative h-[760px] w-full rounded-xl border" : "fixed inset-0 z-[80]"} overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl`}
               style={{
                 paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
-                background: isPremiumActive
-                  ? `linear-gradient(to bottom, color-mix(in srgb, ${primaryColor} 88%, var(--app-panel)), var(--app-bg))`
-                  : "var(--app-bg)",
+                background: "var(--app-bg)",
                 ["--venue-accent" as any]: accentColor,
                 ["--venue-glow" as any]: glowColor,
                 ["--venue-tag" as any]: tagColor,
@@ -471,11 +466,11 @@ export default function VenueCard({
               {/* Simplified airy title and header bar */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3.5">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-neutral-800/70 bg-neutral-950">
+                  <div className="size-16 shrink-0 overflow-hidden rounded-2xl">
                     <img
                       src={logoImage}
                       alt={venue.name}
-                      className="h-full w-full object-contain p-2"
+                      className="size-full object-cover"
                       referrerPolicy="no-referrer"
                       loading="lazy"
                       onError={(event) => {
