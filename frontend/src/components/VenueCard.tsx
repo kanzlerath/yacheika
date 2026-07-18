@@ -307,6 +307,8 @@ export default function VenueCard({
       exit={{ y: "100%", opacity: 0.96 }}
       transition={panelTransition}
       className={`absolute text-neutral-200 shadow-2xl backdrop-blur-2xl overflow-hidden bottom-0 inset-x-0 w-full md:max-w-xl md:mx-auto md:bottom-2 md:rounded-2xl border z-30 ${
+        isExpanded ? "md:hidden" : ""
+      } ${
         isPremiumActive ? "venue-card-premium" : ""
       }`}
       style={{
@@ -447,7 +449,11 @@ export default function VenueCard({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={panelTransition}
-              className={`venue-card-expanded ${previewMode ? "relative h-[760px] w-full rounded-xl border" : "fixed inset-0 z-[80]"} overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl`}
+              className={`venue-card-expanded ${
+                previewMode
+                  ? "venue-card-preview relative h-[760px] w-full rounded-xl border"
+                  : "venue-card-inspector fixed inset-0 z-[80]"
+              } overflow-y-auto px-5 pt-[calc(env(safe-area-inset-top,0px)+1rem)] space-y-6 text-left text-neutral-200 shadow-2xl`}
               style={{
                 paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))",
                 background: "var(--app-bg)",
@@ -686,7 +692,7 @@ export default function VenueCard({
                       )}
 
                       {/* Clean classy contact coordinates */}
-                      <div className="grid sm:grid-cols-2 gap-6 border-t border-neutral-900 pt-5 text-[13px] font-mono venue-info-grid">
+                      <div className="grid sm:grid-cols-2 md:grid-cols-1 gap-6 border-t border-neutral-900 pt-5 text-[13px] font-mono venue-info-grid">
                         <div className="space-y-4">
                           <div className="venue-info-row">
                             <Clock className="w-4 h-4 text-neutral-500 shrink-0" />
