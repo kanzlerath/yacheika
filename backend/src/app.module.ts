@@ -10,6 +10,7 @@ import { StorageModule } from './storage/storage.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminDataModule } from './admin/admin-data.module';
 import { VenueSuggestionModule } from './venue-suggestion/venue-suggestion.module';
+import { FeedbackModule } from './feedback/feedback.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -34,6 +35,7 @@ import { HealthController } from './health.controller';
     AnalyticsModule,
     StorageModule,
     VenueSuggestionModule,
+    FeedbackModule,
   ],
   controllers: [HealthController],
 })

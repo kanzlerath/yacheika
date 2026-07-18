@@ -156,6 +156,7 @@ export default function VenueCard({
   const compactHeight = "calc(226px + env(safe-area-inset-bottom, 0px))";
   const schedule = venue.workingHoursSchedule ? normalizeSchedule(venue.workingHoursSchedule) : null;
   const galleryImages = venue.gallery.filter(Boolean);
+  const galleryThumbnails = venue.galleryThumbnails || {};
   const lightboxImages = isPremiumActive && premium.heroImage ? [premium.heroImage, ...galleryImages] : galleryImages;
   const logoImage = venue.logoUrl || galleryImages[0] || "/logo.png";
   const topItems = normalizePremiumRecommendations(premium.topItems || premium.featuredDrinks || []);
@@ -647,7 +648,7 @@ export default function VenueCard({
                               className="w-60 h-36 rounded-2xl overflow-hidden bg-neutral-950 border border-neutral-900/50 shadow shrink-0 snap-start"
                             >
                               <img
-                                src={photoUrl}
+                                src={galleryThumbnails[photoUrl] || photoUrl}
                                 alt="Атмосфера"
                                 className="w-full h-full object-cover select-none filter brightness-95"
                                 referrerPolicy="no-referrer"
@@ -744,7 +745,7 @@ export default function VenueCard({
                             onClick={handleRouteClick}
                             className="app-text-button w-full"
                           >
-                            Найти на Яндекс Картах
+                            Проложить маршрут
                           </Button>
                         </div>
                       </div>
@@ -762,11 +763,12 @@ export default function VenueCard({
                                   href={link.href}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-neutral-800/60 bg-neutral-900 px-3 text-xs font-semibold text-neutral-300 transition hover:border-neutral-700 hover:bg-neutral-850 hover:text-white"
+                                  className="inline-flex size-10 items-center justify-center rounded-xl border border-neutral-800/60 bg-neutral-900 text-neutral-300 transition hover:border-neutral-700 hover:bg-neutral-850 hover:text-white"
                                   onClick={() => handleSocialClick(link.id, link.value)}
+                                  title={link.label}
+                                  aria-label={link.label}
                                 >
                                   <Icon className="w-4 h-4" />
-                                  {link.label}
                                 </a>
                               );
                             })}

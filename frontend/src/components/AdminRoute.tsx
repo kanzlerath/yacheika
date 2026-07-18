@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import AdminPanel from "./AdminPanel";
 import MapContainer from "./MapContainer";
-import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, Venue, VenueAudit, VenueEvent, VenueSuggestion } from "../types";
+import { AdminDashboard, AdminTelegramUser, AnalyticsEvent, MapStyle, UserFeedback, Venue, VenueAudit, VenueEvent, VenueSuggestion } from "../types";
 import { createEmptyVenueDiscoveryFilters } from "../utils/venueFilters";
 
 interface AdminUser {
@@ -28,6 +28,7 @@ export default function AdminRoute() {
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [users, setUsers] = useState<AdminTelegramUser[]>([]);
   const [suggestions, setSuggestions] = useState<VenueSuggestion[]>([]);
+  const [feedback, setFeedback] = useState<UserFeedback[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [selectedVenueAudit, setSelectedVenueAudit] = useState<VenueAudit | null>(null);
   const [selectedVenueAuditLoading, setSelectedVenueAuditLoading] = useState(false);
@@ -44,26 +45,28 @@ export default function AdminRoute() {
   };
 
   const fetchAdminData = async () => {
-    const [vRes, eRes, aRes, dRes, uRes, sRes] = await Promise.all([
+    const [vRes, eRes, aRes, dRes, uRes, sRes, fRes] = await Promise.all([
       fetch("/api/venues/admin/all"),
       fetch("/api/events/admin/all"),
       fetch("/api/analytics"),
       fetch("/api/admin/dashboard"),
       fetch("/api/admin/users"),
       fetch("/api/admin/venue-suggestions"),
+      fetch("/api/admin/feedback"),
     ]);
 
-    if ([vRes, eRes, aRes, dRes, uRes, sRes].some((res) => !res.ok)) {
+    if ([vRes, eRes, aRes, dRes, uRes, sRes, fRes].some((res) => !res.ok)) {
       throw new Error("Admin data loading failed");
     }
 
-    const [vData, eData, aData, dData, uData, sData] = await Promise.all([
+    const [vData, eData, aData, dData, uData, sData, fData] = await Promise.all([
       vRes.json(),
       eRes.json(),
       aRes.json(),
       dRes.json(),
       uRes.json(),
       sRes.json(),
+      fRes.json(),
     ]);
     setVenues(vData);
     setEvents(eData);
@@ -71,6 +74,7 @@ export default function AdminRoute() {
     setDashboard(dData);
     setUsers(uData);
     setSuggestions(sData);
+    setFeedback(fData);
   };
 
   useEffect(() => {
@@ -118,6 +122,7 @@ export default function AdminRoute() {
     setDashboard(null);
     setUsers([]);
     setSuggestions([]);
+    setFeedback([]);
   };
 
   const refreshAdminData = () => {
@@ -255,6 +260,7 @@ export default function AdminRoute() {
             dashboard={dashboard}
             users={users}
             suggestions={suggestions}
+            feedback={feedback}
             selectedVenueAudit={selectedVenueAudit}
             selectedVenueAuditLoading={selectedVenueAuditLoading}
             selectedVenue={selectedVenue}
@@ -286,17 +292,39 @@ export default function AdminRoute() {
                   </div>
                 )}
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setPendingCoords(null);
-                  setAdminMobileShowMap(false);
-                }}
-              >
-                Назад
-              </Button>
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                {pendingCoords ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setAdminMobileShowMap(false)}
+                    >
+                      Принять точку
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setPendingCoords(null);
+                        setAdminMobileShowMap(false);
+                      }}
+                    >
+                      Отменить
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAdminMobileShowMap(false)}
+                  >
+                    Назад
+                  </Button>
+                )}
+              </div>
             </div>
           </Card>
 

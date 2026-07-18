@@ -185,6 +185,10 @@ export class SaveVenueDto {
   @IsString({ each: true })
   gallery: string[];
 
+  @IsOptional()
+  @IsObject()
+  galleryThumbnails?: Record<string, string>;
+
   @IsArray()
   @IsString({ each: true })
   tags: string[];
