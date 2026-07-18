@@ -6,7 +6,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Plus, Minus, LocateFixed } from "lucide-react";
+import { Plus, Minus, Navigation } from "lucide-react";
 import { MapStyle, Venue, VenueEvent } from "../types";
 import { VenueDiscoveryFilters, filterVenuesForDiscovery } from "../utils/venueFilters";
 
@@ -766,22 +766,24 @@ export default function MapContainer({
     <div id="map-root" className="w-full h-full relative overflow-hidden bg-neutral-950">
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
       
-      {/* Custom glassmorphic zoom controls */}
-      <div className="map-zoom-controls absolute top-1/2 -translate-y-1/2 right-4 sm:right-6 z-15 flex flex-col gap-1 border rounded-xl p-1 shadow-2xl backdrop-blur-md">
-        <button
-          onClick={() => mapRef.current?.zoomIn()}
-          className="w-8 h-8 rounded-lg flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-          title="Приблизить"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => mapRef.current?.zoomOut()}
-          className="w-8 h-8 rounded-lg flex items-center justify-center active:scale-95 transition-all cursor-pointer"
-          title="Отдалить"
-        >
-          <Minus className="w-4 h-4" />
-        </button>
+      {/* Custom map controls */}
+      <div className="absolute right-4 top-1/2 z-15 flex -translate-y-1/2 flex-col items-end gap-3 sm:right-6">
+        <div className="map-zoom-controls flex flex-col gap-1 rounded-xl border p-1 shadow-2xl backdrop-blur-md">
+          <button
+            onClick={() => mapRef.current?.zoomIn()}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all active:scale-95"
+            title="Приблизить"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => mapRef.current?.zoomOut()}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg transition-all active:scale-95"
+            title="Отдалить"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+        </div>
         {userCoords && !adminMode && (
           <button
             type="button"
@@ -795,11 +797,11 @@ export default function MapContainer({
                 duration: 720,
               });
             }}
-            className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border-t pt-1 transition-all active:scale-95 cursor-pointer"
-            title="Показать моё местоположение"
-            aria-label="Показать моё местоположение"
+            className="map-locate-control flex size-10 cursor-pointer items-center justify-center rounded-xl border shadow-2xl backdrop-blur-md transition-all active:scale-95"
+            title="Вернуться к моему местоположению"
+            aria-label="Вернуться к моему местоположению"
           >
-            <LocateFixed className="w-4 h-4" />
+            <Navigation className="size-4" fill="currentColor" strokeWidth={1.7} />
           </button>
         )}
       </div>

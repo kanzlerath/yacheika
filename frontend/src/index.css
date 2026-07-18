@@ -373,6 +373,18 @@ body {
   color: var(--app-text-muted) !important;
 }
 
+[data-theme] .map-locate-control {
+  background: color-mix(in srgb, var(--app-panel) 90%, transparent) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text-muted) !important;
+}
+
+[data-theme] .map-locate-control:hover {
+  background: var(--app-panel-soft) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text) !important;
+}
+
 [data-theme] #discovery-panel h3,
 [data-theme] #discovery-panel h4,
 [data-theme] [id^="venue-card-"] h1,
