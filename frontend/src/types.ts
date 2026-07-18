@@ -93,6 +93,7 @@ export interface Venue {
     website?: string;
   };
   gallery: string[];
+  galleryThumbnails?: Record<string, string>;
   tags: string[];
   status: VenueStatus;
   premiumConfig: PremiumConfig;
@@ -312,6 +313,18 @@ export interface VenueSuggestion {
   userId?: string;
   userName?: string;
   status: 'new' | 'reviewed' | 'rejected' | 'converted';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserFeedback {
+  id: string;
+  kind: 'idea' | 'bug' | 'other';
+  message: string;
+  contact?: string;
+  userId: string;
+  userName?: string;
+  status: 'new' | 'reviewed' | 'closed';
   createdAt: string;
   updatedAt: string;
 }

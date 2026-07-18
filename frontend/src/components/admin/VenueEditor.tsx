@@ -57,7 +57,7 @@ export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "i
 const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
 const COMPRESSED_IMAGE_MAX_SIZE = 1800;
 const COMPRESSED_IMAGE_QUALITY = 0.86;
-type UploadTarget = "gallery" | "hero" | "event" | "logo";
+type UploadTarget = "gallery" | "gallery-thumbnail" | "hero" | "event" | "logo";
 type CropJob = {
   file: File;
   queue: File[];
@@ -221,7 +221,6 @@ export function VenueEditor(props: any) {
   const {
     editingVenue,
     setEditingVenue,
-    duplicateName,
     tagInput,
     setTagInput,
     addTag,
@@ -259,7 +258,6 @@ export function VenueEditor(props: any) {
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Имя">
             <Input value={editingVenue.name} onChange={(event) => updateVenueName(event.target.value)} placeholder="Например: Nobody Knows I Suppose" />
-            {duplicateName && <div className="mt-1 text-[10px] text-destructive">Такое имя уже есть.</div>}
           </Field>
           <Field label="Категория">
             <AdminSelect value={editingVenue.category} onValueChange={(value) => setEditingVenue({ ...editingVenue, category: value })} options={CATEGORIES} />
@@ -429,8 +427,17 @@ export function VenueEditor(props: any) {
                 <SortableImage
                   key={url}
                   url={url}
-                  onDelete={() => setEditingVenue({ ...editingVenue, gallery: editingVenue.gallery.filter((item: string) => item !== url) })}
-                  onCrop={() => startCropFromUrl(url, "gallery", 4 / 3, "Обрезка фото", url)}
+                  previewUrl={editingVenue.galleryThumbnails?.[url] || url}
+                  onDelete={() => {
+                    const nextThumbnails = { ...(editingVenue.galleryThumbnails || {}) };
+                    delete nextThumbnails[url];
+                    setEditingVenue({
+                      ...editingVenue,
+                      gallery: editingVenue.gallery.filter((item: string) => item !== url),
+                      galleryThumbnails: nextThumbnails,
+                    });
+                  }}
+                  onCrop={() => startCropFromUrl(url, "gallery-thumbnail", 4 / 3, "Обрезка миниатюры", url)}
                 />
               ))}
             </div>
@@ -439,7 +446,7 @@ export function VenueEditor(props: any) {
         <ImageUploadBox
           multiple
           uploading={uploadingTarget === "gallery"}
-          onSelect={(files) => startCropQueue(files, "gallery", 4 / 3, "Обрезка фото")}
+          onSelect={(files) => void uploadSelectedImages(files, "gallery")}
           label="Добавить фото"
         />
       </AdminBlock>
@@ -841,18 +848,18 @@ function ImageCropDialog({
   );
 }
 
-function SortableImage({ url, onDelete, onCrop }: { key?: React.Key; url: string; onDelete: () => void; onCrop: () => void }) {
+function SortableImage({ url, previewUrl, onDelete, onCrop }: { key?: React.Key; url: string; previewUrl: string; onDelete: () => void; onCrop: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: url });
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className="relative aspect-video overflow-hidden rounded-lg border bg-muted shadow-sm">
-      <img src={url} alt="" className="h-full w-full object-cover" />
+      <img src={previewUrl} alt="" className="h-full w-full object-cover" />
       <Button type="button" variant="secondary" size="icon-sm" {...attributes} {...listeners} className="absolute left-1 top-1 touch-none active:scale-95" aria-label="Перетащить фото">
         <GripVertical />
       </Button>
       <Button type="button" variant="destructive" size="icon-sm" onClick={onDelete} className="absolute right-1 top-1">
         <Trash2 />
       </Button>
-      <Button type="button" variant="secondary" size="icon-sm" onClick={() => void onCrop()} className="absolute bottom-1 right-1" aria-label="Обрезать фото">
+      <Button type="button" variant="secondary" size="icon-sm" onClick={() => void onCrop()} className="absolute bottom-1 right-1" aria-label="Обрезать миниатюру" title="Обрезать миниатюру">
         <Crop />
       </Button>
     </div>

@@ -7,6 +7,7 @@ import { EventAttendanceEntity } from './entities/event-attendance.entity';
 import { ReactionEntity } from './entities/reaction.entity';
 import { UserEntity } from './entities/user.entity';
 import { VenueSuggestionEntity } from './entities/venue-suggestion.entity';
+import { UserFeedbackEntity } from './entities/user-feedback.entity';
 import { VenueEntity } from './entities/venue.entity';
 
 export default new DataSource({
@@ -25,6 +26,7 @@ export default new DataSource({
     ReactionEntity,
     UserEntity,
     VenueSuggestionEntity,
+    UserFeedbackEntity,
     VenueEntity,
   ],
   migrations: [__dirname + '/migrations/*{.js,.ts}'],

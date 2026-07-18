@@ -18,6 +18,14 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import TelegramLoginWidget from "./TelegramLoginWidget";
 import { MapStyle, TelegramAuthSession } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
@@ -58,6 +66,15 @@ export default function SettingsModal({
   });
   const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({
+    kind: "idea" as "idea" | "bug" | "other",
+    message: "",
+    contact: "",
+  });
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [deleteAccountConfirmOpen, setDeleteAccountConfirmOpen] = useState(false);
   const [legalConsentAccepted, setLegalConsentAccepted] = useState(false);
   const [clusterZoomDraft, setClusterZoomDraft] = useState(clusterMaxZoom);
 
@@ -112,6 +129,33 @@ export default function SettingsModal({
       await onChangeClusterMaxZoom(value);
     } catch {
       setClusterZoomDraft(clusterMaxZoom);
+    }
+  };
+
+  const submitFeedback = async () => {
+    setFeedbackError(null);
+    if (!auth) return;
+    if (feedbackForm.message.trim().length < 3) {
+      setFeedbackError("Опишите предложение или проблему чуть подробнее.");
+      return;
+    }
+
+    setFeedbackStatus("sending");
+    try {
+      const res = await fetch("/api/users/me/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(feedbackForm),
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || "Не удалось отправить сообщение.");
+      }
+      setFeedbackStatus("sent");
+      setFeedbackForm({ kind: "idea", message: "", contact: "" });
+    } catch (error) {
+      setFeedbackStatus("error");
+      setFeedbackError(error instanceof Error ? error.message : "Не удалось отправить сообщение.");
     }
   };
 
@@ -214,6 +258,27 @@ export default function SettingsModal({
                     </ToggleGroup>
                   </div>
 
+                  <div className="settings-divider flex flex-col gap-3 border-t pt-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="settings-strong text-xs font-semibold">Группировка меток</div>
+                        <div className="mt-1 text-[11px] leading-relaxed text-neutral-500">
+                          Объединять близкие места до масштаба {clusterZoomDraft}
+                        </div>
+                      </div>
+                      <span className="font-mono text-xs text-neutral-400">{clusterZoomDraft}</span>
+                    </div>
+                    <Slider
+                      value={[clusterZoomDraft]}
+                      min={8}
+                      max={18}
+                      step={1}
+                      onValueChange={([value]) => setClusterZoomDraft(value)}
+                      onValueCommit={([value]) => void commitClusterZoom(value)}
+                      aria-label="Масштаб группировки меток"
+                    />
+                  </div>
+
                   {/* Actions for authenticated */}
                   <div className="settings-divider flex flex-col gap-2 pt-2 border-t">
                     <Button
@@ -227,29 +292,6 @@ export default function SettingsModal({
                     >
                       <span>Выйти из аккаунта</span>
                     </Button>
-                    <a href="/delete-account" className="text-center text-[11px] font-semibold text-neutral-500 transition hover:text-neutral-200">
-                      Удалить аккаунт
-                    </a>
-                  </div>
-                  <div className="settings-divider flex flex-col gap-3 border-t pt-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="settings-strong text-xs font-semibold">Кластеризация карты</div>
-                        <div className="mt-1 text-[11px] leading-relaxed text-neutral-500">
-                          Метки объединяются до масштаба {clusterZoomDraft}
-                        </div>
-                      </div>
-                      <span className="font-mono text-xs text-neutral-400">{clusterZoomDraft}</span>
-                    </div>
-                    <Slider
-                      value={[clusterZoomDraft]}
-                      min={8}
-                      max={18}
-                      step={1}
-                      onValueChange={([value]) => setClusterZoomDraft(value)}
-                      onValueCommit={([value]) => void commitClusterZoom(value)}
-                      aria-label="Масштаб кластеризации карты"
-                    />
                   </div>
                 </motion.div>
               ) : (
@@ -288,77 +330,135 @@ export default function SettingsModal({
               )}
             </motion.div>
 
-            <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
-              <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                Новое место
-              </h4>
-              <motion.div className="settings-card rounded-2xl border p-4 space-y-3" variants={revealItem}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setSuggestionOpen((value) => !value)}
-                  className="settings-secondary-button w-full rounded-xl text-xs font-semibold"
-                >
-                  Предложить заведение
-                </Button>
+            {auth && (
+              <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
+                <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                  Обращения
+                </h4>
+                <motion.div className="settings-card rounded-2xl border p-4 space-y-3" variants={revealItem}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setSuggestionOpen((value) => !value)}
+                    className="settings-secondary-button w-full rounded-xl text-xs font-semibold"
+                  >
+                    Предложить заведение
+                  </Button>
 
-                <AnimatePresence initial={false}>
-                  {suggestionOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0, y: -6 }}
-                      animate={{ opacity: 1, height: "auto", y: 0 }}
-                      exit={{ opacity: 0, height: 0, y: -6 }}
-                      transition={{ duration: 0.22, ease: appEase }}
-                      className="space-y-2 overflow-hidden"
-                    >
-                      {!auth ? (
-                        <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs leading-relaxed text-muted-foreground">
-                          Войдите через Telegram или Яндекс ID, чтобы предложить новое место. Так мы сможем связать заявку с профилем и показать статус рассмотрения.
-                        </div>
-                      ) : (
-                        <>
-                          <Input
-                            value={suggestionForm.name}
-                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, name: event.target.value }))}
-                            className="settings-form-input"
-                            placeholder="Название: например, Весна"
-                          />
-                          <Input
-                            value={suggestionForm.address}
-                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, address: event.target.value }))}
-                            className="settings-form-input"
-                            placeholder="Адрес: ул. Ленина, 34"
-                          />
-                          <Textarea
-                            value={suggestionForm.comment}
-                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, comment: event.target.value }))}
-                            className="settings-form-input min-h-20 resize-none"
-                            placeholder="Комментарий: что это за место, почему стоит добавить"
-                          />
-                          <Input
-                            value={suggestionForm.contact}
-                            onChange={(event) => setSuggestionForm((prev) => ({ ...prev, contact: event.target.value }))}
-                            className="settings-form-input"
-                            placeholder="Контакт, если нужен ответ"
-                          />
-                          {suggestionError && <div className="text-[11px] text-rose-300">{suggestionError}</div>}
-                          {suggestionStatus === "sent" && <div className="text-[11px] text-emerald-300">Заявка отправлена.</div>}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={submitSuggestion}
-                            disabled={suggestionStatus === "sending"}
-                            className="app-text-button w-full"
-                          >
-                            {suggestionStatus === "sending" ? "Отправляем..." : "Отправить"}
-                          </Button>
-                        </>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  <AnimatePresence initial={false}>
+                    {suggestionOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, y: -6 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -6 }}
+                        transition={{ duration: 0.22, ease: appEase }}
+                        className="space-y-2 overflow-hidden"
+                      >
+                        <Input
+                          value={suggestionForm.name}
+                          onChange={(event) => setSuggestionForm((prev) => ({ ...prev, name: event.target.value }))}
+                          className="settings-form-input"
+                          placeholder="Название: например, Весна"
+                        />
+                        <Input
+                          value={suggestionForm.address}
+                          onChange={(event) => setSuggestionForm((prev) => ({ ...prev, address: event.target.value }))}
+                          className="settings-form-input"
+                          placeholder="Адрес: ул. Ленина, 34"
+                        />
+                        <Textarea
+                          value={suggestionForm.comment}
+                          onChange={(event) => setSuggestionForm((prev) => ({ ...prev, comment: event.target.value }))}
+                          className="settings-form-input min-h-20 resize-none"
+                          placeholder="Что это за место и почему его стоит добавить"
+                        />
+                        <Input
+                          value={suggestionForm.contact}
+                          onChange={(event) => setSuggestionForm((prev) => ({ ...prev, contact: event.target.value }))}
+                          className="settings-form-input"
+                          placeholder="Контакт, если нужен ответ"
+                        />
+                        {suggestionError && <div className="text-[11px] text-rose-300">{suggestionError}</div>}
+                        {suggestionStatus === "sent" && <div className="text-[11px] text-emerald-300">Заявка отправлена.</div>}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={submitSuggestion}
+                          disabled={suggestionStatus === "sending"}
+                          className="app-text-button w-full"
+                        >
+                          {suggestionStatus === "sending" ? "Отправляем..." : "Отправить"}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="settings-divider border-t" />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFeedbackOpen((value) => !value)}
+                    className="settings-secondary-button w-full rounded-xl text-xs font-semibold"
+                  >
+                    Сообщить о проблеме или идее
+                  </Button>
+
+                  <AnimatePresence initial={false}>
+                    {feedbackOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, y: -6 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -6 }}
+                        transition={{ duration: 0.22, ease: appEase }}
+                        className="space-y-2 overflow-hidden"
+                      >
+                        <ToggleGroup
+                          type="single"
+                          value={feedbackForm.kind}
+                          onValueChange={(kind) => {
+                            if (kind === "idea" || kind === "bug" || kind === "other") {
+                              setFeedbackForm((prev) => ({ ...prev, kind }));
+                            }
+                          }}
+                          variant="outline"
+                          spacing={1}
+                          className="flex w-full"
+                          aria-label="Тип обращения"
+                        >
+                          <ToggleGroupItem value="idea" className="flex-1">Идея</ToggleGroupItem>
+                          <ToggleGroupItem value="bug" className="flex-1">Ошибка</ToggleGroupItem>
+                          <ToggleGroupItem value="other" className="flex-1">Другое</ToggleGroupItem>
+                        </ToggleGroup>
+                        <Textarea
+                          value={feedbackForm.message}
+                          onChange={(event) => setFeedbackForm((prev) => ({ ...prev, message: event.target.value }))}
+                          className="settings-form-input min-h-24 resize-none"
+                          placeholder="Опишите, что произошло или что хотелось бы улучшить"
+                        />
+                        <Input
+                          value={feedbackForm.contact}
+                          onChange={(event) => setFeedbackForm((prev) => ({ ...prev, contact: event.target.value }))}
+                          className="settings-form-input"
+                          placeholder="Контакт для ответа, если нужен"
+                        />
+                        {feedbackError && <div className="text-[11px] text-rose-300">{feedbackError}</div>}
+                        {feedbackStatus === "sent" && <div className="text-[11px] text-emerald-300">Сообщение отправлено.</div>}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={submitFeedback}
+                          disabled={feedbackStatus === "sending"}
+                          className="app-text-button w-full"
+                        >
+                          {feedbackStatus === "sending" ? "Отправляем..." : "Отправить"}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
               </motion.div>
-            </motion.div>
+            )}
 
             {/* GPS Proximity Sort Settings */}
             <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
@@ -399,7 +499,48 @@ export default function SettingsModal({
                 </div>
               </motion.div>
             </motion.div>
+
+            {auth && (
+              <motion.div className="pt-1" variants={revealList} initial="hidden" animate="show">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setDeleteAccountConfirmOpen(true)}
+                  className="settings-danger-button w-full rounded-xl text-xs font-semibold"
+                >
+                  Удалить аккаунт
+                </Button>
+              </motion.div>
+            )}
           </motion.div>
+
+          <Dialog open={deleteAccountConfirmOpen} onOpenChange={setDeleteAccountConfirmOpen}>
+            <DialogContent
+              data-theme={mapStyle}
+              className={`settings-surface max-w-sm ${mapStyle === "dark" ? "dark" : ""}`}
+            >
+              <DialogHeader>
+                <DialogTitle>Перейти к удалению аккаунта?</DialogTitle>
+                <DialogDescription>
+                  Откроется страница с порядком удаления аккаунта и персональных данных.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setDeleteAccountConfirmOpen(false)}>
+                  Отмена
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    window.location.assign("/delete-account");
+                  }}
+                >
+                  Продолжить
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
     </AnimatePresence>

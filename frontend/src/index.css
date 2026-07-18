@@ -275,6 +275,21 @@ body {
   border-color: var(--app-border) !important;
 }
 
+[data-theme] .discovery-filter-drawer {
+  background: var(--app-panel) !important;
+  color: var(--app-text) !important;
+  border-color: var(--app-border-strong) !important;
+}
+
+[data-theme] .discovery-filter-drawer-header {
+  background: color-mix(in srgb, var(--app-panel) 96%, transparent) !important;
+  border-color: var(--app-border) !important;
+}
+
+[data-theme] .discovery-filter-drawer > .overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
 [data-theme] .discovery-search-input {
   background: color-mix(in srgb, var(--app-bg-elevated) 86%, transparent) !important;
   color: var(--app-text) !important;
@@ -500,6 +515,15 @@ body {
   background: var(--app-panel-soft) !important;
   border-color: var(--app-border-strong) !important;
   color: var(--app-text) !important;
+}
+
+[data-theme] .settings-danger-button {
+  color: var(--app-danger) !important;
+}
+
+[data-theme] .settings-danger-button:hover {
+  background: color-mix(in srgb, var(--app-danger) 12%, transparent) !important;
+  color: color-mix(in srgb, var(--app-danger) 78%, var(--app-text)) !important;
 }
 
 [data-theme] .settings-toggle-on {

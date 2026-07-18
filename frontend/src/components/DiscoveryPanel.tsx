@@ -4,6 +4,7 @@
  */
 
 import { useState, Dispatch, SetStateAction } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Search,
   X,
@@ -78,7 +79,7 @@ export default function DiscoveryPanel({
   eventsList,
   setMobileView,
 }: DiscoveryPanelProps) {
-  const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const filteredVenues = filterVenuesForDiscovery(venues, filters, {
     events: eventsList,
@@ -97,7 +98,7 @@ export default function DiscoveryPanel({
   return (
     <div 
       id="discovery-panel" 
-      className="flex flex-col h-full font-sans"
+      className="relative flex h-full flex-col font-sans"
       style={{
         paddingTop: "calc(4.5rem + env(safe-area-inset-top, 0px))"
       }}
@@ -145,7 +146,7 @@ export default function DiscoveryPanel({
 
         <div className="flex flex-col gap-3">
           <div className="flex items-start gap-2">
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <ToggleGroup
               type="multiple"
               value={[
@@ -159,9 +160,7 @@ export default function DiscoveryPanel({
                   hasEventToday: values.includes("hasEventToday"),
                 }));
               }}
-              className={`flex w-full flex-wrap items-start justify-start gap-1.5 overflow-hidden py-0.5 transition-[max-height] duration-300 ease-out ${
-                isFiltersExpanded ? "max-h-[360px] pb-1" : "max-h-[36px]"
-              }`}
+              className="flex w-full flex-wrap items-start justify-start gap-1.5 py-0.5"
               spacing={1}
               variant="outline"
             >
@@ -177,81 +176,14 @@ export default function DiscoveryPanel({
             type="button"
             variant="outline"
             size="icon-lg"
-            onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
+            onClick={() => setIsFiltersOpen(true)}
             className="discovery-icon-button shrink-0"
-            title={isFiltersExpanded ? "Свернуть фильтры" : "Все фильтры"}
+            title="Все параметры"
+            aria-label="Открыть параметры поиска"
           >
-            {isFiltersExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <ChevronUp className="w-4 h-4" />
           </Button>
           </div>
-
-          {isFiltersExpanded && (
-            <div className="flex flex-col gap-3">
-              {activeFilterCount > 0 && (
-                <div className="flex items-center justify-end gap-2">
-                  <span className="text-[10px] font-mono text-zinc-500">{activeFilterCount} выбрано</span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={clearAllFilters}
-                    title="Сбросить фильтры"
-                    aria-label="Сбросить фильтры"
-                  >
-                    <RotateCcw />
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">Тип места</div>
-                <ToggleGroup
-                  type="multiple"
-                  value={filters.categories}
-                  onValueChange={(categories) => setFilters((prev) => ({ ...prev, categories }))}
-                  className="flex w-full flex-wrap justify-start gap-1.5"
-                  spacing={1}
-                  variant="outline"
-                >
-                  {UNIFIED_PILLS.map((pill) => (
-                    <ToggleGroupItem
-                      key={pill.id}
-                      value={pill.id}
-                      aria-label={pill.label}
-                      className="discovery-pill h-8 rounded-md px-3 text-[11px]"
-                    >
-                      {pill.label}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </div>
-
-              {VIBE_FILTER_GROUPS.map((group) => (
-                <div key={group.title} className="flex flex-col gap-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">{group.title}</div>
-                  <ToggleGroup
-                    type="multiple"
-                    value={filters.tags}
-                    onValueChange={(tags) => setFilters((prev) => ({ ...prev, tags }))}
-                    className="flex w-full flex-wrap justify-start gap-1.5"
-                    spacing={1}
-                    variant="outline"
-                  >
-                    {group.tags.map((tag) => (
-                      <ToggleGroupItem
-                        key={tag}
-                        value={tag}
-                        aria-label={tag}
-                        className="discovery-pill h-8 rounded-md px-3 text-[11px]"
-                      >
-                        {tag}
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -344,6 +276,117 @@ export default function DiscoveryPanel({
         </div>
 
       </div>
+
+      <AnimatePresence>
+        {isFiltersOpen && (
+          <div className="absolute inset-0 z-40 flex flex-col justify-end">
+            <motion.button
+              type="button"
+              aria-label="Закрыть параметры поиска"
+              className="absolute inset-0 cursor-default bg-black/35"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setIsFiltersOpen(false)}
+            />
+            <motion.section
+              aria-label="Параметры поиска"
+              className="discovery-filter-drawer relative flex max-h-[calc(100%_-_2rem)] flex-col overflow-hidden rounded-t-2xl border border-b-0 shadow-2xl"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="discovery-filter-drawer-header sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 pb-3 pt-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">Параметры поиска</div>
+                  <div className="mt-0.5 text-[10px] font-mono text-zinc-500">
+                    {activeFilterCount ? `${activeFilterCount} выбрано` : "Можно выбрать несколько"}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {activeFilterCount > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={clearAllFilters}
+                      title="Сбросить параметры"
+                      aria-label="Сбросить параметры"
+                    >
+                      <RotateCcw />
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon-sm"
+                    onClick={() => setIsFiltersOpen(false)}
+                    className="discovery-icon-button"
+                    title="Закрыть параметры"
+                    aria-label="Закрыть параметры"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 touch-pan-y overscroll-contain overflow-y-auto px-4 pb-[calc(1.5rem_+_env(safe-area-inset-bottom,0px))] pt-4">
+                <div className="flex flex-col gap-5">
+                  <div className="flex flex-col gap-2">
+                    <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">Тип места</div>
+                    <ToggleGroup
+                      type="multiple"
+                      value={filters.categories}
+                      onValueChange={(categories) => setFilters((prev) => ({ ...prev, categories }))}
+                      className="flex w-full flex-wrap justify-start gap-1.5"
+                      spacing={1}
+                      variant="outline"
+                    >
+                      {UNIFIED_PILLS.map((pill) => (
+                        <ToggleGroupItem
+                          key={pill.id}
+                          value={pill.id}
+                          aria-label={pill.label}
+                          className="discovery-pill h-8 rounded-md px-3 text-[11px]"
+                        >
+                          {pill.label}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  </div>
+
+                  {VIBE_FILTER_GROUPS.map((group) => (
+                    <div key={group.title} className="flex flex-col gap-2">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-550">{group.title}</div>
+                      <ToggleGroup
+                        type="multiple"
+                        value={filters.tags}
+                        onValueChange={(tags) => setFilters((prev) => ({ ...prev, tags }))}
+                        className="flex w-full flex-wrap justify-start gap-1.5"
+                        spacing={1}
+                        variant="outline"
+                      >
+                        {group.tags.map((tag) => (
+                          <ToggleGroupItem
+                            key={tag}
+                            value={tag}
+                            aria-label={tag}
+                            className="discovery-pill h-8 rounded-md px-3 text-[11px]"
+                          >
+                            {tag}
+                          </ToggleGroupItem>
+                        ))}
+                      </ToggleGroup>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.section>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

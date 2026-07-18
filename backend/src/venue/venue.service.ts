@@ -1,6 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { VenueEntity } from '../entities/venue.entity';
 
 const transliterationMap: Record<string, string> = {
@@ -116,26 +116,18 @@ export class VenueService {
 
   async createOrUpdate(data: any) {
     const id = data.id || `v-${Math.random().toString(36).substring(2, 11)}`;
-    const normalizedName = data.name?.trim().toLowerCase();
-    const existingName = normalizedName
-      ? await this.venueRepository
-          .createQueryBuilder('venue')
-          .where('LOWER(venue.name) = :name', { name: normalizedName })
-          .andWhere(data.id ? 'venue.id != :id' : '1=1', { id: data.id })
-          .getOne()
-      : null;
+    let venue = await this.venueRepository.findOne({ where: { id } });
+    const normalizedName = data.name?.trim().toLowerCase() || '';
+    const isSameName = Boolean(venue && venue.name.trim().toLowerCase() === normalizedName);
+    const baseSlug = makeSlug(data.slug || data.name || id) || id;
+    let slug = isSameName && venue ? venue.slug : baseSlug;
+    let suffix = 2;
 
-    if (existingName) {
-      throw new ConflictException('Venue name already exists');
-    }
-
-    const slug = makeSlug(data.slug || data.name || id) || id;
-    const existingSlug = await this.venueRepository.findOne({
-      where: data.id ? { slug, id: Not(data.id) } : { slug },
-    });
-
-    if (existingSlug) {
-      throw new ConflictException('Venue slug already exists');
+    while (true) {
+      const existingSlug = await this.venueRepository.findOne({ where: { slug } });
+      if (!existingSlug || existingSlug.id === id) break;
+      slug = `${baseSlug}-${suffix}`;
+      suffix += 1;
     }
 
     const premiumConfig = {
@@ -144,8 +136,6 @@ export class VenueService {
       featuredDrinks: data.premiumConfig?.featuredDrinks || data.premiumConfig?.topItems || [],
       premiumTheme: undefined,
     };
-
-    let venue = await this.venueRepository.findOne({ where: { id } });
 
     if (venue) {
       // Update

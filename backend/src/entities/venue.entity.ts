@@ -61,6 +61,9 @@ export class VenueEntity {
   @Column({ type: 'text', array: true, default: '{}' })
   gallery: string[];
 
+  @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
+  galleryThumbnails: Record<string, string>;
+
   @Column({ type: 'text', array: true, default: '{}' })
   tags: string[];
 

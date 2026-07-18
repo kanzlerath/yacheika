@@ -6,7 +6,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { Plus, Minus } from "lucide-react";
+import { Plus, Minus, LocateFixed } from "lucide-react";
 import { MapStyle, Venue, VenueEvent } from "../types";
 import { VenueDiscoveryFilters, filterVenuesForDiscovery } from "../utils/venueFilters";
 
@@ -194,7 +194,7 @@ const toSelectedVenueFeatureCollection = (venue: Venue | null): VenueFeatureColl
     : [],
 });
 
-const ensureVenueLayers = (map: maplibregl.Map, clusterMaxZoom = 14) => {
+const ensureVenueLayers = (map: maplibregl.Map, clusterMaxZoom = 14, mapStyle: MapStyle = "dark") => {
   if (!map.getSource(VENUES_SOURCE_ID)) {
     map.addSource(VENUES_SOURCE_ID, {
       type: "geojson",
@@ -339,6 +339,11 @@ const ensureVenueLayers = (map: maplibregl.Map, clusterMaxZoom = 14) => {
     });
   }
 
+  const isLightMap = mapStyle === "light";
+  map.setPaintProperty(VENUE_LABELS_LAYER_ID, "text-color", isLightMap ? "#05070a" : "#f4f4f5");
+  map.setPaintProperty(VENUE_LABELS_LAYER_ID, "text-halo-color", isLightMap ? "rgba(0, 0, 0, 0)" : "rgba(3, 3, 3, 0.88)");
+  map.setPaintProperty(VENUE_LABELS_LAYER_ID, "text-halo-width", isLightMap ? 0 : 1.4);
+
   if (!map.getSource(SELECTED_VENUE_SOURCE_ID)) {
     map.addSource(SELECTED_VENUE_SOURCE_ID, {
       type: "geojson",
@@ -416,7 +421,7 @@ export default function MapContainer({
   });
 
   const syncVenueSources = (map: maplibregl.Map) => {
-    ensureVenueLayers(map, clusterMaxZoom);
+    ensureVenueLayers(map, clusterMaxZoom, mapStyle);
     const venuesSource = map.getSource(VENUES_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
     const selectedSource = map.getSource(SELECTED_VENUE_SOURCE_ID) as maplibregl.GeoJSONSource | undefined;
     venuesSource?.setData(venueSourceDataRef.current.venues);
@@ -514,7 +519,7 @@ export default function MapContainer({
     map.on("styleimagemissing", missingImageHandler);
 
     map.on("load", () => {
-      ensureVenueLayers(map, clusterMaxZoom);
+      ensureVenueLayers(map, clusterMaxZoom, mapStyle);
     });
 
     setVectorStyleWithFallback(map, mapStyle);
@@ -690,7 +695,7 @@ export default function MapContainer({
     };
 
     const bindLayerHandlers = () => {
-      ensureVenueLayers(map, clusterMaxZoom);
+      ensureVenueLayers(map, clusterMaxZoom, mapStyle);
       if (!map.getLayer(CLUSTERS_LAYER_ID) || !map.getLayer(VENUE_HIT_LAYER_ID) || layerHandlersBound) return;
       map.on("click", CLUSTERS_LAYER_ID, clusterClickHandler);
       map.on("click", VENUE_HIT_LAYER_ID, venueClickHandler);
@@ -777,6 +782,26 @@ export default function MapContainer({
         >
           <Minus className="w-4 h-4" />
         </button>
+        {userCoords && !adminMode && (
+          <button
+            type="button"
+            onClick={() => {
+              const map = mapRef.current;
+              if (!map) return;
+              map.flyTo({
+                center: [userCoords.lng, userCoords.lat],
+                zoom: Math.max(map.getZoom(), 14),
+                essential: true,
+                duration: 720,
+              });
+            }}
+            className="mt-1 flex h-8 w-8 items-center justify-center rounded-lg border-t pt-1 transition-all active:scale-95 cursor-pointer"
+            title="Показать моё местоположение"
+            aria-label="Показать моё местоположение"
+          >
+            <LocateFixed className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
     </div>

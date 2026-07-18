@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   PointerSensor,
   TouchSensor,
@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   List,
   MapPin,
+  MessageSquare,
   Plus,
   Users,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import {
   VenueAudit,
   VenueEvent,
   VenueSuggestion,
+  UserFeedback,
   WeekdayKey,
   WorkingHoursSchedule,
 } from "../types";
@@ -37,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { normalizePremiumRecommendations } from "../utils/premium";
 import { DashboardView } from "./admin/DashboardView";
 import { EventsOverview } from "./admin/EventsOverview";
+import { FeedbackView } from "./admin/FeedbackView";
 import { SuggestionsView } from "./admin/SuggestionsView";
 import { UsersView } from "./admin/UsersView";
 import { ACCEPTED_IMAGE_TYPES, EventEditor, VenueEditor, compressImageFile } from "./admin/VenueEditor";
@@ -50,6 +53,7 @@ interface AdminPanelProps {
   dashboard: AdminDashboard | null;
   users: AdminTelegramUser[];
   suggestions: VenueSuggestion[];
+  feedback: UserFeedback[];
   selectedVenueAudit: VenueAudit | null;
   selectedVenueAuditLoading: boolean;
   selectedVenue: Venue | null;
@@ -63,7 +67,7 @@ interface AdminPanelProps {
   onToggleMobileMap?: (show: boolean) => void;
 }
 
-type AdminSection = "dashboard" | "venues" | "add" | "users" | "events" | "suggestions";
+type AdminSection = "dashboard" | "venues" | "add" | "users" | "events" | "suggestions" | "feedback";
 
 const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
 
@@ -88,6 +92,7 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
     website: "",
   },
   gallery: [],
+  galleryThumbnails: {},
   tags: [],
   status: "published",
   premiumConfig: {
@@ -130,6 +135,7 @@ const normalizeVenueForEdit = (venue: Venue) => ({
   },
   logoUrl: venue.logoUrl || "",
   gallery: venue.gallery || [],
+  galleryThumbnails: venue.galleryThumbnails || {},
   tags: venue.tags || [],
   premiumConfig: {
     premiumActive: venue.premiumConfig?.premiumActive || false,
@@ -167,6 +173,7 @@ export default function AdminPanel({
   dashboard,
   users,
   suggestions,
+  feedback,
   selectedVenueAudit,
   selectedVenueAuditLoading,
   selectedVenue,
@@ -186,7 +193,7 @@ export default function AdminPanel({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadingTarget, setUploadingTarget] = useState<"gallery" | "hero" | "event" | "logo" | null>(null);
+  const [uploadingTarget, setUploadingTarget] = useState<"gallery" | "gallery-thumbnail" | "hero" | "event" | "logo" | null>(null);
   const [newEvent, setNewEvent] = useState({
     title: "",
     description: "",
@@ -199,12 +206,6 @@ export default function AdminPanel({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 130, tolerance: 8 } }),
   );
-
-  const duplicateName = useMemo(() => {
-    const normalized = editingVenue.name.trim().toLowerCase();
-    if (!normalized) return false;
-    return venues.some((venue) => venue.id !== editingVenue.id && venue.name.trim().toLowerCase() === normalized);
-  }, [editingVenue.id, editingVenue.name, venues]);
 
   const selectedVenueEvents = events.filter((event) => event.venueId === editingVenue.id);
 
@@ -279,7 +280,7 @@ export default function AdminPanel({
     return data.url as string;
   };
 
-  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "hero" | "event" | "logo", replaceUrl?: string) => {
+  const uploadSelectedImages = async (files: FileList | File[] | null | undefined, target: "gallery" | "gallery-thumbnail" | "hero" | "event" | "logo", replaceUrl?: string) => {
     const list = Array.from(files || []);
     if (!list.length) return;
     setUploadError(null);
@@ -301,9 +302,16 @@ export default function AdminPanel({
       if (target === "gallery") {
         setEditingVenue((prev: any) => ({
           ...prev,
-          gallery: replaceUrl
-            ? prev.gallery.map((url: string) => url === replaceUrl ? urls[0] : url)
-            : [...prev.gallery, ...urls],
+          gallery: [...prev.gallery, ...urls],
+        }));
+      } else if (target === "gallery-thumbnail") {
+        if (!replaceUrl) throw new Error("Не найдено исходное фото для миниатюры");
+        setEditingVenue((prev: any) => ({
+          ...prev,
+          galleryThumbnails: {
+            ...(prev.galleryThumbnails || {}),
+            [replaceUrl]: urls[0],
+          },
         }));
       } else if (target === "hero") {
         setEditingVenue((prev: any) => ({
@@ -324,10 +332,6 @@ export default function AdminPanel({
 
   const saveVenue = async () => {
     setSaveError(null);
-    if (duplicateName) {
-      setSaveError("Заведение с таким именем уже есть.");
-      return;
-    }
     if (!editingVenue.name.trim()) {
       setSaveError("Укажите имя заведения.");
       return;
@@ -396,6 +400,7 @@ export default function AdminPanel({
             ["add", Plus, "Добавить заведение"],
             ["users", Users, "Пользователи"],
             ["suggestions", MapPin, "Заявки"],
+            ["feedback", MessageSquare, "Обращения"],
             ["events", Calendar, "События"],
           ].map(([id, Icon, label]) => (
             <Button
@@ -423,6 +428,8 @@ export default function AdminPanel({
 
           {section === "suggestions" && <SuggestionsView suggestions={suggestions} />}
 
+          {section === "feedback" && <FeedbackView feedback={feedback} />}
+
           {section === "events" && (
             <EventsOverview events={events} venues={venues} onSelectVenue={loadVenue} />
           )}
@@ -446,7 +453,6 @@ export default function AdminPanel({
                     <VenueEditor
                       editingVenue={editingVenue}
                       setEditingVenue={setEditingVenue}
-                      duplicateName={duplicateName}
                       tagInput={tagInput}
                       setTagInput={setTagInput}
                       addTag={addTag}
