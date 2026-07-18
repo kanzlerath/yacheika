@@ -472,11 +472,9 @@ function ScopeApp() {
       </header>
 
       <main className="w-full flex-1 h-0 min-h-0 flex flex-col md:grid md:grid-cols-12 relative overflow-hidden">
-        <motion.section
-          layout
-          transition={{ duration: 0.28, ease: appEase }}
-          className={`app-sidebar h-full md:col-span-4 lg:col-span-3.5 border-r md:block absolute md:relative inset-0 z-30 transition-transform duration-300 ${
-            mobileView === "list" ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        <section
+          className={`app-sidebar h-full md:col-span-4 lg:col-span-3.5 border-r md:block absolute md:relative inset-0 z-30 will-change-transform transition-transform duration-300 ${
+            mobileView === "list" ? "translate-y-0" : "translate-y-full md:translate-y-0"
           }`}
         >
           <DiscoveryPanel
@@ -489,7 +487,7 @@ function ScopeApp() {
             eventsList={events}
             setMobileView={setMobileView}
           />
-        </motion.section>
+        </section>
 
         <section className="relative w-full h-full flex-1 md:col-span-8 lg:col-span-8.5 overflow-hidden block">
           <MapContainer
