@@ -82,25 +82,16 @@ const getDayRestrictions = (text: string) => {
   return days;
 };
 
-const segmentAppliesToday = (segment: string, today: number) => {
+const segmentAppliesOnDay = (segment: string, day: number) => {
   const restrictedDays = getDayRestrictions(segment);
-  return restrictedDays.size === 0 || restrictedDays.has(today);
-};
-
-const isTimeInRange = (nowMinutes: number, startMinutes: number, endMinutes: number) => {
-  if (startMinutes === endMinutes) return true;
-
-  if (startMinutes < endMinutes) {
-    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
-  }
-
-  return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+  return restrictedDays.size === 0 || restrictedDays.has(day);
 };
 
 export const isVenueOpenNow = (workingHours: string, now = new Date()) => {
   const segments = workingHours.split(",").map((segment) => segment.trim()).filter(Boolean);
   const nowMinutes = toMinutes(now.getHours(), now.getMinutes());
   const today = now.getDay();
+  const previousDay = (today + 6) % 7;
   let parsedAnyRange = false;
 
   for (const segment of segments) {
@@ -124,17 +115,27 @@ export const isVenueOpenNow = (workingHours: string, now = new Date()) => {
 
       parsedAnyRange = true;
 
-      if (!segmentAppliesToday(segment, today)) {
-        continue;
+      const startTime = toMinutes(startHours, startMinutes);
+      const endTime = toMinutes(endHours, endMinutes);
+      const crossesMidnight = startTime > endTime;
+      const appliesToday = segmentAppliesOnDay(segment, today);
+      const appliesPreviousDay = segmentAppliesOnDay(segment, previousDay);
+
+      if (startTime === endTime && appliesToday) {
+        return true;
       }
 
-      if (
-        isTimeInRange(
-          nowMinutes,
-          toMinutes(startHours, startMinutes),
-          toMinutes(endHours, endMinutes),
-        )
-      ) {
+      if (!crossesMidnight && appliesToday && nowMinutes >= startTime && nowMinutes < endTime) {
+        return true;
+      }
+
+      // An interval such as "Сб 16:00-02:00" has two distinct parts:
+      // Saturday after 16:00 and Sunday before 02:00.
+      if (crossesMidnight && appliesToday && nowMinutes >= startTime) {
+        return true;
+      }
+
+      if (crossesMidnight && appliesPreviousDay && nowMinutes < endTime) {
         return true;
       }
     }

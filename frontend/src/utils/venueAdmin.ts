@@ -59,12 +59,29 @@ export const formatScheduleLine = (schedule?: WorkingHoursSchedule, fallback?: s
   return lines.join(" · ");
 };
 
-export const formatTodaySchedule = (schedule?: WorkingHoursSchedule, fallback?: string) => {
+const timeToMinutes = (value: string) => {
+  const [hours, minutes] = value.split(":").map(Number);
+  return Number.isInteger(hours) && Number.isInteger(minutes) ? hours * 60 + minutes : null;
+};
+
+export const formatTodaySchedule = (schedule?: WorkingHoursSchedule, fallback?: string, now = new Date()) => {
   if (!schedule) return fallback || "Расписание уточняется";
 
-  const dayIndex = new Date().getDay();
+  const dayIndex = now.getDay();
   const key = (["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as WeekdayKey[])[dayIndex];
   const label = WEEKDAYS.find((day) => day.key === key)?.short || "Сегодня";
+  const previousKey = (["sat", "sun", "mon", "tue", "wed", "thu", "fri"] as WeekdayKey[])[dayIndex];
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const overnightEnds = (schedule[previousKey] || [])
+    .filter((slot) => {
+      const from = timeToMinutes(slot.from);
+      const to = timeToMinutes(slot.to);
+      return from !== null && to !== null && from > to && nowMinutes < to;
+    })
+    .map((slot) => slot.to);
+
+  if (overnightEnds.length > 0) return `До ${overnightEnds.join(", ")}`;
+
   const intervals = schedule[key] || [];
 
   if (intervals.length === 0) return `${label}: выходной`;
