@@ -10,6 +10,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import {
   Activity,
   Calendar,
+  ChevronLeft,
   FileText,
   Image,
   LayoutDashboard,
@@ -467,13 +468,25 @@ export default function AdminPanel({
   const isVenueWorkspace = Boolean(
     workspaceCopy && (activeEditorSection || section === "venue-events" || section === "venue-audit"),
   );
+  const isVenueContext = section === "add" || section.startsWith("venue-");
+
+  const navigateTo = (nextSection: AdminSection) => {
+    if (nextSection === "add") {
+      startCreateVenue();
+      return;
+    }
+    if (!nextSection.startsWith("venue-")) {
+      onSelectVenue(null);
+    }
+    setSection(nextSection);
+  };
 
   const renderNavItems = (items: Array<{ id: AdminSection; icon: LucideIcon; label: string }>) => items.map(({ id, icon: Icon, label }) => (
     <Button
       key={id}
       type="button"
       variant="ghost"
-      onClick={() => (id === "add" ? startCreateVenue() : setSection(id))}
+      onClick={() => navigateTo(id)}
       className={cn(
         "w-full justify-start gap-2 text-left text-muted-foreground",
         section === id && "bg-muted text-foreground",
@@ -485,57 +498,101 @@ export default function AdminPanel({
   ));
 
   return (
-    <div id="workspace" className="min-h-full overflow-hidden rounded-xl border bg-card text-xs text-card-foreground sm:text-sm">
+    <div id="workspace" className="min-h-full bg-background text-xs text-foreground sm:text-sm">
       <div className="grid min-h-full grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)]">
-        <nav className="border-b bg-muted/15 p-3 lg:sticky lg:top-0 lg:self-start lg:border-b-0 lg:border-r lg:p-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="flex flex-col gap-1">
-              <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Обзор
-              </div>
-              {renderNavItems([
-                { id: "dashboard", icon: LayoutDashboard, label: "Дашборд" },
-                { id: "venues", icon: List, label: "Все заведения" },
-                { id: "add", icon: Plus, label: "Добавить заведение" },
-              ])}
-            </div>
+        <nav className="border-b bg-muted/20 p-3 lg:sticky lg:top-0 lg:min-h-[calc(100vh-3.5rem)] lg:self-start lg:border-b-0 lg:border-r lg:p-4">
+          {isVenueContext ? (
+            <div className="flex flex-col gap-5">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => navigateTo("venues")}
+                className="w-full justify-start gap-2 text-muted-foreground"
+              >
+                <ChevronLeft data-icon="inline-start" />
+                Все заведения
+              </Button>
 
-            {editingVenue.id && (
-              <div className="flex min-w-0 flex-col gap-1">
-                <div className="px-2 pb-1">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Выбранное заведение
-                  </div>
-                  <div className="mt-1 truncate text-xs font-semibold text-foreground" title={editingVenue.name}>
-                    {editingVenue.name}
+              <div className="border-b px-2 pb-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  {editingVenue.logoUrl ? (
+                    <img src={editingVenue.logoUrl} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-background text-sm font-semibold">
+                      {(editingVenue.name || "Н").slice(0, 1)}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-foreground" title={editingVenue.name || "Новое заведение"}>
+                      {editingVenue.name || "Новое заведение"}
+                    </div>
+                    <div className="mt-0.5 truncate text-[10px] text-muted-foreground">
+                      {editingVenue.id ? `${editingVenue.category} · ${editingVenue.status}` : "Черновик до сохранения"}
+                    </div>
                   </div>
                 </div>
-                {renderNavItems([
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Карточка
+                </div>
+                {renderNavItems(editingVenue.id ? [
                   { id: "venue-main", icon: Settings2, label: "Основное" },
                   { id: "venue-content", icon: FileText, label: "Контент" },
                   { id: "venue-media", icon: Image, label: "Фото" },
                   { id: "venue-premium", icon: Sparkles, label: "Premium" },
-                  { id: "venue-events", icon: Calendar, label: "События карточки" },
-                  { id: "venue-audit", icon: Activity, label: "Аудит карточки" },
+                ] : [
+                  { id: "add", icon: Settings2, label: "Основное" },
                 ])}
               </div>
-            )}
 
-            <div className="flex flex-col gap-1">
-              <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Работа с сервисом
-              </div>
-              {renderNavItems([
-                { id: "users", icon: Users, label: "Пользователи" },
-                { id: "suggestions", icon: MapPin, label: "Заявки" },
-                { id: "feedback", icon: MessageSquare, label: "Обращения" },
-                { id: "events", icon: Calendar, label: "Все события" },
-              ])}
+              {editingVenue.id && (
+                <div className="flex flex-col gap-1">
+                  <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Управление
+                  </div>
+                  {renderNavItems([
+                    { id: "venue-events", icon: Calendar, label: "События" },
+                    { id: "venue-audit", icon: Activity, label: "Аудит и статистика" },
+                  ])}
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="flex flex-col gap-1">
+                <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Главное
+                </div>
+                {renderNavItems([
+                  { id: "dashboard", icon: LayoutDashboard, label: "Дашборд" },
+                  { id: "venues", icon: List, label: "Заведения" },
+                  { id: "events", icon: Calendar, label: "События" },
+                ])}
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Аудитория
+                </div>
+                {renderNavItems([
+                  { id: "users", icon: Users, label: "Пользователи" },
+                  { id: "suggestions", icon: MapPin, label: "Заявки" },
+                  { id: "feedback", icon: MessageSquare, label: "Обращения" },
+                ])}
+              </div>
+
+              <Button type="button" onClick={() => navigateTo("add")} className="mt-1 w-full justify-start gap-2">
+                <Plus data-icon="inline-start" />
+                Добавить заведение
+              </Button>
+            </div>
+          )}
         </nav>
 
-        <div className="min-w-0 p-3 sm:p-5">
+        <div className="min-w-0 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1440px]">
           {section === "dashboard" && (
             <DashboardView dashboard={dashboard} analytics={analytics} venues={venues} />
           )}
@@ -615,6 +672,7 @@ export default function AdminPanel({
               )}
             </VenueWorkspace>
           )}
+          </div>
         </div>
       </div>
     </div>

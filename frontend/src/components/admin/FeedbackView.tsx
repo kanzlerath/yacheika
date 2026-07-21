@@ -60,10 +60,10 @@ export function FeedbackView({ feedback }: { feedback: UserFeedback[] }) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-display text-lg font-semibold text-foreground">Обращения</h2>
-        <p className="text-xs text-muted-foreground">{filteredFeedback.length} из {localFeedback.length} · идеи, ошибки и вопросы от пользователей</p>
+    <div className="flex flex-col gap-5">
+      <div className="border-b pb-4">
+        <h1 className="font-display text-xl font-semibold text-foreground">Обращения</h1>
+        <p className="mt-1 text-xs text-muted-foreground">{filteredFeedback.length} из {localFeedback.length} · идеи, ошибки и вопросы от пользователей</p>
       </div>
 
       <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -81,7 +81,7 @@ export function FeedbackView({ feedback }: { feedback: UserFeedback[] }) {
       ) : (
         <div className="grid gap-2">
           {filteredFeedback.map((item) => (
-            <Card key={item.id} size="sm">
+            <Card key={item.id} size="sm" className="rounded-lg shadow-none">
               <CardContent className="p-3">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
                   <div className="min-w-0">

@@ -12,7 +12,7 @@ import {
 
 export function AdminBlock({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <Card size="sm">
+    <Card size="sm" className="rounded-lg shadow-none">
       <CardHeader>
         <CardTitle className="font-display text-sm font-semibold text-foreground">{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
@@ -34,7 +34,7 @@ export function EmptyLine({ children }: { children: React.ReactNode }) {
 
 export function Metric({ label, value, note }: { label: string; value: number | string; note: string }) {
   return (
-    <Card size="sm">
+    <Card size="sm" className="rounded-lg shadow-none">
       <CardContent className="pt-4">
         <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
         <div className="mt-2 text-2xl font-semibold text-foreground">{value}</div>

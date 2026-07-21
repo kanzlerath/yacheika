@@ -30,10 +30,10 @@ export function EventsOverview({ events, venues, onSelectVenue }: { events: Venu
   const upcomingCount = filteredEvents.filter((event) => event.date >= today).length;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-display text-lg font-semibold text-foreground">События</h2>
-        <p className="text-xs text-muted-foreground">{filteredEvents.length} из {events.length} · {upcomingCount} будущих</p>
+    <div className="flex flex-col gap-5">
+      <div className="border-b pb-4">
+        <h1 className="font-display text-xl font-semibold text-foreground">События</h1>
+        <p className="mt-1 text-xs text-muted-foreground">{filteredEvents.length} из {events.length} · {upcomingCount} будущих</p>
       </div>
 
       <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Поиск: событие, заведение, категория" />
@@ -51,7 +51,7 @@ export function EventsOverview({ events, venues, onSelectVenue }: { events: Venu
                 type="button"
                 variant="ghost"
                 onClick={() => venue && onSelectVenue(venue)}
-                className={cn("h-auto w-full justify-start rounded-xl border bg-card p-3 text-left", isPast && "opacity-60")}
+                className={cn("h-auto w-full justify-start rounded-lg border bg-card p-3 text-left shadow-none", isPast && "opacity-60")}
               >
                 <div className="grid w-full gap-3 sm:grid-cols-[minmax(0,1fr)_150px] sm:items-center">
                   <div className="min-w-0">

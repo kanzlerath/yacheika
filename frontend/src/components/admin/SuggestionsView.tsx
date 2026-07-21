@@ -59,10 +59,10 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="font-display text-lg font-semibold text-foreground">Заявки на заведения</h2>
-        <p className="text-xs text-muted-foreground">{filteredSuggestions.length} из {sourceSuggestions.length} · предложения от гостей и пользователей</p>
+    <div className="flex flex-col gap-5">
+      <div className="border-b pb-4">
+        <h1 className="font-display text-xl font-semibold text-foreground">Заявки на заведения</h1>
+        <p className="mt-1 text-xs text-muted-foreground">{filteredSuggestions.length} из {sourceSuggestions.length} · предложения от гостей и пользователей</p>
       </div>
 
       <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -85,7 +85,7 @@ export function SuggestionsView({ suggestions }: { suggestions: VenueSuggestion[
       ) : (
         <div className="grid gap-2">
           {filteredSuggestions.map((suggestion) => (
-            <Card key={suggestion.id} size="sm">
+            <Card key={suggestion.id} size="sm" className="rounded-lg shadow-none">
               <CardContent className="p-3">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
                   <div className="min-w-0">

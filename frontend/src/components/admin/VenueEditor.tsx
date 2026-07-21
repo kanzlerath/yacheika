@@ -248,6 +248,8 @@ export function VenueEditor(props: any) {
     <>
     {section === "main" && (
       <div className="flex flex-col gap-4">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="flex min-w-0 flex-col gap-4">
       <AdminBlock title={editingVenue.id ? "Редактирование заведения" : "Добавление заведения"}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Имя">
@@ -269,17 +271,6 @@ export function VenueEditor(props: any) {
             />
           </Field>
         </div>
-      </AdminBlock>
-
-      <AdminBlock title="Логотип заведения">
-        <ImageUploadBox
-          existingUrl={editingVenue.logoUrl}
-          uploading={uploadingTarget === "logo"}
-          onSelect={(files) => startCropQueue(files, "logo", 1, "Обрезка логотипа")}
-          onCropExisting={() => startCropFromUrl(editingVenue.logoUrl, "logo", 1, "Обрезка логотипа")}
-          label="Загрузить логотип"
-          fit="contain"
-        />
       </AdminBlock>
 
       <AdminBlock title="Адрес и координаты">
@@ -309,6 +300,19 @@ export function VenueEditor(props: any) {
           )}
         </div>
       </AdminBlock>
+      </div>
+
+      <AdminBlock title="Логотип заведения">
+        <ImageUploadBox
+          existingUrl={editingVenue.logoUrl}
+          uploading={uploadingTarget === "logo"}
+          onSelect={(files) => startCropQueue(files, "logo", 1, "Обрезка логотипа")}
+          onCropExisting={() => startCropFromUrl(editingVenue.logoUrl, "logo", 1, "Обрезка логотипа")}
+          label="Загрузить логотип"
+          fit="contain"
+        />
+      </AdminBlock>
+      </div>
 
       <AdminBlock title="Расписание по дням">
         <div className="flex flex-col gap-2">
