@@ -48,7 +48,7 @@ export function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Ve
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Поиск: название, адрес, тег"
         />
-        <div className="grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+        <div className="grid gap-2 sm:grid-cols-3">
           <AdminSelect
             value={status}
             onValueChange={setStatus}
@@ -79,7 +79,7 @@ export function VenueList({ venues, selectedVenue, onSelectVenue }: { venues: Ve
         </div>
       </div>
 
-      <div className="max-h-[72vh] overflow-y-auto pr-1">
+      <div className="overflow-y-auto pr-1 lg:max-h-[68vh]">
         <div className="flex flex-col gap-1.5">
           {filteredVenues.length === 0 ? (
             <EmptyLine>По этим фильтрам ничего не найдено.</EmptyLine>

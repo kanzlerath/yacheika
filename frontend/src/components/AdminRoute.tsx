@@ -172,6 +172,7 @@ export default function AdminRoute() {
     const saved = await res.json();
     setSelectedVenue(saved);
     refreshAdminData();
+    return saved as Venue;
   };
 
   const handleDeleteVenue = async (id: string) => {

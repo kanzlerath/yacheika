@@ -763,7 +763,7 @@ export default function MapContainer({
   }, [venues, selectedVenue, filters, adminMode, mapStyle, eventsList]);
 
   return (
-    <div id="map-root" className="w-full h-full relative overflow-hidden bg-neutral-950">
+    <div id="map-root" className="relative h-full min-h-0 w-full min-w-0 overflow-hidden bg-neutral-950">
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
       
       {/* Custom map controls */}
