@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 import { AdminTelegramUser, AdminUserDetail } from "../../types";
 import { EmptyLine } from "./AdminShared";
 
@@ -47,11 +48,11 @@ export function UsersView({ users }: { users: AdminTelegramUser[] }) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b pb-4">
         <div>
-          <h2 className="font-display text-lg font-semibold text-foreground">Пользователи</h2>
-          <p className="text-xs text-muted-foreground">{filteredUsers.length} из {users.length}</p>
+          <h1 className="font-display text-xl font-semibold text-foreground">Пользователи</h1>
+          <p className="mt-1 text-xs text-muted-foreground">{filteredUsers.length} из {users.length}</p>
         </div>
         <ToggleGroup type="single" value={provider} onValueChange={(value) => value && setProvider(value as typeof provider)} variant="outline" size="sm" spacing={0}>
           {(["all", "telegram", "yandex"] as const).map((item) => (
@@ -75,7 +76,7 @@ export function UsersView({ users }: { users: AdminTelegramUser[] }) {
           <div className="grid content-start gap-2">
             {filteredUsers.map((user) => (
               <button key={user.id} type="button" onClick={() => loadUserDetail(user.id)} className="text-left">
-                <Card size="sm" className={selectedUser?.id === user.id ? "border-foreground/40 bg-muted/40" : ""}>
+                <Card size="sm" className={cn("rounded-lg shadow-none", selectedUser?.id === user.id && "border-foreground/40 bg-muted/40")}>
                   <CardContent className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_120px_110px] sm:items-center">
                     <div className="min-w-0">
                       <div className="truncate font-semibold text-foreground">{user.firstName} {user.lastName || ""}</div>
@@ -121,7 +122,7 @@ function UserDetailPanel({
   if (!user) return <EmptyLine>Выберите пользователя.</EmptyLine>;
 
   return (
-    <Card size="sm" className="sticky top-4 h-fit">
+    <Card size="sm" className="sticky top-4 h-fit rounded-lg shadow-none">
       <CardContent className="flex flex-col gap-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

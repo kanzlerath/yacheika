@@ -251,8 +251,8 @@ export default function AdminRoute() {
 
       <main className="w-full flex-1 h-0 min-h-0 relative overflow-hidden bg-background">
         <section
-          className={`h-full overflow-y-auto p-4 md:p-6 ${adminMobileShowMap ? "hidden" : "block"}`}
-          style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))" }}
+          className={`h-full overflow-y-auto ${adminMobileShowMap ? "hidden" : "block"}`}
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           <AdminPanel
             venues={venues}
