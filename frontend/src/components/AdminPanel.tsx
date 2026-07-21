@@ -8,13 +8,19 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
+  Activity,
   Calendar,
+  FileText,
+  Image,
   LayoutDashboard,
   List,
   MapPin,
   MessageSquare,
   Plus,
+  Settings2,
+  Sparkles,
   Users,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +48,8 @@ import { EventsOverview } from "./admin/EventsOverview";
 import { FeedbackView } from "./admin/FeedbackView";
 import { SuggestionsView } from "./admin/SuggestionsView";
 import { UsersView } from "./admin/UsersView";
-import { ACCEPTED_IMAGE_TYPES, EventEditor, VenueEditor, compressImageFile } from "./admin/VenueEditor";
+import { ACCEPTED_IMAGE_TYPES, EventEditor, VenueEditor, compressImageFile, type VenueEditorSection } from "./admin/VenueEditor";
+import { VenueAuditView } from "./admin/VenueAuditView";
 import { VenueList } from "./admin/VenueList";
 import { VenueWorkspace } from "./admin/VenueWorkspace";
 
@@ -57,9 +64,9 @@ interface AdminPanelProps {
   selectedVenueAudit: VenueAudit | null;
   selectedVenueAuditLoading: boolean;
   selectedVenue: Venue | null;
-  onSelectVenue: (venue: Venue) => void;
-  onSaveVenue: (venue: any) => Promise<void> | void;
-  onDeleteVenue: (id: string) => void;
+  onSelectVenue: (venue: Venue | null) => void;
+  onSaveVenue: (venue: any) => Promise<Venue | void> | Venue | void;
+  onDeleteVenue: (id: string) => Promise<void> | void;
   onSaveEvent: (event: any) => void;
   onDeleteEvent: (id: string) => void;
   pendingCoords: { lat: number; lng: number } | null;
@@ -67,7 +74,59 @@ interface AdminPanelProps {
   onToggleMobileMap?: (show: boolean) => void;
 }
 
-type AdminSection = "dashboard" | "venues" | "add" | "users" | "events" | "suggestions" | "feedback";
+type AdminSection =
+  | "dashboard"
+  | "venues"
+  | "add"
+  | "venue-main"
+  | "venue-content"
+  | "venue-media"
+  | "venue-premium"
+  | "venue-events"
+  | "venue-audit"
+  | "users"
+  | "events"
+  | "suggestions"
+  | "feedback";
+
+const VENUE_EDITOR_SECTIONS: Partial<Record<AdminSection, VenueEditorSection>> = {
+  add: "main",
+  "venue-main": "main",
+  "venue-content": "content",
+  "venue-media": "media",
+  "venue-premium": "premium",
+};
+
+const WORKSPACE_COPY: Partial<Record<AdminSection, { title: string; description: string }>> = {
+  add: {
+    title: "Новое заведение",
+    description: "Создайте карточку, укажите адрес и расписание. Остальные разделы станут доступны после первого сохранения.",
+  },
+  "venue-main": {
+    title: "Основные данные",
+    description: "Название, категория, статус публикации, логотип, адрес и режим работы.",
+  },
+  "venue-content": {
+    title: "Контент карточки",
+    description: "Описание, контакты и теги, которые видит пользователь.",
+  },
+  "venue-media": {
+    title: "Фото",
+    description: "Галерея, порядок изображений и отдельные миниатюры.",
+  },
+  "venue-premium": {
+    title: "Premium-оформление",
+    description: "Предпросмотр и визуальные настройки premium-карточки.",
+  },
+  "venue-events": {
+    title: "События карточки",
+    description: "Мероприятия, привязанные к выбранному заведению.",
+  },
+  "venue-audit": {
+    title: "Аудит карточки",
+    description: "Просмотры, действия, реакции, конверсия и качество заполнения.",
+  },
+};
 
 const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024;
 
@@ -212,11 +271,12 @@ export default function AdminPanel({
   const loadVenue = (venue: Venue) => {
     onSelectVenue(venue);
     setEditingVenue(normalizeVenueForEdit(venue));
-    setSection("venues");
+    setSection("venue-main");
     setSaveError(null);
   };
 
   const startCreateVenue = () => {
+    onSelectVenue(null);
     setEditingVenue(createVenueDraft(pendingCoords));
     setSaveError(null);
     setSection("add");
@@ -339,7 +399,7 @@ export default function AdminPanel({
 
     try {
       const schedule = normalizeSchedule(editingVenue.workingHoursSchedule);
-      await onSaveVenue({
+      const savedVenue = await onSaveVenue({
         ...editingVenue,
         slug: slugifyVenueName(editingVenue.name),
         workingHoursSchedule: schedule,
@@ -351,6 +411,11 @@ export default function AdminPanel({
           premiumTheme: undefined,
         },
       });
+      if (savedVenue) {
+        onSelectVenue(savedVenue);
+        setEditingVenue(normalizeVenueForEdit(savedVenue));
+        setSection("venue-main");
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 1800);
     } catch (error) {
@@ -390,36 +455,87 @@ export default function AdminPanel({
     });
   };
 
+  const deleteCurrentVenue = async (id: string) => {
+    await onDeleteVenue(id);
+    onSelectVenue(null);
+    setEditingVenue(createVenueDraft(pendingCoords));
+    setSection("venues");
+  };
+
+  const activeEditorSection = VENUE_EDITOR_SECTIONS[section];
+  const workspaceCopy = WORKSPACE_COPY[section];
+  const isVenueWorkspace = Boolean(
+    workspaceCopy && (activeEditorSection || section === "venue-events" || section === "venue-audit"),
+  );
+
+  const renderNavItems = (items: Array<{ id: AdminSection; icon: LucideIcon; label: string }>) => items.map(({ id, icon: Icon, label }) => (
+    <Button
+      key={id}
+      type="button"
+      variant="ghost"
+      onClick={() => (id === "add" ? startCreateVenue() : setSection(id))}
+      className={cn(
+        "w-full justify-start gap-2 text-left text-muted-foreground",
+        section === id && "bg-muted text-foreground",
+      )}
+    >
+      <Icon data-icon="inline-start" />
+      {label}
+    </Button>
+  ));
+
   return (
-    <div id="workspace" className="min-h-full rounded-xl border bg-card p-3 text-xs text-card-foreground sm:p-4 sm:text-sm">
-      <div className="grid min-h-full grid-cols-1 gap-4 lg:grid-cols-[190px_minmax(0,1fr)]">
-        <nav className="flex flex-col gap-1 border-b pb-3 lg:border-b-0 lg:border-r lg:pr-3">
-          {[
-            ["dashboard", LayoutDashboard, "Дашборд"],
-            ["venues", List, "Заведения"],
-            ["add", Plus, "Добавить заведение"],
-            ["users", Users, "Пользователи"],
-            ["suggestions", MapPin, "Заявки"],
-            ["feedback", MessageSquare, "Обращения"],
-            ["events", Calendar, "События"],
-          ].map(([id, Icon, label]) => (
-            <Button
-              key={id as string}
-              type="button"
-              variant="ghost"
-              onClick={() => (id === "add" ? startCreateVenue() : setSection(id as AdminSection))}
-              className={cn(
-                "w-full justify-start gap-2 text-left text-muted-foreground",
-                section === id && "bg-muted text-foreground",
-              )}
-            >
-              <Icon data-icon="inline-start" />
-              {label as string}
-            </Button>
-          ))}
+    <div id="workspace" className="min-h-full overflow-hidden rounded-xl border bg-card text-xs text-card-foreground sm:text-sm">
+      <div className="grid min-h-full grid-cols-1 lg:grid-cols-[230px_minmax(0,1fr)]">
+        <nav className="border-b bg-muted/15 p-3 lg:sticky lg:top-0 lg:self-start lg:border-b-0 lg:border-r lg:p-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="flex flex-col gap-1">
+              <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Обзор
+              </div>
+              {renderNavItems([
+                { id: "dashboard", icon: LayoutDashboard, label: "Дашборд" },
+                { id: "venues", icon: List, label: "Все заведения" },
+                { id: "add", icon: Plus, label: "Добавить заведение" },
+              ])}
+            </div>
+
+            {editingVenue.id && (
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="px-2 pb-1">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Выбранное заведение
+                  </div>
+                  <div className="mt-1 truncate text-xs font-semibold text-foreground" title={editingVenue.name}>
+                    {editingVenue.name}
+                  </div>
+                </div>
+                {renderNavItems([
+                  { id: "venue-main", icon: Settings2, label: "Основное" },
+                  { id: "venue-content", icon: FileText, label: "Контент" },
+                  { id: "venue-media", icon: Image, label: "Фото" },
+                  { id: "venue-premium", icon: Sparkles, label: "Premium" },
+                  { id: "venue-events", icon: Calendar, label: "События карточки" },
+                  { id: "venue-audit", icon: Activity, label: "Аудит карточки" },
+                ])}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <div className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Работа с сервисом
+              </div>
+              {renderNavItems([
+                { id: "users", icon: Users, label: "Пользователи" },
+                { id: "suggestions", icon: MapPin, label: "Заявки" },
+                { id: "feedback", icon: MessageSquare, label: "Обращения" },
+                { id: "events", icon: Calendar, label: "Все события" },
+              ])}
+            </div>
+          </div>
         </nav>
 
-        <div className="min-w-0">
+        <div className="min-w-0 p-3 sm:p-5">
           {section === "dashboard" && (
             <DashboardView dashboard={dashboard} analytics={analytics} venues={venues} />
           )}
@@ -434,60 +550,70 @@ export default function AdminPanel({
             <EventsOverview events={events} venues={venues} onSelectVenue={loadVenue} />
           )}
 
-          {(section === "venues" || section === "add") && (
-            <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-              <div className="rounded-xl border bg-muted/20 p-3">
-                <VenueList venues={venues} selectedVenue={selectedVenue} onSelectVenue={loadVenue} />
-              </div>
-              <div className="min-w-0 rounded-xl border bg-background p-3 shadow-sm">
-                <VenueWorkspace
-                  editingVenue={editingVenue}
-                  selectedVenueAudit={selectedVenueAudit}
-                  selectedVenueAuditLoading={selectedVenueAuditLoading}
-                  selectedVenueEvents={selectedVenueEvents}
-                  saveError={saveError}
-                  saved={saved}
-                  onDeleteVenue={onDeleteVenue}
-                  saveVenue={saveVenue}
-                  editor={(
-                    <VenueEditor
-                      editingVenue={editingVenue}
-                      setEditingVenue={setEditingVenue}
-                      tagInput={tagInput}
-                      setTagInput={setTagInput}
-                      addTag={addTag}
-                      updateVenueName={updateVenueName}
-                      updateSchedule={updateSchedule}
-                      pendingCoords={pendingCoords}
-                      onToggleMobileMap={onToggleMobileMap}
-                      applyPendingCoords={applyPendingCoords}
-                      uploadError={uploadError}
-                      uploadingTarget={uploadingTarget}
-                      uploadSelectedImages={uploadSelectedImages}
-                      sensors={sensors}
-                      handleGalleryDragEnd={handleGalleryDragEnd}
-                      topItemInput={topItemInput}
-                      setTopItemInput={setTopItemInput}
-                      addTopItem={addTopItem}
-                      events={selectedVenueEvents}
-                    />
-                  )}
-                  eventsEditor={(
-                    <EventEditor
-                      editingVenue={editingVenue}
-                      events={selectedVenueEvents}
-                      newEvent={newEvent}
-                      setNewEvent={setNewEvent}
-                      uploadError={uploadError}
-                      uploadingTarget={uploadingTarget}
-                      uploadSelectedImages={uploadSelectedImages}
-                      onDeleteEvent={onDeleteEvent}
-                      createEvent={createEvent}
-                    />
-                  )}
-                />
-              </div>
+          {section === "venues" && (
+            <div className="rounded-xl border bg-background p-4 shadow-sm">
+              <VenueList venues={venues} selectedVenue={selectedVenue} onSelectVenue={loadVenue} />
             </div>
+          )}
+
+          {isVenueWorkspace && workspaceCopy && (
+            <VenueWorkspace
+              editingVenue={editingVenue}
+              title={workspaceCopy.title}
+              description={workspaceCopy.description}
+              saveError={saveError}
+              saved={saved}
+              showActions={Boolean(activeEditorSection)}
+              onDeleteVenue={deleteCurrentVenue}
+              saveVenue={saveVenue}
+            >
+              {activeEditorSection && (
+                <VenueEditor
+                  section={activeEditorSection}
+                  editingVenue={editingVenue}
+                  setEditingVenue={setEditingVenue}
+                  tagInput={tagInput}
+                  setTagInput={setTagInput}
+                  addTag={addTag}
+                  updateVenueName={updateVenueName}
+                  updateSchedule={updateSchedule}
+                  pendingCoords={pendingCoords}
+                  onToggleMobileMap={onToggleMobileMap}
+                  applyPendingCoords={applyPendingCoords}
+                  uploadError={uploadError}
+                  uploadingTarget={uploadingTarget}
+                  uploadSelectedImages={uploadSelectedImages}
+                  sensors={sensors}
+                  handleGalleryDragEnd={handleGalleryDragEnd}
+                  topItemInput={topItemInput}
+                  setTopItemInput={setTopItemInput}
+                  addTopItem={addTopItem}
+                  events={selectedVenueEvents}
+                />
+              )}
+
+              {section === "venue-events" && (
+                <EventEditor
+                  editingVenue={editingVenue}
+                  events={selectedVenueEvents}
+                  newEvent={newEvent}
+                  setNewEvent={setNewEvent}
+                  uploadError={uploadError}
+                  uploadingTarget={uploadingTarget}
+                  uploadSelectedImages={uploadSelectedImages}
+                  onDeleteEvent={onDeleteEvent}
+                  createEvent={createEvent}
+                />
+              )}
+
+              {section === "venue-audit" && (
+                <VenueAuditView
+                  audit={selectedVenueAudit}
+                  loading={selectedVenueAuditLoading}
+                  venue={editingVenue}
+                />
+              )}
+            </VenueWorkspace>
           )}
         </div>
       </div>

@@ -28,7 +28,6 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { VenueEvent, WeekdayKey, WorkingHoursSchedule } from "../../types";
 import { normalizePremiumRecommendations } from "../../utils/premium";
@@ -57,6 +56,7 @@ export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "i
 const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
 const COMPRESSED_IMAGE_MAX_SIZE = 1800;
 const COMPRESSED_IMAGE_QUALITY = 0.86;
+export type VenueEditorSection = "main" | "content" | "media" | "premium";
 type UploadTarget = "gallery" | "gallery-thumbnail" | "hero" | "event" | "logo";
 type CropJob = {
   file: File;
@@ -238,6 +238,7 @@ export function VenueEditor(props: any) {
     setTopItemInput,
     addTopItem,
     events = [],
+    section = "main" as VenueEditorSection,
   } = props;
 
   const schedule = normalizeSchedule(editingVenue.workingHoursSchedule);
@@ -245,15 +246,8 @@ export function VenueEditor(props: any) {
 
   return (
     <>
-    <Tabs defaultValue="main" className="w-full gap-4">
-      <TabsList variant="line" className="w-full justify-start overflow-x-auto rounded-none border-b bg-transparent p-0">
-        <TabsTrigger value="main" className="h-10 flex-none rounded-none px-4 text-xs">Основное</TabsTrigger>
-        <TabsTrigger value="content" className="h-10 flex-none rounded-none px-4 text-xs">Контент</TabsTrigger>
-        <TabsTrigger value="media" className="h-10 flex-none rounded-none px-4 text-xs">Фото</TabsTrigger>
-        <TabsTrigger value="premium" className="h-10 flex-none rounded-none px-4 text-xs">Premium</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="main" className="flex flex-col gap-4">
+    {section === "main" && (
+      <div className="flex flex-col gap-4">
       <AdminBlock title={editingVenue.id ? "Редактирование заведения" : "Добавление заведения"}>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Имя">
@@ -347,9 +341,11 @@ export function VenueEditor(props: any) {
         </div>
       </AdminBlock>
 
-      </TabsContent>
+      </div>
+    )}
 
-      <TabsContent value="content" className="flex flex-col gap-4">
+    {section === "content" && (
+      <div className="flex flex-col gap-4">
       <AdminBlock title="Описание и контакты">
         <div className="flex flex-col gap-3">
           <Field label="Короткое описание">
@@ -415,9 +411,11 @@ export function VenueEditor(props: any) {
         />
       </AdminBlock>
 
-      </TabsContent>
+      </div>
+    )}
 
-      <TabsContent value="media" className="flex flex-col gap-4">
+    {section === "media" && (
+      <div className="flex flex-col gap-4">
       <AdminBlock title="Галерея">
         {uploadError && <div className="mb-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-destructive">{uploadError}</div>}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleGalleryDragEnd}>
@@ -451,9 +449,11 @@ export function VenueEditor(props: any) {
         />
       </AdminBlock>
 
-      </TabsContent>
+      </div>
+    )}
 
-      <TabsContent value="premium" className="flex flex-col gap-4">
+    {section === "premium" && (
+      <div className="flex flex-col gap-4">
       <AdminBlock title="Premium">
         <label className="mb-3 flex items-center gap-2 text-xs font-semibold text-foreground">
           <Switch
@@ -577,8 +577,8 @@ export function VenueEditor(props: any) {
           </div>
         )}
       </AdminBlock>
-      </TabsContent>
-    </Tabs>
+      </div>
+    )}
     <ImageCropDialog {...cropDialogProps} />
     </>
   );

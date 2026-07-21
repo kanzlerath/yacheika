@@ -98,7 +98,7 @@ export default function DiscoveryPanel({
   return (
     <div 
       id="discovery-panel" 
-      className="h-full overflow-y-auto font-sans"
+      className="h-full min-h-0 overflow-y-auto overscroll-contain font-sans"
       style={{
         paddingTop: "calc(4.5rem + env(safe-area-inset-top, 0px))"
       }}
