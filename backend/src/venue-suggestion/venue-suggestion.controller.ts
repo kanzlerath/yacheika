@@ -15,6 +15,12 @@ export class VenueSuggestionController {
     return this.suggestionService.create(data, request.telegramSession);
   }
 
+  @Get('api/users/me/venue-suggestions')
+  @UseGuards(TelegramAuthGuard)
+  async getUserSuggestionUpdates(@Req() request: any) {
+    return this.suggestionService.findPositiveUpdatesForUser(request.telegramSession.userId);
+  }
+
   @Get('api/admin/venue-suggestions')
   @UseGuards(AdminGuard)
   async getAdminSuggestions() {
