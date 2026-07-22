@@ -200,6 +200,18 @@ body {
   --app-shadow: 0 24px 52px rgba(5, 7, 10, 0.16);
 }
 
+.vk-logo-black {
+  display: none;
+}
+
+[data-theme="light"] .vk-logo-white {
+  display: none;
+}
+
+[data-theme="light"] .vk-logo-black {
+  display: block;
+}
+
 [data-theme] {
   background: var(--app-bg);
   color: var(--app-text);

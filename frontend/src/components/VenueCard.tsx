@@ -11,7 +11,6 @@ import {
   Clock,
   Phone,
   Send,
-  Instagram,
   Globe,
   Plus,
   Calendar,
@@ -54,6 +53,22 @@ const VIBE_GROUPS = [
   { title: "Особенности", tags: ["летник", "панорамные окна", "танцпол", "сцена", "ВИП-зона", "можно с животными", "можно с ноутбуком", "бронирование", "фейс-контроль"] },
   { title: "Цены", tags: ["недорого", "средний чек", "премиум"] },
 ];
+
+function VkIcon({ className = "" }: { className?: string }) {
+  return (
+    <span className={`relative inline-flex ${className}`} aria-hidden="true">
+      <img src="/vk-logo-white.svg" alt="" className="vk-logo-white size-full" />
+      <img src="/vk-logo-black.svg" alt="" className="vk-logo-black absolute inset-0 size-full" />
+    </span>
+  );
+}
+
+const getVkUrl = (value: string) => {
+  const normalized = value.trim().replace(/^@/, "");
+  if (/^https?:\/\//i.test(normalized)) return normalized;
+  if (/^(?:www\.)?vk\.com\//i.test(normalized)) return `https://${normalized}`;
+  return `https://vk.com/${normalized}`;
+};
 
 function ExpandableText({
   children,
@@ -178,21 +193,12 @@ export default function VenueCard({
           value: venue.contacts.telegram,
         }
       : null,
-    venue.contacts.instagram
-      ? {
-          id: "instagram",
-          label: "Instagram",
-          href: `https://instagram.com/${venue.contacts.instagram}`,
-          icon: Instagram,
-          value: venue.contacts.instagram,
-        }
-      : null,
     venue.contacts.vk
       ? {
           id: "vk",
           label: "VK",
-          href: venue.contacts.vk.startsWith("http") ? venue.contacts.vk : `https://vk.com/${venue.contacts.vk}`,
-          icon: Globe,
+          href: getVkUrl(venue.contacts.vk),
+          icon: VkIcon,
           value: venue.contacts.vk,
         }
       : null,
@@ -209,7 +215,7 @@ export default function VenueCard({
     id: string;
     label: string;
     href: string;
-    icon: typeof Globe;
+    icon: React.ComponentType<{ className?: string }>;
     value: string;
   }>;
   const setVenueTab = (tab: "info" | "events" | "vibes") => {

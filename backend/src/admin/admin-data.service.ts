@@ -668,7 +668,7 @@ export class AdminDataService {
       {
         id: 'contacts',
         label: 'Есть контакт для действия',
-        ok: Boolean(contacts.phone || contacts.telegram || contacts.website || contacts.instagram || contacts.vk),
+        ok: Boolean(contacts.phone || contacts.telegram || contacts.website || contacts.vk),
         severity: 'warning',
         detail: 'Телефон, Telegram, сайт или соцсети нужны для конверсии.',
       },

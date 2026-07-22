@@ -88,7 +88,6 @@ export interface Venue {
   contacts: {
     phone?: string;
     telegram?: string;
-    instagram?: string;
     vk?: string;
     website?: string;
   };

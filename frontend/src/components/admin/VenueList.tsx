@@ -163,7 +163,7 @@ function getVenueAuditIssues(venue: Venue) {
     !venue.gallery?.length ? "нет фото" : null,
     !venue.shortDescription ? "нет описания" : null,
     !venue.workingHoursSchedule && !venue.workingHours ? "нет графика" : null,
-    !venue.contacts?.phone && !venue.contacts?.telegram && !venue.contacts?.website && !venue.contacts?.instagram && !venue.contacts?.vk ? "нет контакта" : null,
+    !venue.contacts?.phone && !venue.contacts?.telegram && !venue.contacts?.website && !venue.contacts?.vk ? "нет контакта" : null,
     venue.premiumConfig?.premiumActive && (!venue.premiumConfig.heroImage || !venue.premiumConfig.ctaUrl || !venue.premiumConfig.ctaText) ? "premium" : null,
   ].filter(Boolean) as string[];
 }
