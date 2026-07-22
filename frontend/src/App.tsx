@@ -21,26 +21,13 @@ import { logAnalyticsEvent } from "./utils/analytics";
 import { getLegalDocumentByPath } from "./legalDocuments";
 import { appEase, softTransition } from "./utils/motionPresets";
 import { createEmptyVenueDiscoveryFilters } from "./utils/venueFilters";
+import { createRandomVenueRanks, sortVenues, type VenueSortMode } from "./utils/venueSorting";
 import {
   clearTelegramAuth,
   readStoredTelegramAuth,
   refreshTelegramSession,
   storeTelegramAuth,
 } from "./utils/telegramAuth";
-
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
 
 const SYSTEM_SURFACE_COLORS: Record<MapStyle, string> = {
   dark: "#05070a",
@@ -78,9 +65,11 @@ function ScopeApp() {
     const val = localStorage.getItem("yacheyka.mapStyle");
     return val === "dark" || val === "light" ? val : "dark";
   });
-  const [nearbySort, setNearbySort] = useState<boolean>(() => {
-    return localStorage.getItem("yacheyka.nearbySort") === "true";
+  const [locationEnabled, setLocationEnabled] = useState<boolean>(() => {
+    const stored = localStorage.getItem("yacheyka.locationEnabled") ?? localStorage.getItem("yacheyka.nearbySort");
+    return stored === "true";
   });
+  const [venueSortMode, setVenueSortMode] = useState<VenueSortMode>("random");
   const [clusterMaxZoom, setClusterMaxZoom] = useState(
     () => auth?.user.preferences?.clusterMaxZoom ?? 14,
   );
@@ -121,9 +110,20 @@ function ScopeApp() {
     }
   };
 
-  const handleNearbySortChange = (val: boolean) => {
-    setNearbySort(val);
-    localStorage.setItem("yacheyka.nearbySort", String(val));
+  const handleLocationEnabledChange = (enabled: boolean) => {
+    setLocationEnabled(enabled);
+    localStorage.setItem("yacheyka.locationEnabled", String(enabled));
+    localStorage.removeItem("yacheyka.nearbySort");
+    if (!enabled) {
+      setVenueSortMode((current) => current === "distance" ? "random" : current);
+    }
+  };
+
+  const handleVenueSortModeChange = (mode: VenueSortMode) => {
+    setVenueSortMode(mode);
+    if (mode === "distance" && !locationEnabled) {
+      handleLocationEnabledChange(true);
+    }
   };
 
   const handleClusterMaxZoomChange = async (value: number) => {
@@ -190,12 +190,12 @@ function ScopeApp() {
   };
 
   useEffect(() => {
-    if (!nearbySort) {
+    if (!locationEnabled) {
       setUserCoords(null);
       return;
     }
 
-    let watchId: number;
+    let watchId: number | undefined;
     const onSuccess = (pos: GeolocationPosition) => {
       setUserCoords({
         lat: pos.coords.latitude,
@@ -204,29 +204,37 @@ function ScopeApp() {
     };
     const onError = (err: GeolocationPositionError) => {
       console.warn("Geolocation watch error:", err);
-      setNearbySort(false);
+      setLocationEnabled(false);
+      localStorage.setItem("yacheyka.locationEnabled", "false");
+      setVenueSortMode((current) => current === "distance" ? "random" : current);
     };
 
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(onSuccess, onError, { enableHighAccuracy: true });
       watchId = navigator.geolocation.watchPosition(onSuccess, onError, { enableHighAccuracy: true });
     } else {
-      setNearbySort(false);
+      setLocationEnabled(false);
+      localStorage.setItem("yacheyka.locationEnabled", "false");
+      setVenueSortMode((current) => current === "distance" ? "random" : current);
     }
 
     return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
+      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
-  }, [nearbySort]);
+  }, [locationEnabled]);
 
-  const sortedVenues = useMemo(() => {
-    if (!nearbySort || !userCoords) return venues;
-    return [...venues].sort((a, b) => {
-      const distA = calculateDistance(userCoords.lat, userCoords.lng, a.latitude, a.longitude);
-      const distB = calculateDistance(userCoords.lat, userCoords.lng, b.latitude, b.longitude);
-      return distA - distB;
-    });
-  }, [venues, nearbySort, userCoords]);
+  const venueIdsKey = useMemo(
+    () => venues.map((venue) => venue.id).sort().join("|"),
+    [venues],
+  );
+  const randomVenueRanks = useMemo(
+    () => createRandomVenueRanks(venueIdsKey ? venueIdsKey.split("|") : []),
+    [venueIdsKey],
+  );
+  const sortedVenues = useMemo(
+    () => sortVenues(venues, venueSortMode, randomVenueRanks, userCoords),
+    [randomVenueRanks, userCoords, venueSortMode, venues],
+  );
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -486,6 +494,9 @@ function ScopeApp() {
             setFilters={setFilters}
             eventsList={events}
             setMobileView={setMobileView}
+            sortMode={venueSortMode}
+            onSortModeChange={handleVenueSortModeChange}
+            hasUserLocation={Boolean(userCoords)}
           />
         </section>
 
@@ -558,8 +569,8 @@ function ScopeApp() {
         onLogout={handleLogout}
         mapStyle={mapStyle}
         onChangeMapStyle={handleMapStyleChange}
-        nearbySort={nearbySort}
-        onChangeNearbySort={handleNearbySortChange}
+        locationEnabled={locationEnabled}
+        onChangeLocationEnabled={handleLocationEnabledChange}
         clusterMaxZoom={clusterMaxZoom}
         onChangeClusterMaxZoom={handleClusterMaxZoomChange}
       />

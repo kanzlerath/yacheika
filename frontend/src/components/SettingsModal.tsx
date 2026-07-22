@@ -38,8 +38,8 @@ interface SettingsModalProps {
   onLogout: () => void;
   mapStyle: MapStyle;
   onChangeMapStyle: (style: MapStyle) => Promise<void>;
-  nearbySort: boolean;
-  onChangeNearbySort: (val: boolean) => void;
+  locationEnabled: boolean;
+  onChangeLocationEnabled: (enabled: boolean) => void;
   clusterMaxZoom: number;
   onChangeClusterMaxZoom: (value: number) => Promise<void>;
 }
@@ -51,8 +51,8 @@ export default function SettingsModal({
   onLogout,
   mapStyle,
   onChangeMapStyle,
-  nearbySort,
-  onChangeNearbySort,
+  locationEnabled,
+  onChangeLocationEnabled,
   clusterMaxZoom,
   onChangeClusterMaxZoom,
 }: SettingsModalProps) {
@@ -460,27 +460,27 @@ export default function SettingsModal({
               </motion.div>
             )}
 
-            {/* GPS Proximity Sort Settings */}
+            {/* Location Settings */}
             <motion.div className="space-y-3" variants={revealList} initial="hidden" animate="show">
               <h4 className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
-                Геолокация и фильтры
+                Карта
               </h4>
 
               <motion.div className="settings-card flex items-center justify-between p-4 rounded-2xl border" variants={revealItem}>
                 <div className="space-y-0.5 pr-2">
                   <div className="settings-strong text-xs font-semibold">
-                    <span>Сортировка по близости (GPS)</span>
+                    <span>Использовать геопозицию</span>
                   </div>
                   <div className="text-[10px] leading-relaxed">
-                    Определяет ваши координаты и перестраивает список заведений от близких к дальним.
+                    Показывает ваше положение на карте и позволяет быстро вернуться к нему.
                   </div>
                 </div>
 
                 <Switch
-                  checked={nearbySort}
-                  onCheckedChange={onChangeNearbySort}
-                  className={nearbySort ? "settings-toggle-on" : "settings-toggle-off"}
-                  aria-label="Сортировка по близости"
+                  checked={locationEnabled}
+                  onCheckedChange={onChangeLocationEnabled}
+                  className={locationEnabled ? "settings-toggle-on" : "settings-toggle-off"}
+                  aria-label="Использовать геопозицию"
                 />
               </motion.div>
             </motion.div>
