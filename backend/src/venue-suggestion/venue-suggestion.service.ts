@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { VenueSuggestionEntity, VenueSuggestionStatus } from '../entities/venue-suggestion.entity';
 import { CreateVenueSuggestionDto } from './dto/create-venue-suggestion.dto';
 
@@ -28,6 +28,20 @@ export class VenueSuggestionService {
 
   async findAll() {
     return this.suggestionRepository.find({ order: { createdAt: 'DESC' } });
+  }
+
+  /**
+   * Rejections deliberately remain private: the author only sees positive
+   * updates once a suggestion is being reviewed or has been accepted.
+   */
+  async findPositiveUpdatesForUser(userId: string) {
+    return this.suggestionRepository.find({
+      where: {
+        userId,
+        status: In(['reviewed', 'converted']),
+      },
+      order: { updatedAt: 'DESC' },
+    });
   }
 
   async updateStatus(id: string, status?: VenueSuggestionStatus) {

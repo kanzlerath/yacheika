@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import TelegramLoginWidget from "./TelegramLoginWidget";
-import { MapStyle, TelegramAuthSession } from "../types";
+import { MapStyle, TelegramAuthSession, VenueSuggestion } from "../types";
 import { appEase, panelTransition, revealItem, revealList } from "../utils/motionPresets";
 import { LEGAL_LINKS } from "../legalDocuments";
 
@@ -66,6 +66,7 @@ export default function SettingsModal({
   });
   const [suggestionStatus, setSuggestionStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [suggestionError, setSuggestionError] = useState<string | null>(null);
+  const [suggestionUpdates, setSuggestionUpdates] = useState<VenueSuggestion[]>([]);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({
     kind: "idea" as "idea" | "bug" | "other",
@@ -91,6 +92,27 @@ export default function SettingsModal({
   useEffect(() => {
     setClusterZoomDraft(clusterMaxZoom);
   }, [clusterMaxZoom]);
+
+  const loadSuggestionUpdates = async () => {
+    if (!auth) {
+      setSuggestionUpdates([]);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/users/me/venue-suggestions");
+      if (!response.ok) throw new Error("Failed to load suggestion updates");
+      setSuggestionUpdates(await response.json());
+    } catch (error) {
+      // Updates are supplementary to the settings panel, so a transient
+      // failure must not prevent the user from sending a new suggestion.
+      console.error("Failed to load suggestion updates:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) void loadSuggestionUpdates();
+  }, [auth?.user.id, isOpen]);
 
   const submitSuggestion = async () => {
     setSuggestionError(null);
@@ -118,6 +140,7 @@ export default function SettingsModal({
       }
       setSuggestionStatus("sent");
       setSuggestionForm({ name: "", address: "", comment: "", contact: "" });
+      void loadSuggestionUpdates();
     } catch (error) {
       setSuggestionStatus("error");
       setSuggestionError(error instanceof Error ? error.message : "Не удалось отправить заявку.");
@@ -336,6 +359,28 @@ export default function SettingsModal({
                   Обращения
                 </h4>
                 <motion.div className="settings-card rounded-2xl border p-4 space-y-3" variants={revealItem}>
+                  {suggestionUpdates.length > 0 && (
+                    <div className="space-y-2" aria-live="polite">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
+                        Новости по вашим заявкам
+                      </div>
+                      {suggestionUpdates.map((suggestion) => {
+                        const accepted = suggestion.status === "converted";
+                        return (
+                          <div key={suggestion.id} className="rounded-xl border border-emerald-400/20 bg-emerald-400/8 px-3 py-2.5 text-xs leading-relaxed text-neutral-300">
+                            <div className="font-semibold text-emerald-200">
+                              {accepted ? "Заявка принята" : "Заявка рассматривается"}
+                            </div>
+                            <p className="mt-0.5">
+                              {accepted
+                                ? <>Спасибо за наводку: «{suggestion.name}» появится в каталоге после подготовки.</>
+                                : <>Спасибо за наводку: «{suggestion.name}» уже взяли в работу.</>}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                   <Button
                     type="button"
                     variant="outline"
