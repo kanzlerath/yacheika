@@ -147,7 +147,6 @@ const createVenueDraft = (coords?: { lat: number; lng: number } | null) => ({
   contacts: {
     phone: "",
     telegram: "",
-    instagram: "",
     vk: "",
     website: "",
   },
@@ -189,7 +188,6 @@ const normalizeVenueForEdit = (venue: Venue) => ({
   contacts: {
     phone: venue.contacts?.phone || "",
     telegram: venue.contacts?.telegram || "",
-    instagram: venue.contacts?.instagram || "",
     vk: venue.contacts?.vk || "",
     website: venue.contacts?.website || "",
   },

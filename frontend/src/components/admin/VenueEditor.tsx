@@ -41,6 +41,7 @@ const CATEGORIES = [
   "Бар",
   "Паб",
   "Кафе",
+  "Кофейня",
   "Рюмочная",
   "Коктейльный бар",
   "Винный бар",
@@ -51,6 +52,13 @@ const CATEGORIES = [
   "Клуб",
   "Ресторан",
 ];
+
+const CONTACT_FIELDS = [
+  { key: "phone", label: "Телефон", placeholder: "+7 (999) 123-45-67" },
+  { key: "telegram", label: "Telegram", placeholder: "bar_username без @" },
+  { key: "vk", label: "VK", placeholder: "place или https://vk.com/place" },
+  { key: "website", label: "Сайт", placeholder: "https://example.com" },
+] as const;
 
 export const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const IMAGE_ACCEPT_ATTRIBUTE = ACCEPTED_IMAGE_TYPES.join(",");
@@ -359,8 +367,8 @@ export function VenueEditor(props: any) {
             <Textarea value={editingVenue.fullDescription} onChange={(event) => setEditingVenue({ ...editingVenue, fullDescription: event.target.value })} rows={4} placeholder="Атмосфера, посадка, напитки, музыка, важные детали для гостя" />
           </Field>
           <div className="grid gap-2 sm:grid-cols-3">
-            {(["phone", "telegram", "instagram", "website"] as const).map((key) => (
-              <Field key={key} label={key}>
+            {CONTACT_FIELDS.map(({ key, label, placeholder }) => (
+              <Field key={key} label={label}>
                 <Input
                   value={editingVenue.contacts[key] || ""}
                   onChange={(event) => setEditingVenue({
@@ -370,15 +378,7 @@ export function VenueEditor(props: any) {
                       [key]: key === "phone" ? formatPhoneInput(event.target.value) : event.target.value,
                     },
                   })}
-                  placeholder={
-                    key === "phone"
-                      ? "+7 (999) 123-45-67"
-                      : key === "telegram"
-                      ? "bar_username без @"
-                      : key === "instagram"
-                      ? "instagram_username"
-                      : "https://example.com"
-                  }
+                  placeholder={placeholder}
                 />
               </Field>
             ))}
