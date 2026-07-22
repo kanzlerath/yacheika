@@ -12,17 +12,27 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  ArrowUpDown,
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Venue, Collection, VenueEvent } from "../types";
 import {
   VenueDiscoveryFilters,
   createEmptyVenueDiscoveryFilters,
   filterVenuesForDiscovery,
 } from "../utils/venueFilters";
+import type { VenueSortMode } from "../utils/venueSorting";
 
 interface DiscoveryPanelProps {
   venues: Venue[];
@@ -33,6 +43,9 @@ interface DiscoveryPanelProps {
   setFilters: Dispatch<SetStateAction<VenueDiscoveryFilters>>;
   eventsList: VenueEvent[];
   setMobileView?: (view: "map" | "list") => void;
+  sortMode: VenueSortMode;
+  onSortModeChange: (mode: VenueSortMode) => void;
+  hasUserLocation: boolean;
 }
 
 const UNIFIED_PILLS = [
@@ -78,6 +91,9 @@ export default function DiscoveryPanel({
   setFilters,
   eventsList,
   setMobileView,
+  sortMode,
+  onSortModeChange,
+  hasUserLocation,
 }: DiscoveryPanelProps) {
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
@@ -196,6 +212,30 @@ export default function DiscoveryPanel({
               className="overflow-hidden"
             >
               <div className="flex flex-col gap-4 pt-1">
+                <div className="flex flex-col gap-2 border-b pb-4">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-zinc-550">
+                    <ArrowUpDown className="size-3.5" />
+                    Порядок
+                  </div>
+                  <Select value={sortMode} onValueChange={(value) => onSortModeChange(value as VenueSortMode)}>
+                    <SelectTrigger className="h-9 w-full rounded-md text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="random">Случайно</SelectItem>
+                        <SelectItem value="rating">По рейтингу</SelectItem>
+                        <SelectItem value="popular">Популярные</SelectItem>
+                        <SelectItem value="distance">Рядом</SelectItem>
+                        <SelectItem value="newest">Сначала новые</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {sortMode === "distance" && !hasUserLocation && (
+                    <div className="text-[10px] text-zinc-500">Определяем геопозицию...</div>
+                  )}
+                </div>
+
                 {activeFilterCount > 0 && (
                   <div className="flex items-center justify-end gap-2">
                     <span className="text-[10px] font-mono text-zinc-500">{activeFilterCount} выбрано</span>
